@@ -2,6 +2,7 @@ package certs
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -9,14 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 )
-
-type KubernetesCertsGenerator interface {
-	//Generate generates a group of certificates that be uses for communicating with Kubernetes components.
-	Generate(path string) (*GeneratedCertsMap, error)
-}
-
-type KubernetesCertsGeneratorImple struct {
-}
 
 type GeneratedCertsMap struct {
 	res  map[string]string
@@ -33,8 +26,12 @@ func (gm *GeneratedCertsMap) GetResources() map[string]string {
 	return gm.res
 }
 
-func (kci *KubernetesCertsGeneratorImple) Generate(path string) (*GeneratedCertsMap, error) {
-	cmd := exec.Command("/bin/bash", "-c", "kubeadm init phase certs")
+func GenerateMasterCertificates(path, advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error) {
+	defer func() {
+		//remove certs path.
+		_ = os.RemoveAll(path)
+	}()
+	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase certs all --cert-dir=%s --apiserver-advertise-address=%s --service-cidr=%s", path, advertiseAddr, serviceCIDR))
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
