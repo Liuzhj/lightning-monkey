@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/g0194776/lightningmonkey/cmd/apiserver/apis"
+	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
@@ -48,7 +49,7 @@ func main() {
 		logrus.Fatalf("Failed to initialize backend storage driver: %s, error: %s", driverType, err.Error())
 		return
 	}
+	common.StorageDriver = driver
 	logrus.Infof("Starting Web Engine...")
-	go app.Run(iris.Addr(":8080"))
-	select {}
+	app.Run(iris.Addr(":8080"))
 }

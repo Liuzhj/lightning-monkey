@@ -1,0 +1,181 @@
+hash: 648e99354d376fc2c05ec6489ce3e49d897b00fe816e8ef77e54182efb59689b
+updated: 2019-02-28T15:31:33.888005+08:00
+imports:
+- name: github.com/aymerick/raymond
+  version: b565731e1464263de0bda75f2e45d97b54b60110
+  subpackages:
+  - ast
+  - lexer
+  - parser
+- name: github.com/BurntSushi/toml
+  version: 3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005
+- name: github.com/eknkc/amber
+  version: cdade1c073850f4ffc70a829e31235ea6892853b
+  subpackages:
+  - parser
+- name: github.com/fatih/structs
+  version: 878a968ab22548362a09bdb3322f98b00f470d46
+- name: github.com/flosch/pongo2
+  version: 79872a7b27692599b259dc751bed8b03581dd0de
+- name: github.com/globalsign/mgo
+  version: eeefdecb41b842af6dc652aaea4026e8403e62df
+  subpackages:
+  - bson
+  - internal/json
+- name: github.com/go-stack/stack
+  version: 2fee6af1a9795aafbe0253a0cfbdf668e1fb8a9a
+- name: github.com/golang/snappy
+  version: 2a8bb927dd31d8daada140a5d09578521ce5c36a
+- name: github.com/iris-contrib/blackfriday
+  version: 48b3da6a6f3865c7eb1eba96d74cf0a16f63faca
+- name: github.com/iris-contrib/formBinder
+  version: fbd5963f41e18ae1f1423ba046235094b0721ea1
+- name: github.com/iris-contrib/go.uuid
+  version: 36e9d2ebbde5e3f13ab2e25625fd453271d6522e
+- name: github.com/Joker/jade
+  version: 436f681db35f1b52a5560f1ae0e6ba5b69074bb2
+- name: github.com/json-iterator/go
+  version: 5bc93205020f6311d7e4a34f82c5616a18ec35e5
+- name: github.com/juju/errors
+  version: e65537c515d77e35697c471d6c2755375cb3adc4
+- name: github.com/kataras/golog
+  version: 03be101463868edc5a81f094fc68a5f6c1b5503a
+- name: github.com/kataras/iris
+  version: 328b5c6610ff57cfce1fe2a317b817e1fba10585
+  subpackages:
+  - cache
+  - cache/cfg
+  - cache/client
+  - cache/client/rule
+  - cache/entry
+  - cache/ruleset
+  - cache/uri
+  - context
+  - core/errors
+  - core/handlerconv
+  - core/host
+  - core/memstore
+  - core/netutil
+  - core/router
+  - macro
+  - macro/handler
+  - macro/interpreter/ast
+  - macro/interpreter/lexer
+  - macro/interpreter/parser
+  - macro/interpreter/token
+  - middleware/logger
+  - middleware/recover
+  - view
+- name: github.com/kataras/pio
+  version: ea782b38602d1e5df3c2b891978a1f80d917a6bd
+  subpackages:
+  - terminal
+- name: github.com/klauspost/compress
+  version: 30be6041bed523c18e269a700ebd9c2ea9328574
+  subpackages:
+  - flate
+  - gzip
+- name: github.com/klauspost/cpuid
+  version: 0da02118eaa37aa89aea6776b464a4ad00990af1
+- name: github.com/konsorten/go-windows-terminal-sequences
+  version: f55edac94c9bbba5d6182a4be46d86a2c9b5b50e
+- name: github.com/microcosm-cc/bluemonday
+  version: 506f3da9b7c86d737e91f16b7431df8635871552
+- name: github.com/modern-go/concurrent
+  version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
+- name: github.com/modern-go/reflect2
+  version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
+- name: github.com/mongodb/mongo-go-driver
+  version: fcec76a7c147bbcef3aecb66ce318bd4a0b004b4
+  subpackages:
+  - mongo
+  - mongo/options
+- name: github.com/ryanuber/columnize
+  version: abc90934186a77966e2beeac62ed966aac0561d5
+- name: github.com/satori/go.uuid
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
+- name: github.com/Shopify/goreferrer
+  version: ec9c9a553398739f0dcf817e0ad5e01c4e7dcd08
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 7bfe4c7ecddb3666a94b053b422cdd8f5aaa3615
+- name: github.com/sirupsen/logrus
+  version: e1e72e9de974bd926e5c56f83753fba2df402ce5
+- name: github.com/stretchr/testify
+  version: ffdc059bfe9ce6a4e144ba849dbedead332c6053
+  subpackages:
+  - assert
+  - require
+- name: github.com/xdg/scram
+  version: 7eeb5667e42c09cb51bf7b7c28aea8c56767da90
+- name: github.com/xdg/stringprep
+  version: 73f8eece6fdcd902c185bf651de50f3828bed5ed
+- name: go.mongodb.org/mongo-driver
+  version: fcec76a7c147bbcef3aecb66ce318bd4a0b004b4
+  subpackages:
+  - bson
+  - bson/bsoncodec
+  - bson/bsonrw
+  - bson/bsontype
+  - bson/primitive
+  - event
+  - internal
+  - mongo/options
+  - mongo/readconcern
+  - mongo/readpref
+  - mongo/writeconcern
+  - tag
+  - version
+  - x/bsonx
+  - x/bsonx/bsoncore
+  - x/mongo/driver
+  - x/mongo/driver/auth
+  - x/mongo/driver/auth/internal/gssapi
+  - x/mongo/driver/session
+  - x/mongo/driver/topology
+  - x/mongo/driver/uuid
+  - x/network/address
+  - x/network/command
+  - x/network/compressor
+  - x/network/connection
+  - x/network/connstring
+  - x/network/description
+  - x/network/result
+  - x/network/wiremessage
+- name: golang.org/x/crypto
+  version: 31a38585487a4b1fd6ff4f8f3db26f1fb296ac82
+  subpackages:
+  - acme
+  - acme/autocert
+  - pbkdf2
+  - ssh/terminal
+- name: golang.org/x/net
+  version: c95aed5357e77a4bf7d3955c46740000a17adee1
+  subpackages:
+  - html
+  - html/atom
+  - publicsuffix
+- name: golang.org/x/sync
+  version: e225da77a7e68af35c70ccbf71af2b83e6acac3c
+  subpackages:
+  - semaphore
+- name: golang.org/x/sys
+  version: 92a0ff1e1e2f61773648454ec71ec0c0f1c700a2
+  subpackages:
+  - unix
+  - windows
+- name: golang.org/x/text
+  version: d14c52b222ee852cdba8b07206ca0c614b389876
+  subpackages:
+  - transform
+  - unicode/norm
+- name: gopkg.in/yaml.v2
+  version: 51d6538a90f86fe93ac480b35f37b2be17fef232
+testImports:
+- name: github.com/davecgh/go-spew
+  version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
+  subpackages:
+  - difflib

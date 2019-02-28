@@ -11,6 +11,7 @@ const (
 	ResourceHasBeingDeleted int = 40006
 	NotFound                int = 40007
 	InternalError           int = 50000
+	RESPONSEINFO                = "HTTP_RESPONSE_INFO"
 )
 
 type Response struct {

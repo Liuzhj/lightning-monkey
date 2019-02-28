@@ -6,7 +6,7 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/managers"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
-	"gitlab.moebius.com/devops-k8s-mgmt-api/pkg/apis"
+	"io/ioutil"
 )
 
 func Register(app *iris.Application) error {
@@ -21,11 +21,19 @@ func Register(app *iris.Application) error {
 func NewCluster(ctx iris.Context) {
 	var rsp interface{}
 	cluster := entities.Cluster{}
-	err := json.Unmarshal(getBody(ctx), &cluster)
+	httpData, err := getBody(ctx)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}
 		ctx.JSON(&rsp)
-		ctx.Values().Set(apis.RESPONSEINFO, &rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	err = json.Unmarshal(httpData, &cluster)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
 		return
 	}
@@ -33,7 +41,7 @@ func NewCluster(ctx iris.Context) {
 	if err != nil {
 		rsp = entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)
-		ctx.Values().Set(apis.RESPONSEINFO, &rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
 		return
 	}
@@ -42,7 +50,7 @@ func NewCluster(ctx iris.Context) {
 		Cluster:  &cluster,
 	}
 	_, _ = ctx.JSON(rsp)
-	ctx.Values().Set(apis.RESPONSEINFO, &rsp)
+	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()
 	return
 }
@@ -50,6 +58,6 @@ func NewCluster(ctx iris.Context) {
 func UpdateCluster(ctx iris.Context)    {}
 func GetClusterList(ctx iris.Context)   {}
 func GetClusterStatus(ctx iris.Context) {}
-func getBody(ctx iris.Context) []byte {
-	return []byte(ctx.Values().GetString("BODY-INFO"))
+func getBody(ctx iris.Context) ([]byte, error) {
+	return ioutil.ReadAll(ctx.Request().Body)
 }

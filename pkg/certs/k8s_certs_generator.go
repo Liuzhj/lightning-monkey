@@ -3,6 +3,7 @@ package certs
 import (
 	"bufio"
 	"fmt"
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -26,7 +27,9 @@ func (gm *GeneratedCertsMap) GetResources() map[string]string {
 	return gm.res
 }
 
-func GenerateMasterCertificates(path, advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error) {
+func GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error) {
+	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
+	logrus.Infof("Certificates temporary storage path: %s", path)
 	defer func() {
 		//remove certs path.
 		_ = os.RemoveAll(path)
@@ -39,7 +42,6 @@ func GenerateMasterCertificates(path, advertiseAddr, serviceCIDR string) (*Gener
 	if err = cmd.Start(); err != nil {
 		return nil, err
 	}
-	m := GeneratedCertsMap{res: make(map[string]string), path: path}
 	reader := bufio.NewReader(stdout)
 	for {
 		traceData, _, err := reader.ReadLine()
@@ -54,11 +56,48 @@ func GenerateMasterCertificates(path, advertiseAddr, serviceCIDR string) (*Gener
 	if err = cmd.Wait(); err != nil {
 		return nil, err
 	}
-	err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+	return getCertificatesContent(path)
+}
+
+func GenerateMainCACertificates() (*GeneratedCertsMap, error) {
+	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
+	logrus.Infof("Certificates temporary storage path: %s", path)
+	defer func() {
+		//remove certs path.
+		_ = os.RemoveAll(path)
+	}()
+	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase certs ca --cert-dir=%s", path))
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err = cmd.Start(); err != nil {
+		return nil, err
+	}
+	reader := bufio.NewReader(stdout)
+	for {
+		traceData, _, err := reader.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				return nil, err
+			}
+			break
+		}
+		logrus.Infof(string(traceData))
+	}
+	if err = cmd.Wait(); err != nil {
+		return nil, err
+	}
+	return getCertificatesContent(path)
+}
+
+func getCertificatesContent(path string) (*GeneratedCertsMap, error) {
+	m := GeneratedCertsMap{res: make(map[string]string), path: path}
+	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
-		f, err := os.OpenFile(filepath.Join(path, p), os.O_RDONLY, 0644)
+		f, err := os.OpenFile(p, os.O_RDONLY, 0644)
 		if err != nil {
 			return err
 		}
@@ -69,8 +108,5 @@ func GenerateMasterCertificates(path, advertiseAddr, serviceCIDR string) (*Gener
 		m.res[info.Name()] = string(fileData)
 		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &m, nil
+	return &m, err
 }
