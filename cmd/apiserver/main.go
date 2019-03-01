@@ -51,5 +51,5 @@ func main() {
 	}
 	common.StorageDriver = driver
 	logrus.Infof("Starting Web Engine...")
-	app.Run(iris.Addr(":8080"))
+	app.Run(iris.Addr("0.0.0.0:8080"))
 }

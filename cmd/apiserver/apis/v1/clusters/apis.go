@@ -21,7 +21,7 @@ func Register(app *iris.Application) error {
 func NewCluster(ctx iris.Context) {
 	var rsp interface{}
 	cluster := entities.Cluster{}
-	httpData, err := getBody(ctx)
+	httpData, err := ioutil.ReadAll(ctx.Request().Body)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}
 		ctx.JSON(&rsp)
@@ -46,18 +46,14 @@ func NewCluster(ctx iris.Context) {
 		return
 	}
 	rsp = entities.CreateClusterResponse{
-		Response: entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()},
+		Response: entities.Response{ErrorId: entities.Succeed, Reason: ""},
 		Cluster:  &cluster,
 	}
 	_, _ = ctx.JSON(rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()
-	return
 }
 
 func UpdateCluster(ctx iris.Context)    {}
 func GetClusterList(ctx iris.Context)   {}
 func GetClusterStatus(ctx iris.Context) {}
-func getBody(ctx iris.Context) ([]byte, error) {
-	return ioutil.ReadAll(ctx.Request().Body)
-}
