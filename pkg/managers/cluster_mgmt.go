@@ -44,3 +44,7 @@ func NewCluster(cluster *entities.Cluster) error {
 	}
 	return err
 }
+
+func GetClusterCertificates(clusterId string) (entities.CertificateCollection, error) {
+	return common.StorageDriver.GetCertificatesByClusterId(clusterId)
+}

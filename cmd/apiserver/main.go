@@ -4,6 +4,7 @@ import (
 	"github.com/g0194776/lightningmonkey/cmd/apiserver/apis"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
+	"github.com/g0194776/lightningmonkey/pkg/strategies"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -50,6 +51,11 @@ func main() {
 		return
 	}
 	common.StorageDriver = driver
+	logrus.Infof("Initializing cluster statement controller...")
+	csc := &strategies.ClusterStatementController{}
+	csc.Initialize(driver)
+	csc.Start()
+	common.ClusterStatementController = csc
 	logrus.Infof("Starting Web Engine...")
 	app.Run(iris.Addr("0.0.0.0:8080"))
 }

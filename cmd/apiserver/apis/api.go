@@ -1,6 +1,7 @@
 package apis
 
 import (
+	v1agent "github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/agents"
 	v1cluster "github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/clusters"
 	"github.com/kataras/iris"
 )
@@ -11,6 +12,7 @@ type APIRegisterationManager struct {
 
 func (arm *APIRegisterationManager) Initialize() {
 	arm.apiEntries = append(arm.apiEntries, v1cluster.Register)
+	arm.apiEntries = append(arm.apiEntries, v1agent.Register)
 }
 
 func (arm *APIRegisterationManager) DoRegister(app *iris.Application) error {

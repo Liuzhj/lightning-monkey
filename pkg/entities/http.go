@@ -24,3 +24,8 @@ type CreateClusterResponse struct {
 	Response
 	Cluster *Cluster `json:"cluster"`
 }
+
+type GetCertificateResponse struct {
+	Response
+	Content string `json:"content"`
+}

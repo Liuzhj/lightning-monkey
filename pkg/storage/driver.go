@@ -10,7 +10,13 @@ import (
 
 type StorageDriver interface {
 	Initialize(args map[string]string) error
+	GetCluster(clusterId string) (*entities.Cluster, error)
 	SaveCluster(cluster *entities.Cluster, certsMap *certs.GeneratedCertsMap) error
+	GetCertificatesByClusterId(clusterId string) (entities.CertificateCollection, error)
+	GetAllClusters() ([]*entities.Cluster, error)
+	GetAllAgentsByClusterId(clusterId string) ([]*entities.Agent, error)
+	GetAgentByMetadataId(metadataId string) (*entities.Agent, error)
+	SaveAgent(agent *entities.Agent) error
 }
 
 type StorageDriverFactory struct {

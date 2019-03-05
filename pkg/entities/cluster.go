@@ -2,6 +2,7 @@ package entities
 
 import (
 	"github.com/globalsign/mgo/bson"
+	"strings"
 	"time"
 )
 
@@ -14,6 +15,8 @@ const (
 	Minion
 	Master_TCD
 	Master_ETCD_Minion
+	ClusterDeleted                 = "ClusterDeleted"
+	ClusterBlockedAgentRegistering = "ClusterBlockedAgentRegistering"
 )
 
 type Cluster struct {
@@ -37,11 +40,13 @@ type Certificate struct {
 	CreateTime time.Time      `json:"create_time" bson:"create_time"`
 }
 
-type Agent struct {
-	Id             *bson.ObjectId `json:"id" bson:"_id"`
-	ClusterId      *bson.ObjectId `json:"cluster_id" bson:"cluster_id"`
-	Hostname       string         `json:"hostname" bson:"hostname"`
-	IP             string         `json:"ip" bson:"ip"`
-	LastReportTime time.Time      `json:"last_report_time" bson:"last_report_time"`
-	Role           string         `json:"role" bson:"role"`
+type CertificateCollection []*Certificate
+
+func (c CertificateCollection) GetCertificateContent(name string) string {
+	for i := 0; i < len(c); i++ {
+		if strings.ToLower(c[i].Name) == strings.ToLower(name) {
+			return c[i].Content
+		}
+	}
+	return ""
 }
