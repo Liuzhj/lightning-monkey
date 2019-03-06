@@ -6,17 +6,18 @@ import (
 	"time"
 )
 
-type ClusterRole int
+type ConditionCheckedResult int
 
 const (
-	_ ClusterRole = iota
-	Master
-	ETCD
-	Minion
-	Master_TCD
-	Master_ETCD_Minion
-	ClusterDeleted                 = "ClusterDeleted"
-	ClusterBlockedAgentRegistering = "ClusterBlockedAgentRegistering"
+	AgentRole_Master                                      = "master"
+	AgentRole_ETCD                                        = "etcd"
+	AgentRole_Minion                                      = "minion"
+	ClusterDeleted                                        = "ClusterDeleted"
+	ClusterBlockedAgentRegistering                        = "ClusterBlockedAgentRegistering"
+	_                              ConditionCheckedResult = iota
+	ConditionConfirmed
+	ConditionNotConfirmed
+	ConditionInapplicable
 )
 
 type Cluster struct {

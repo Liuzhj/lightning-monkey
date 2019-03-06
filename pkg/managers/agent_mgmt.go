@@ -20,9 +20,6 @@ func RegisterAgent(agent *entities.Agent) error {
 	if agent.Hostname == "" {
 		return errors.New("HTTP body field \"hostname\" is required for registering agent.")
 	}
-	if agent.Roles == nil || len(agent.Roles) == 0 {
-		return errors.New("Current being register agent must have one legal role at least.")
-	}
 	cluster, err := common.StorageDriver.GetCluster(agent.ClusterId.Hex())
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve cluster information from database, error: %s", err.Error())
@@ -55,7 +52,6 @@ func RegisterAgent(agent *entities.Agent) error {
 	}
 	agentId := bson.NewObjectId()
 	agent.Id = &agentId
-	agent.LastReportStatus = "NEW"
 	agent.LastReportTime = time.Now()
 	err = common.StorageDriver.SaveAgent(agent)
 	if err != nil {
@@ -64,6 +60,67 @@ func RegisterAgent(agent *entities.Agent) error {
 	return nil
 }
 
-func GetAgentById(metadataId string) (*entities.Agent, error) {
-	return nil, nil
+func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
+	agent, err := common.StorageDriver.GetAgentByMetadataId(metadataId)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to retrieve agent from database, error: %s", err.Error())
+	}
+	if agent == nil {
+		return nil, errors.New("Current agent has not registered to Master.")
+	}
+	cluster, err := common.StorageDriver.GetCluster(agent.ClusterId.Hex())
+	if err != nil {
+		return nil, fmt.Errorf("Failed to retrieve the cluster information which current agent belongs to, error: %s", err.Error())
+	}
+	if cluster == nil {
+		return nil, errors.New("Agent's cluster information had been deleted(Maybe), not found.")
+	}
+	strategy := common.ClusterStatementController.GetClusterStrategy(cluster.Id.Hex())
+	if strategy == nil {
+		//not load into memory yet.
+		return nil, nil
+	}
+	canDeployETCD := strategy.CanDeployETCD()
+	canDeployMaster := strategy.CanDeployMasterComponents()
+	canDeployMinion := strategy.CanDeployMinion()
+	//1st, deploy ETCD components.
+	if canDeployETCD == entities.ConditionNotConfirmed {
+		return &entities.AgentJob{Name: "NOP", Reason: "Wait, All of agents of ETCD role are not ready yet."}, nil
+	}
+	if agent.HasETCDRole && !agent.HasProvisionedETCD && canDeployETCD == entities.ConditionConfirmed {
+		return &entities.AgentJob{Name: entities.AgentJob_Deploy_ETCD, Arguments: map[string]string{"addresses": strings.Join(strategy.GetETCDNodeAddresses(), ",")}}, nil
+	}
+	//2ec, deploy Master components.
+	if canDeployMaster == entities.ConditionNotConfirmed {
+		return &entities.AgentJob{Name: "NOP", Reason: "Wait, All of agents of Kubernetes master role are not ready yet."}, nil
+	}
+	if agent.HasMasterRole && !agent.HasProvisionedMasterComponents && canDeployMaster == entities.ConditionConfirmed {
+		return &entities.AgentJob{Name: entities.AgentJob_Deploy_Master}, nil
+	}
+	//last, deploy Minion components.
+	if agent.HasMinionRole && !agent.HasProvisionedMinion && canDeployMinion == entities.ConditionConfirmed {
+		return &entities.AgentJob{Name: entities.AgentJob_Deploy_Minion}, nil
+	}
+	return &entities.AgentJob{Name: "NOP", Reason: "Wait, no any operations should perform."}, nil
+}
+
+func AgentReportStatus(metadataId string, status entities.AgentStatus) error {
+	agent, err := common.StorageDriver.GetAgentByMetadataId(metadataId)
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve agent from database, error: %s", err.Error())
+	}
+	if agent == nil {
+		return errors.New("Current agent has not registered to Master.")
+	}
+	cluster, err := common.StorageDriver.GetCluster(agent.ClusterId.Hex())
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve the cluster information which current agent belongs to, error: %s", err.Error())
+	}
+	if cluster == nil {
+		return errors.New("Agent's cluster information had been deleted(Maybe), not found.")
+	}
+	agent.LastReportTime = time.Now()
+	agent.LastReportStatus = status.Status
+	agent.Reason = status.Reason
+	return common.StorageDriver.UpdateAgentStatus(agent)
 }

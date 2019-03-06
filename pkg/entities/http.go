@@ -29,3 +29,8 @@ type GetCertificateResponse struct {
 	Response
 	Content string `json:"content"`
 }
+
+type GetNextAgentJobResponse struct {
+	Response
+	Job *AgentJob `json:"job"`
+}

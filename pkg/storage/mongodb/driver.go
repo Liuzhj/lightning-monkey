@@ -140,3 +140,16 @@ func (sd *MongoDBStorageDriver) SaveAgent(agent *entities.Agent) error {
 	defer session.Close()
 	return session.DB("lightning_monkey").C("agents").Insert(agent)
 }
+
+func (sd *MongoDBStorageDriver) UpdateAgentStatus(agent *entities.Agent) error {
+	session := sd.NewSession()
+	defer session.Close()
+	//update: {"$set": {"some_key.param2": "val2_new", "some_key.param3": "val3_new"}}
+	return session.DB("lightning_monkey").C("agents").UpdateId(agent.Id, bson.M{
+		"$set": bson.M{
+			"last_report_ip":     agent.LastReportIP,
+			"last_report_status": agent.LastReportStatus,
+			"last_report_time":   agent.LastReportTime,
+			"reason":             agent.Reason,
+		}})
+}

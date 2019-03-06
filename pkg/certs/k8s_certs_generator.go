@@ -56,7 +56,7 @@ func GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCe
 	if err = cmd.Wait(); err != nil {
 		return nil, err
 	}
-	return getCertificatesContent(path)
+	return getCertificatesContent(path, "", nil)
 }
 
 func GenerateMainCACertificates() (*GeneratedCertsMap, error) {
@@ -88,11 +88,40 @@ func GenerateMainCACertificates() (*GeneratedCertsMap, error) {
 	if err = cmd.Wait(); err != nil {
 		return nil, err
 	}
-	return getCertificatesContent(path)
+	certMap, err := getCertificatesContent(path, "", nil)
+	if err != nil {
+		return nil, err
+	}
+	//ETCD ca.
+	cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase certs etcd-ca --cert-dir=%s", path))
+	stdout, err = cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err = cmd.Start(); err != nil {
+		return nil, err
+	}
+	reader = bufio.NewReader(stdout)
+	for {
+		traceData, _, err := reader.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				return nil, err
+			}
+			break
+		}
+		logrus.Infof(string(traceData))
+	}
+	if err = cmd.Wait(); err != nil {
+		return nil, err
+	}
+	return getCertificatesContent(path, "etcd", certMap)
 }
 
-func getCertificatesContent(path string) (*GeneratedCertsMap, error) {
-	m := GeneratedCertsMap{res: make(map[string]string), path: path}
+func getCertificatesContent(path, title string, m *GeneratedCertsMap) (*GeneratedCertsMap, error) {
+	if m == nil {
+		m = &GeneratedCertsMap{res: make(map[string]string), path: path}
+	}
 	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -105,8 +134,12 @@ func getCertificatesContent(path string) (*GeneratedCertsMap, error) {
 		if err != nil {
 			return err
 		}
-		m.res[info.Name()] = string(fileData)
+		if title != "" {
+			m.res[filepath.Join(title, info.Name())] = string(fileData)
+		} else {
+			m.res[info.Name()] = string(fileData)
+		}
 		return nil
 	})
-	return &m, err
+	return m, err
 }

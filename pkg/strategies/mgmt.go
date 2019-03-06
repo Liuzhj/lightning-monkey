@@ -81,3 +81,9 @@ func (csc *ClusterStatementController) getClustersInformation() (map[string]Clus
 	}
 	return mapping, nil
 }
+
+func (csc *ClusterStatementController) GetClusterStrategy(clusterId string) ClusterStatementStrategy {
+	csc.lockObj.Lock()
+	defer csc.lockObj.Unlock()
+	return csc.clusters[clusterId]
+}
