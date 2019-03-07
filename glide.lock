@@ -1,5 +1,5 @@
-hash: 648e99354d376fc2c05ec6489ce3e49d897b00fe816e8ef77e54182efb59689b
-updated: 2019-02-28T15:31:33.888005+08:00
+hash: 040a23d36062a840caa58efc27c35d611f68811bd2005c18d9bacd3a69463bfd
+updated: 2019-03-07T15:05:35.848986+08:00
 imports:
 - name: github.com/aymerick/raymond
   version: b565731e1464263de0bda75f2e45d97b54b60110
@@ -22,10 +22,8 @@ imports:
   subpackages:
   - bson
   - internal/json
-- name: github.com/go-stack/stack
-  version: 2fee6af1a9795aafbe0253a0cfbdf668e1fb8a9a
-- name: github.com/golang/snappy
-  version: 2a8bb927dd31d8daada140a5d09578521ce5c36a
+  - internal/sasl
+  - internal/scram
 - name: github.com/iris-contrib/blackfriday
   version: 48b3da6a6f3865c7eb1eba96d74cf0a16f63faca
 - name: github.com/iris-contrib/formBinder
@@ -35,13 +33,13 @@ imports:
 - name: github.com/Joker/jade
   version: 436f681db35f1b52a5560f1ae0e6ba5b69074bb2
 - name: github.com/json-iterator/go
-  version: 5bc93205020f6311d7e4a34f82c5616a18ec35e5
+  version: 36b14963da70d11297d313183d7e6388c8510e1e
 - name: github.com/juju/errors
   version: e65537c515d77e35697c471d6c2755375cb3adc4
 - name: github.com/kataras/golog
   version: 03be101463868edc5a81f094fc68a5f6c1b5503a
 - name: github.com/kataras/iris
-  version: 328b5c6610ff57cfce1fe2a317b817e1fba10585
+  version: ffcb1b8aac0d270d623596734f5595c5a76bed9f
   subpackages:
   - cache
   - cache/cfg
@@ -81,15 +79,10 @@ imports:
   version: f55edac94c9bbba5d6182a4be46d86a2c9b5b50e
 - name: github.com/microcosm-cc/bluemonday
   version: 506f3da9b7c86d737e91f16b7431df8635871552
-- name: github.com/modern-go/concurrent
-  version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
-- name: github.com/modern-go/reflect2
-  version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
 - name: github.com/mongodb/mongo-go-driver
   version: fcec76a7c147bbcef3aecb66ce318bd4a0b004b4
   subpackages:
   - mongo
-  - mongo/options
 - name: github.com/ryanuber/columnize
   version: abc90934186a77966e2beeac62ed966aac0561d5
 - name: github.com/satori/go.uuid
@@ -100,79 +93,43 @@ imports:
   version: 7bfe4c7ecddb3666a94b053b422cdd8f5aaa3615
 - name: github.com/sirupsen/logrus
   version: e1e72e9de974bd926e5c56f83753fba2df402ce5
+- name: github.com/spf13/pflag
+  version: 298182f68c66c05229eb03ac171abe6e309ee79a
 - name: github.com/stretchr/testify
   version: ffdc059bfe9ce6a4e144ba849dbedead332c6053
   subpackages:
   - assert
   - require
-- name: github.com/xdg/scram
-  version: 7eeb5667e42c09cb51bf7b7c28aea8c56767da90
-- name: github.com/xdg/stringprep
-  version: 73f8eece6fdcd902c185bf651de50f3828bed5ed
 - name: go.mongodb.org/mongo-driver
   version: fcec76a7c147bbcef3aecb66ce318bd4a0b004b4
-  subpackages:
-  - bson
-  - bson/bsoncodec
-  - bson/bsonrw
-  - bson/bsontype
-  - bson/primitive
-  - event
-  - internal
-  - mongo/options
-  - mongo/readconcern
-  - mongo/readpref
-  - mongo/writeconcern
-  - tag
-  - version
-  - x/bsonx
-  - x/bsonx/bsoncore
-  - x/mongo/driver
-  - x/mongo/driver/auth
-  - x/mongo/driver/auth/internal/gssapi
-  - x/mongo/driver/session
-  - x/mongo/driver/topology
-  - x/mongo/driver/uuid
-  - x/network/address
-  - x/network/command
-  - x/network/compressor
-  - x/network/connection
-  - x/network/connstring
-  - x/network/description
-  - x/network/result
-  - x/network/wiremessage
 - name: golang.org/x/crypto
-  version: 31a38585487a4b1fd6ff4f8f3db26f1fb296ac82
+  version: d172538b2cfce0c13cee31e647d0367aa8cd2486
   subpackages:
   - acme
   - acme/autocert
-  - pbkdf2
+  - openpgp/errors
   - ssh/terminal
 - name: golang.org/x/net
-  version: c95aed5357e77a4bf7d3955c46740000a17adee1
+  version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
   subpackages:
+  - context
+  - context/ctxhttp
   - html
   - html/atom
   - publicsuffix
-- name: golang.org/x/sync
-  version: e225da77a7e68af35c70ccbf71af2b83e6acac3c
-  subpackages:
-  - semaphore
 - name: golang.org/x/sys
-  version: 92a0ff1e1e2f61773648454ec71ec0c0f1c700a2
+  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
-  - windows
-- name: golang.org/x/text
-  version: d14c52b222ee852cdba8b07206ca0c614b389876
+- name: golang.org/x/xerrors
+  version: a5947ffaace3e882f334c1750858b4a6a7e52422
   subpackages:
-  - transform
-  - unicode/norm
+  - internal
 - name: gopkg.in/yaml.v2
-  version: 51d6538a90f86fe93ac480b35f37b2be17fef232
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 testImports:
 - name: github.com/davecgh/go-spew
-  version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib

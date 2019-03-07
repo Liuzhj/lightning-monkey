@@ -32,5 +32,6 @@ type GetCertificateResponse struct {
 
 type GetNextAgentJobResponse struct {
 	Response
-	Job *AgentJob `json:"job"`
+	Job       *AgentJob `json:"job"`
+	NeedCrash bool      `json:"need_crash"`
 }
