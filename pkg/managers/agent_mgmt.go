@@ -85,14 +85,14 @@ func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
 	canDeployMinion := strategy.CanDeployMinion()
 	//1st, deploy ETCD components.
 	if canDeployETCD == entities.ConditionNotConfirmed {
-		return &entities.AgentJob{Name: "NOP", Reason: "Wait, All of agents of ETCD role are not ready yet."}, nil
+		return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Wait, All of agents of ETCD role are not ready yet."}, nil
 	}
 	if agent.HasETCDRole && !agent.HasProvisionedETCD && canDeployETCD == entities.ConditionConfirmed {
 		return &entities.AgentJob{Name: entities.AgentJob_Deploy_ETCD, Arguments: map[string]string{"addresses": strings.Join(strategy.GetETCDNodeAddresses(), ",")}}, nil
 	}
 	//2ec, deploy Master components.
 	if canDeployMaster == entities.ConditionNotConfirmed {
-		return &entities.AgentJob{Name: "NOP", Reason: "Wait, All of agents of Kubernetes master role are not ready yet."}, nil
+		return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Wait, All of agents of Kubernetes master role are not ready yet."}, nil
 	}
 	if agent.HasMasterRole && !agent.HasProvisionedMasterComponents && canDeployMaster == entities.ConditionConfirmed {
 		return &entities.AgentJob{Name: entities.AgentJob_Deploy_Master}, nil
@@ -101,7 +101,7 @@ func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
 	if agent.HasMinionRole && !agent.HasProvisionedMinion && canDeployMinion == entities.ConditionConfirmed {
 		return &entities.AgentJob{Name: entities.AgentJob_Deploy_Minion}, nil
 	}
-	return &entities.AgentJob{Name: "NOP", Reason: "Wait, no any operations should perform."}, nil
+	return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Wait, no any operations should perform."}, nil
 }
 
 func AgentReportStatus(metadataId string, status entities.AgentStatus) error {

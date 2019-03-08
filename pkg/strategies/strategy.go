@@ -37,7 +37,7 @@ func (ds *DefaultClusterStatementStrategy) Load(cluster *entities.Cluster, agent
 		var agentRoles []string
 		if agent.HasMasterRole {
 			agentRoles = append(agentRoles, entities.AgentRole_Master)
-			if time.Since(agent.LastReportTime).Seconds() <= 30 && agent.LastReportStatus == entities.AgentStatus_Running {
+			if time.Since(agent.LastReportTime).Seconds() <= 30 && (agent.LastReportStatus == entities.AgentStatus_Running || agent.LastReportStatus == entities.AgentStatus_Provisioning) {
 				ds.TotalMasterAgentCount++
 				if agent.HasProvisionedMasterComponents {
 					ds.TotalProvisionedMasterNodeCount++
@@ -46,7 +46,7 @@ func (ds *DefaultClusterStatementStrategy) Load(cluster *entities.Cluster, agent
 		}
 		if agent.HasETCDRole {
 			agentRoles = append(agentRoles, entities.AgentRole_ETCD)
-			if time.Since(agent.LastReportTime).Seconds() <= 30 && agent.LastReportStatus == entities.AgentStatus_Running {
+			if time.Since(agent.LastReportTime).Seconds() <= 30 && (agent.LastReportStatus == entities.AgentStatus_Running || agent.LastReportStatus == entities.AgentStatus_Provisioning) {
 				ds.TotalETCDAgentCount++
 				if agent.HasProvisionedETCD {
 					ds.TotalProvisionedETCDNodeCount++
@@ -55,7 +55,7 @@ func (ds *DefaultClusterStatementStrategy) Load(cluster *entities.Cluster, agent
 		}
 		if agent.HasMinionRole {
 			agentRoles = append(agentRoles, entities.AgentRole_Minion)
-			if time.Since(agent.LastReportTime).Seconds() <= 30 && agent.LastReportStatus == entities.AgentStatus_Running {
+			if time.Since(agent.LastReportTime).Seconds() <= 30 && (agent.LastReportStatus == entities.AgentStatus_Running || agent.LastReportStatus == entities.AgentStatus_Provisioning) {
 				ds.TotalMinionAgentCount++
 			}
 		}
@@ -65,13 +65,13 @@ func (ds *DefaultClusterStatementStrategy) Load(cluster *entities.Cluster, agent
 			var m []*entities.Agent
 			if as, isOK = ds.agents[strings.ToLower(agentRoles[j])]; !isOK {
 				as = make(map[string][]*entities.Agent)
-				ds.agents[strings.ToLower(agentRoles[j])] = as
 			}
 			if m, isOK = as[strings.ToLower(agent.LastReportStatus)]; !isOK {
 				m = []*entities.Agent{}
-				as[strings.ToLower(agent.LastReportStatus)] = m
 			}
 			m = append(m, agent)
+			as[strings.ToLower(agent.LastReportStatus)] = m
+			ds.agents[strings.ToLower(agentRoles[j])] = as
 		}
 	}
 }

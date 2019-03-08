@@ -37,7 +37,7 @@ func RegisterAgent(ctx iris.Context) {
 		return
 	}
 	agent.LastReportIP = ctx.RemoteAddr()
-	agent.LastReportStatus = entities.AgentStatus_Registered
+	agent.LastReportStatus = entities.AgentStatus_Provisioning
 	err = managers.RegisterAgent(&agent)
 	if err != nil {
 		rsp = entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}

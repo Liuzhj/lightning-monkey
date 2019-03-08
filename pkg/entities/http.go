@@ -18,6 +18,7 @@ type Response struct {
 	ErrorId     int    `json:"error-id"`
 	Description string `json:"desc,omitempty"`
 	Reason      string `json:"reason"`
+	NeedCrash   bool   `json:"need_crash"`
 }
 
 type CreateClusterResponse struct {
@@ -27,11 +28,11 @@ type CreateClusterResponse struct {
 
 type GetCertificateResponse struct {
 	Response
-	Content string `json:"content"`
+	Content     string `json:"content"`
+	ForceUpdate bool   `json:"force_update"`
 }
 
 type GetNextAgentJobResponse struct {
 	Response
-	Job       *AgentJob `json:"job"`
-	NeedCrash bool      `json:"need_crash"`
+	Job *AgentJob `json:"job"`
 }

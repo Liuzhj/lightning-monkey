@@ -9,6 +9,7 @@ const (
 	AgentJob_Deploy_Master   = "MASTER"
 	AgentJob_Deploy_ETCD     = "ETCD"
 	AgentJob_Deploy_Minion   = "Minion"
+	AgentJob_NOP             = "NOP"
 	AgentStatus_Registered   = "New"
 	AgentStatus_Running      = "Running"
 	AgentStatus_Provisioning = "Provisioning"
