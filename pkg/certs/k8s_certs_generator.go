@@ -118,6 +118,53 @@ func GenerateMainCACertificates() (*GeneratedCertsMap, error) {
 	return getCertificatesContent(path, "etcd", certMap)
 }
 
+func GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent string) error {
+	configFilePath := filepath.Join(certPath, "etcd_config.yml")
+	_ = os.RemoveAll(configFilePath)
+	f, err := os.OpenFile(configFilePath, os.O_CREATE|os.O_WRONLY, 0664)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(etcdConfigContent)
+	if err != nil {
+		return err
+	}
+	subCommands := []string{
+		"kubeadm init phase certs etcd-server",
+		"kubeadm init phase certs etcd-peer",
+		"kubeadm init phase certs etcd-healthcheck-client",
+		"kubeadm init phase certs apiserver-etcd-client",
+		"kubeadm init phase etcd local",
+	}
+	var cmd *exec.Cmd
+	for i := 0; i < len(subCommands); i++ {
+		cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("%s --config=%s", subCommands[i], configFilePath))
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return err
+		}
+		if err = cmd.Start(); err != nil {
+			return err
+		}
+		reader := bufio.NewReader(stdout)
+		for {
+			traceData, _, err := reader.ReadLine()
+			if err != nil {
+				if err != io.EOF {
+					return err
+				}
+				break
+			}
+			logrus.Infof(string(traceData))
+		}
+		if err = cmd.Wait(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func getCertificatesContent(path, title string, m *GeneratedCertsMap) (*GeneratedCertsMap, error) {
 	if m == nil {
 		m = &GeneratedCertsMap{res: make(map[string]string), path: path}

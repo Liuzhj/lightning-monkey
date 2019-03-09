@@ -92,7 +92,7 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 }
 
 func (a *LightningMonkeyAgent) downloadCertificates() error {
-	err := os.MkdirAll(CERTIFICATE_STORAGE_PATH, 0664) //"rw-rw-r--"
+	err := os.MkdirAll(CERTIFICATE_STORAGE_PATH, 0755) //"rwxr-xr-x"
 	if err != nil {
 		return xerrors.Errorf("Failed to create certificate storage path: %s %w", err.Error(), crashError)
 	}
@@ -147,7 +147,9 @@ func (a *LightningMonkeyAgent) saveRemoteCertificate(certName, path string) erro
 		//delete existed file, re-generate it.
 		_ = os.RemoveAll(filePath)
 	}
-	f, err := os.Create(filePath)
+	destPath := filepath.Dir(filePath)
+	_ = os.MkdirAll(destPath, 0755)
+	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0664)
 	if err != nil {
 		return fmt.Errorf("Failed to create certificate file: %s, %s, %w", certName, err.Error(), crashError)
 	}
@@ -311,7 +313,7 @@ func (a *LightningMonkeyAgent) performJob() {
 			logrus.Warnf("No any handler could process this job: %s", job.Name)
 			continue
 		}
-		err = handler(job)
+		err = handler(job, a.arg)
 		if err != nil {
 			logrus.Errorf("Failed to process job: %#v, error: %s", job, err.Error())
 			if xerrors.Is(err, crashError) {
