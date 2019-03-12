@@ -1,5 +1,5 @@
-hash: 040a23d36062a840caa58efc27c35d611f68811bd2005c18d9bacd3a69463bfd
-updated: 2019-03-07T15:05:35.848986+08:00
+hash: 7c2c40b1bca4b026d1306bf8d0ae99c31bf39572f1ca5eef39ff5a0cec650e6b
+updated: 2019-03-12T21:15:17.049479+08:00
 imports:
 - name: github.com/aymerick/raymond
   version: b565731e1464263de0bda75f2e45d97b54b60110
@@ -9,6 +9,38 @@ imports:
   - parser
 - name: github.com/BurntSushi/toml
   version: 3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005
+- name: github.com/docker/distribution
+  version: 6d62eb1d4a3515399431b713fde3ce5a9b40e8d5
+  subpackages:
+  - digestset
+  - reference
+- name: github.com/docker/docker
+  version: 092cba3727bb9b4a2f0e922cd6c0f93ea270e363
+  subpackages:
+  - api/types
+  - api/types/blkiodev
+  - api/types/container
+  - api/types/events
+  - api/types/filters
+  - api/types/mount
+  - api/types/network
+  - api/types/reference
+  - api/types/registry
+  - api/types/strslice
+  - api/types/swarm
+  - api/types/time
+  - api/types/versions
+  - api/types/volume
+  - client
+  - pkg/tlsconfig
+- name: github.com/docker/go-connections
+  version: 7395e3f8aa162843a74ed6d48e79627d9792ac55
+  subpackages:
+  - nat
+  - sockets
+  - tlsconfig
+- name: github.com/docker/go-units
+  version: 2fb04c6466a548a03cb009c5569ee1ab1e35398e
 - name: github.com/eknkc/amber
   version: cdade1c073850f4ffc70a829e31235ea6892853b
   subpackages:
@@ -33,7 +65,7 @@ imports:
 - name: github.com/Joker/jade
   version: 436f681db35f1b52a5560f1ae0e6ba5b69074bb2
 - name: github.com/json-iterator/go
-  version: 36b14963da70d11297d313183d7e6388c8510e1e
+  version: ab8a2e0c74be9d3be70b3184d9acc634935ded82
 - name: github.com/juju/errors
   version: e65537c515d77e35697c471d6c2755375cb3adc4
 - name: github.com/kataras/golog
@@ -79,10 +111,20 @@ imports:
   version: f55edac94c9bbba5d6182a4be46d86a2c9b5b50e
 - name: github.com/microcosm-cc/bluemonday
   version: 506f3da9b7c86d737e91f16b7431df8635871552
+- name: github.com/Microsoft/go-winio
+  version: 1a8911d1ed007260465c3bfbbc785ac6915a0bb8
+- name: github.com/modern-go/concurrent
+  version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
+- name: github.com/modern-go/reflect2
+  version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
 - name: github.com/mongodb/mongo-go-driver
-  version: fcec76a7c147bbcef3aecb66ce318bd4a0b004b4
+  version: 82905e3077cb5ce7f194748a47b55bf7fff65ccf
   subpackages:
   - mongo
+- name: github.com/opencontainers/go-digest
+  version: ac19fd6e7483ff933754af248d80be865e543d22
+- name: github.com/pkg/errors
+  version: 27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7
 - name: github.com/ryanuber/columnize
   version: abc90934186a77966e2beeac62ed966aac0561d5
 - name: github.com/satori/go.uuid
@@ -92,7 +134,7 @@ imports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 7bfe4c7ecddb3666a94b053b422cdd8f5aaa3615
 - name: github.com/sirupsen/logrus
-  version: e1e72e9de974bd926e5c56f83753fba2df402ce5
+  version: dae0fa8d5b0c810a8ab733fbd5510c7cae84eca4
 - name: github.com/spf13/pflag
   version: 298182f68c66c05229eb03ac171abe6e309ee79a
 - name: github.com/stretchr/testify
@@ -101,35 +143,40 @@ imports:
   - assert
   - require
 - name: go.mongodb.org/mongo-driver
-  version: fcec76a7c147bbcef3aecb66ce318bd4a0b004b4
+  version: 82905e3077cb5ce7f194748a47b55bf7fff65ccf
 - name: golang.org/x/crypto
-  version: d172538b2cfce0c13cee31e647d0367aa8cd2486
+  version: c2843e01d9a2bc60bb26ad24e09734fdc2d9ec58
   subpackages:
   - acme
   - acme/autocert
-  - openpgp/errors
   - ssh/terminal
 - name: golang.org/x/net
-  version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
+  version: 0ed95abb35c445290478a5348a7b38bb154135fd
   subpackages:
   - context
   - context/ctxhttp
   - html
   - html/atom
+  - proxy
   - publicsuffix
 - name: golang.org/x/sys
-  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  version: fead79001313d15903fb4605b4a1b781532cd93e
   subpackages:
   - unix
+  - windows
 - name: golang.org/x/xerrors
   version: a5947ffaace3e882f334c1750858b4a6a7e52422
   subpackages:
   - internal
 - name: gopkg.in/yaml.v2
-  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
+  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
+- name: k8s.io/apimachinery
+  version: f9b45bc4494d87078efa7551cad8a792fe1af9e7
+  subpackages:
+  - pkg/util/json
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib

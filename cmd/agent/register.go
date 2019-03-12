@@ -2,14 +2,18 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"github.com/docker/docker/docker"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
+	"io"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/util/json"
 	"net/http"
@@ -21,6 +25,7 @@ import (
 
 type LightningMonkeyAgent struct {
 	arg                *AgentArgs
+	dockerClient       *client.Client
 	lastRegisteredTime time.Time
 	lastReportTime     time.Time
 	hasRegistered      int32
@@ -339,6 +344,39 @@ func (a *LightningMonkeyAgent) runKubeletContainer() error {
 	if err != nil {
 		return xerrors.Errorf("Failed to generate kube-config, error: %s %w", err.Error(), crashError)
 	}
-	docker.NewClientFromEnv()
+	c, err := client.NewEnvClient()
+	if err != nil {
+		return xerrors.Errorf("Failed to initialize docker client, error: %s %w", err.Error(), crashError)
+	}
+	a.dockerClient = c
+	img := a.basicImages["k8s"]
+	logrus.Infof("Pulling docker image: %s", img)
+	reader, err := a.dockerClient.ImagePull(context.Background(), img, types.ImagePullOptions{})
+	if err != nil {
+		return xerrors.Errorf("Failed to pull docker image, error: %s %w", err.Error(), crashError)
+	}
+	_, _ = io.Copy(os.Stdout, reader)
+	resp, err := a.dockerClient.ContainerCreate(context.Background(), &container.Config{
+		Image:   img,
+		Tty:     true,
+		Volumes: map[string]struct{}{},
+	}, nil, nil, "")
+	if err != nil {
+		return xerrors.Errorf("Failed to create container, error: %s %w", err.Error(), crashError)
+	}
+	if err = a.dockerClient.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
+		return xerrors.Errorf("Failed to start container, error: %s %w", err.Error(), crashError)
+	}
+	timeoutContext, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	_, err = a.dockerClient.ContainerWait(timeoutContext, resp.ID)
+	if err != nil {
+		return xerrors.Errorf("Failed to wait container starting, error: %s %w", err.Error(), crashError)
+	}
+	out, err := a.dockerClient.ContainerLogs(context.Background(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	if err != nil {
+		return xerrors.Errorf("Failed to retrieve container logs, error: %s %w", err.Error(), crashError)
+	}
+	_, _ = io.Copy(os.Stdout, out)
 	return nil
 }
