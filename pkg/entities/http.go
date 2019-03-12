@@ -21,6 +21,11 @@ type Response struct {
 	NeedCrash   bool   `json:"need_crash"`
 }
 
+type RegisterAgentResponse struct {
+	Response
+	BasicImages map[string]string `json:"images"`
+}
+
 type CreateClusterResponse struct {
 	Response
 	Cluster *Cluster `json:"cluster"`

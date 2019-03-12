@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/docker/docker/docker"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -22,6 +24,7 @@ type LightningMonkeyAgent struct {
 	lastRegisteredTime time.Time
 	lastReportTime     time.Time
 	hasRegistered      int32
+	basicImages        map[string]string
 	workQueue          chan *entities.AgentJob
 	handlerFactory     *AgentJobHandlerFactory
 }
@@ -77,7 +80,7 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
 	}
-	rspObj := entities.Response{}
+	rspObj := entities.RegisterAgentResponse{}
 	err = json.Unmarshal(httpRspBodyDate, &rspObj)
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
@@ -88,7 +91,15 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	if rspObj.ErrorId != entities.Succeed {
 		return fmt.Errorf("Remote API server returned a non-zero biz code: %d %w", rspObj.ErrorId, crashError)
 	}
-	return a.downloadCertificates()
+	if rspObj.BasicImages == nil || len(rspObj.BasicImages) == 0 {
+		return fmt.Errorf("Remote API server returned an empty basic image collection! %w", crashError)
+	}
+	a.basicImages = rspObj.BasicImages
+	err = a.downloadCertificates()
+	if err != nil {
+		return err
+	}
+	return a.runKubeletContainer()
 }
 
 func (a *LightningMonkeyAgent) downloadCertificates() error {
@@ -321,4 +332,13 @@ func (a *LightningMonkeyAgent) performJob() {
 			}
 		}
 	}
+}
+
+func (a *LightningMonkeyAgent) runKubeletContainer() error {
+	err := k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, *a.arg.Address)
+	if err != nil {
+		return xerrors.Errorf("Failed to generate kube-config, error: %s %w", err.Error(), crashError)
+	}
+	docker.NewClientFromEnv()
+	return nil
 }

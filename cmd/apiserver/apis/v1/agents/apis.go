@@ -2,6 +2,7 @@ package agents
 
 import (
 	"encoding/json"
+	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
 	"github.com/kataras/iris"
@@ -46,7 +47,7 @@ func RegisterAgent(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	rsp = entities.Response{ErrorId: entities.Succeed, Reason: ""}
+	rsp = entities.RegisterAgentResponse{Response: entities.Response{ErrorId: entities.Succeed, Reason: ""}, BasicImages: common.BasicImages["1.12.5"] /*test only*/}
 	_, _ = ctx.JSON(rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()
