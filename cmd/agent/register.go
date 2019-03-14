@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
@@ -350,6 +351,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer() error {
 	}
 	a.dockerClient = c
 	img := a.basicImages["k8s"]
+	infraContainer := a.basicImages["infra"]
 	logrus.Infof("Pulling docker image: %s", img)
 	reader, err := a.dockerClient.ImagePull(context.Background(), img, types.ImagePullOptions{})
 	if err != nil {
@@ -357,21 +359,36 @@ func (a *LightningMonkeyAgent) runKubeletContainer() error {
 	}
 	_, _ = io.Copy(os.Stdout, reader)
 	resp, err := a.dockerClient.ContainerCreate(context.Background(), &container.Config{
-		Image:   img,
-		Tty:     true,
+		Image: img,
+		Tty:   false,
+		Cmd: []string{
+			"kubelet",
+			fmt.Sprintf("--config=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet_settings.yml")),
+			fmt.Sprintf("--bootstrap-kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "bootstrap-kubelet.conf")),
+			fmt.Sprintf("--kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet.conf")),
+			fmt.Sprintf("--pod-infra-container-image=%s", infraContainer),
+			fmt.Sprintf("--register-node=%t", *a.arg.IsMinionRole),
+			"--cgroup-driver=systemd",
+			"--cgroups-per-qos=false",
+			"--enforce-node-allocatable=",
+			"--allow-privileged=true",
+			"--network-plugin=cni",
+			"--serialize-image-pulls=false",
+			//"--address=0.0.0.0",
+		},
 		Volumes: map[string]struct{}{},
-	}, nil, nil, "")
+	}, &container.HostConfig{
+		Binds: []string{
+			"/etc/kubernetes:/etc/kubernetes",
+			"/var/run:/var/run",
+		},
+		Privileged:  true,
+		NetworkMode: "host"}, &network.NetworkingConfig{}, "kubelet")
 	if err != nil {
 		return xerrors.Errorf("Failed to create container, error: %s %w", err.Error(), crashError)
 	}
 	if err = a.dockerClient.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
 		return xerrors.Errorf("Failed to start container, error: %s %w", err.Error(), crashError)
-	}
-	timeoutContext, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	_, err = a.dockerClient.ContainerWait(timeoutContext, resp.ID)
-	if err != nil {
-		return xerrors.Errorf("Failed to wait container starting, error: %s %w", err.Error(), crashError)
 	}
 	out, err := a.dockerClient.ContainerLogs(context.Background(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {

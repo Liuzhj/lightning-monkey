@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os/exec"
 	"path/filepath"
 )
@@ -27,7 +28,6 @@ authorization:
     cacheAuthorizedTTL: 5m0s
     cacheUnauthorizedTTL: 30s
 cgroupDriver: cgroupfs
-cgroupsPerQOS: true
 clusterDNS:
 - 10.96.0.10
 clusterDomain: cluster.local
@@ -41,8 +41,6 @@ cpuManagerPolicy: none
 cpuManagerReconcilePeriod: 10s
 enableControllerAttachDetach: true
 enableDebuggingHandlers: true
-enforceNodeAllocatable:
-- pods
 eventBurst: 10
 eventRecordQPS: 5
 evictionHard:
@@ -79,7 +77,7 @@ registryPullQPS: 5
 resolvConf: /etc/resolv.conf
 rotateCertificates: true
 runtimeRequestTimeout: 2m0s
-serializeImagePulls: true
+serializeImagePulls: false
 staticPodPath: /etc/kubernetes/manifests
 streamingConnectionIdleTimeout: 4h0m0s
 syncFrequency: 1m0s
@@ -87,7 +85,11 @@ volumeStatsAggPeriod: 1m0s`
 )
 
 func GenerateKubeletConfig(certPath, masterAPIAddr string) error {
-	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig kubelet --cert-dir=%s --kubeconfig-dir --apiserver-advertise-address=%s", certPath, certPath, masterAPIAddr))
+	uri, err := url.Parse(masterAPIAddr)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig kubelet --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s", certPath, certPath, uri.Host))
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err

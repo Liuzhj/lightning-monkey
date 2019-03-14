@@ -15,7 +15,11 @@ func main() {
 	arg.IsETCDRole = flag.Bool("etcd", false, "")
 	arg.IsMasterRole = flag.Bool("master", false, "")
 	arg.IsMinionRole = flag.Bool("minion", false, "")
+	certdir := flag.String("cert-dir", "", "")
 	flag.Parse()
+	if certdir != nil && *certdir != "" {
+		CERTIFICATE_STORAGE_PATH = *certdir
+	}
 	if arg.Server == nil || *arg.Server == "" {
 		logrus.Fatalf("\"--server\" argument is required for initializing lightning-monkey agent.")
 	}
