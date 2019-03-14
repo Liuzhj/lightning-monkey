@@ -2,7 +2,7 @@ package main
 
 import "github.com/g0194776/lightningmonkey/pkg/entities"
 
-type AgentJobHandler func(job *entities.AgentJob, arg *AgentArgs) error
+type AgentJobHandler func(job *entities.AgentJob, a *LightningMonkeyAgent) error
 type AgentJobHandlerFactory struct {
 	handlers map[string]AgentJobHandler
 }

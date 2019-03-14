@@ -330,7 +330,7 @@ func (a *LightningMonkeyAgent) performJob() {
 			logrus.Warnf("No any handler could process this job: %s", job.Name)
 			continue
 		}
-		err = handler(job, a.arg)
+		err = handler(job, a)
 		if err != nil {
 			logrus.Errorf("Failed to process job: %#v, error: %s", job, err.Error())
 			if xerrors.Is(err, crashError) {
@@ -368,6 +368,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer() error {
 			fmt.Sprintf("--kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet.conf")),
 			fmt.Sprintf("--pod-infra-container-image=%s", infraContainer),
 			fmt.Sprintf("--register-node=%t", *a.arg.IsMinionRole),
+			fmt.Sprintf("--hostname-override=%s", *a.arg.Address),
 			"--cgroup-driver=systemd",
 			"--cgroups-per-qos=false",
 			"--enforce-node-allocatable=",

@@ -32,7 +32,7 @@ func main() {
 	if !*arg.IsETCDRole && !*arg.IsMasterRole && !*arg.IsMinionRole {
 		logrus.Fatalf("you must specify one role at least to initialize lightning-monkey agent.")
 	}
-	if arg.Address == nil {
+	if arg.Address == nil || *arg.Address == "" {
 		ip := GetLocalIP()
 		arg.Address = &ip
 	}

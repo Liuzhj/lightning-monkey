@@ -7,16 +7,18 @@ import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"html/template"
 	"strings"
 )
 
 const (
-	etcdConfigTemplate string = `apiVersion: "kubeadm.k8s.io/v1beta1"
+	etcdConfigTemplate string = `apiVersion: "kubeadm.k8s.io/v1alpha3"
 kind: ClusterConfiguration
 etcd:
     local:
+        image: {{.IMAGE}}
         serverCertSANs:
         - "{{.HOST}}"
         peerCertSANs:
@@ -31,7 +33,7 @@ etcd:
             initial-advertise-peer-urls: https://{{.HOST}}:2380`
 )
 
-func HandleDeployETCD(job *entities.AgentJob, arg *AgentArgs) error {
+func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) error {
 	if job.Arguments == nil || job.Arguments["addresses"] == "" {
 		return xerrors.Errorf("Illegal ETCD deployment job, required arguments are missed %w", crashError)
 	}
@@ -49,12 +51,13 @@ func HandleDeployETCD(job *entities.AgentJob, arg *AgentArgs) error {
 	if err != nil {
 		return xerrors.Errorf("Failed to parse ETCD configuration template, error: %s %w", err.Error(), crashError)
 	}
+	logrus.Infof("SERVER ADDR: %s", *a.arg.Address)
 	args := map[string]string{
-		"NAME":    generateETCDName(*arg.Address),
-		"HOST":    *arg.Address,
+		"NAME":    generateETCDName(*a.arg.Address),
+		"HOST":    *a.arg.Address,
 		"SERVERS": serversConnection,
+		"IMAGE":   a.basicImages["etcd"],
 	}
-
 	buffer := bytes.Buffer{}
 	err = tmpl.Execute(&buffer, args)
 	if err != nil {
