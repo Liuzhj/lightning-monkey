@@ -6,13 +6,17 @@ import (
 )
 
 const (
-	AgentJob_Deploy_Master   = "MASTER"
-	AgentJob_Deploy_ETCD     = "ETCD"
-	AgentJob_Deploy_Minion   = "Minion"
-	AgentJob_NOP             = "NOP"
-	AgentStatus_Registered   = "New"
-	AgentStatus_Running      = "Running"
-	AgentStatus_Provisioning = "Provisioning"
+	AgentJob_Deploy_Master        = "MASTER"
+	AgentJob_Deploy_ETCD          = "ETCD"
+	AgentJob_Deploy_Minion        = "Minion"
+	AgentJob_NOP                  = "NOP"
+	AgentStatus_Registered        = "New"
+	AgentStatus_Running           = "Running"
+	AgentStatus_Provisioning      = "Provisioning"
+	AgentStatus_Provision_Succeed = "Provision Succeed"
+	AgentStatus_Provision_Failed  = "Provision Failed"
+	AgentReport_Provision         = "Provision"
+	AgentReport_Heartbeat         = "Heartbeat"
 )
 
 type Agent struct {
@@ -43,7 +47,9 @@ type AgentJob struct {
 }
 
 type AgentStatus struct {
-	IP     string `json:"-"`
-	Status string `json:"status"`
-	Reason string `json:"reason"`
+	ReportType   string `json:"report_type"`
+	IP           string `json:"ip"`
+	Status       string `json:"status"`
+	Reason       string `json:"reason"`
+	ReportTarget string `json:"report_target"`
 }

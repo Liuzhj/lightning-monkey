@@ -10,54 +10,54 @@ import (
 	"time"
 )
 
-func RegisterAgent(agent *entities.Agent) error {
+func RegisterAgent(agent *entities.Agent) (*entities.Cluster, error) {
 	if agent.ClusterId == nil {
-		return errors.New("HTTP body field \"cluster_id\" is required for registering agent.")
+		return nil, errors.New("HTTP body field \"cluster_id\" is required for registering agent.")
 	}
 	if agent.MetadataId == "" {
-		return errors.New("HTTP body field \"metadata_id\" is required for registering agent.")
+		return nil, errors.New("HTTP body field \"metadata_id\" is required for registering agent.")
 	}
 	if agent.Hostname == "" {
-		return errors.New("HTTP body field \"hostname\" is required for registering agent.")
+		return nil, errors.New("HTTP body field \"hostname\" is required for registering agent.")
 	}
 	cluster, err := common.StorageDriver.GetCluster(agent.ClusterId.Hex())
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve cluster information from database, error: %s", err.Error())
+		return nil, fmt.Errorf("Failed to retrieve cluster information from database, error: %s", err.Error())
 	}
 	if cluster.Status == entities.ClusterDeleted {
-		return fmt.Errorf("Target cluster: %s had been deleted.", cluster.Name)
+		return nil, fmt.Errorf("Target cluster: %s had been deleted.", cluster.Name)
 	}
 	if cluster.Status == entities.ClusterBlockedAgentRegistering {
-		return fmt.Errorf("Target cluster: %s has been blocked agent registering, try it later.", cluster.Name)
+		return nil, fmt.Errorf("Target cluster: %s has been blocked agent registering, try it later.", cluster.Name)
 	}
 	preAgent, err := common.StorageDriver.GetAgentByMetadataId(agent.MetadataId)
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve agent information from database, error: %s", err.Error())
+		return nil, fmt.Errorf("Failed to retrieve agent information from database, error: %s", err.Error())
 	}
 	if preAgent != nil {
 		if agent.ClusterId.Hex() != preAgent.ClusterId.Hex() {
-			return errors.New("Duplicated agent registering with wrong cluster!")
+			return nil, errors.New("Duplicated agent registering with wrong cluster!")
 		}
 		if strings.ToLower(agent.Hostname) != strings.ToLower(preAgent.Hostname) {
-			return errors.New("Duplicated agent registering with different hostname!")
+			return nil, errors.New("Duplicated agent registering with different hostname!")
 		}
 		if agent.LastReportIP != preAgent.LastReportIP {
-			return errors.New("Duplicated agent registering with different client IP!")
+			return nil, errors.New("Duplicated agent registering with different client IP!")
 		}
 		if preAgent.IsDelete {
-			return errors.New("Target registered agent has been deleted, Please do not reuse it again!")
+			return nil, errors.New("Target registered agent has been deleted, Please do not reuse it again!")
 		}
 		//duplicated registering.
-		return nil
+		return cluster, nil
 	}
 	agentId := bson.NewObjectId()
 	agent.Id = &agentId
 	agent.LastReportTime = time.Now()
 	err = common.StorageDriver.SaveAgent(agent)
 	if err != nil {
-		return fmt.Errorf("Failed to save registered agent to database, error: %s", err.Error())
+		return nil, fmt.Errorf("Failed to save registered agent to database, error: %s", err.Error())
 	}
-	return nil
+	return cluster, nil
 }
 
 func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
@@ -122,5 +122,21 @@ func AgentReportStatus(metadataId string, status entities.AgentStatus) error {
 	agent.LastReportTime = time.Now()
 	agent.LastReportStatus = status.Status
 	agent.Reason = status.Reason
-	return common.StorageDriver.UpdateAgentStatus(agent)
+	if status.Status == entities.AgentStatus_Provision_Succeed && status.ReportTarget == entities.AgentJob_Deploy_ETCD {
+		agent.HasProvisionedETCD = true
+		agent.ETCDProvisionTime = time.Now()
+	}
+	if status.Status == entities.AgentStatus_Provision_Succeed && status.ReportTarget == entities.AgentJob_Deploy_Master {
+		agent.HasProvisionedMasterComponents = true
+		agent.MasterComponentsProvisionTime = time.Now()
+	}
+	if status.Status == entities.AgentStatus_Provision_Succeed && status.ReportTarget == entities.AgentJob_Deploy_Minion {
+		agent.HasProvisionedMinion = true
+		agent.MinionProvisionTime = time.Now()
+	}
+	//strategy := common.ClusterStatementController.GetClusterStrategy(agent.ClusterId.Hex())
+	//if strategy != nil {
+	//	strategy.UpdateAgentProvisionStatus()
+	//}
+	return common.StorageDriver.SaveAgent(agent)
 }

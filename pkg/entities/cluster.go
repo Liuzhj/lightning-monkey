@@ -18,6 +18,10 @@ const (
 	ConditionConfirmed
 	ConditionNotConfirmed
 	ConditionInapplicable
+	MasterSettings_PodCIDR           = "pod_ip_cidr"
+	MasterSettings_ServiceCIDR       = "service_ip_cidr"
+	MasterSettings_ServiceDNSDomain  = "service_dns_domain"
+	MasterSettings_KubernetesVersion = "k8s_version"
 )
 
 type Cluster struct {
@@ -31,6 +35,7 @@ type Cluster struct {
 	PodNetworkCIDR       string         `json:"pod_network_cidr" bson:"pod_network_cidr"`
 	SecurityToken        string         `json:"security_token" bson:"security_token"`
 	Status               string         `json:"status" bson:"status"`
+	ServiceDNSDomain     string         `json:"service_dns_domain" bson:"service_dns_domain"`
 }
 
 type Certificate struct {

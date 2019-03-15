@@ -138,7 +138,8 @@ func (sd *MongoDBStorageDriver) GetAllAgentsByClusterId(clusterId string) ([]*en
 func (sd *MongoDBStorageDriver) SaveAgent(agent *entities.Agent) error {
 	session := sd.NewSession()
 	defer session.Close()
-	return session.DB("lightning_monkey").C("agents").Insert(agent)
+	_, err := session.DB("lightning_monkey").C("agents").UpsertId(agent.Id, agent)
+	return err
 }
 
 func (sd *MongoDBStorageDriver) UpdateAgentStatus(agent *entities.Agent) error {

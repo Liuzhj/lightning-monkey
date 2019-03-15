@@ -19,6 +19,9 @@ func NewCluster(cluster *entities.Cluster) error {
 	if cluster.KubernetesVersion == "" {
 		return errors.New("You must specify expected Kubernetes version!")
 	}
+	if cluster.ServiceDNSDomain == "" /* default: "cluster.local" */ {
+		return errors.New("You must specify cluster DNS domain!")
+	}
 	_, _, err := net.ParseCIDR(cluster.PodNetworkCIDR)
 	if err != nil {
 		return fmt.Errorf("Failed to parse \"cluster.PodNetworkCIDR\" value as correct CIDR format, error: %s", err.Error())

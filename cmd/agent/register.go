@@ -31,6 +31,7 @@ type LightningMonkeyAgent struct {
 	lastReportTime     time.Time
 	hasRegistered      int32
 	basicImages        map[string]string
+	masterSettings     map[string]string
 	workQueue          chan *entities.AgentJob
 	handlerFactory     *AgentJobHandlerFactory
 }
@@ -61,6 +62,7 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 		MetadataId:    *a.arg.MetadataId,
 		ClusterId:     &clusterId,
 		Hostname:      hostname,
+		LastReportIP:  *a.arg.Address,
 	}
 	bodyData, err := json.Marshal(agentObj)
 	if err != nil {
@@ -101,6 +103,7 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 		return fmt.Errorf("Remote API server returned an empty basic image collection! %w", crashError)
 	}
 	a.basicImages = rspObj.BasicImages
+	a.masterSettings = rspObj.MasterSettings
 	err = a.downloadCertificates()
 	if err != nil {
 		return err
@@ -249,7 +252,13 @@ func (a *LightningMonkeyAgent) reportStatusInternal() error {
 		Timeout:   time.Second * 5,
 		Transport: http.DefaultTransport,
 	}
-	status := entities.AgentStatus{Status: entities.AgentStatus_Running}
+	status := entities.AgentStatus{
+		ReportType:   entities.AgentReport_Heartbeat,
+		ReportTarget: "Agent",
+		Reason:       "",
+		Status:       entities.AgentStatus_Running,
+		IP:           *a.arg.Address,
+	}
 	bodyData, err := json.Marshal(status)
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
@@ -317,25 +326,70 @@ func (a *LightningMonkeyAgent) queryJob() (*entities.AgentJob, error) {
 
 func (a *LightningMonkeyAgent) performJob() {
 	var job *entities.AgentJob
-	var handler AgentJobHandler
+	var handlers []AgentJobHandler
+	var succeed bool
 	var err error
 	var isOpen bool
+	retryTimes := 100
 	for {
 		job, isOpen = <-a.workQueue
 		if !isOpen {
 			return
 		}
-		handler = a.handlerFactory.GetHandler(job.Name)
-		if handler == nil {
+		handlers = a.handlerFactory.GetHandler(job.Name)
+		if handlers == nil {
 			logrus.Warnf("No any handler could process this job: %s", job.Name)
 			continue
 		}
-		err = handler(job, a)
+		//send provisioning signal to master.
+		err = a.SendSignalToMaster(job, false, false, "Provisioning")
+		if err != nil {
+			logrus.Warnf("Failed to send signal to master API, error: %s", err.Error())
+			continue
+		}
+		//do provision.
+		succeed, err = handlers[0](job, a)
 		if err != nil {
 			logrus.Errorf("Failed to process job: %#v, error: %s", job, err.Error())
 			if xerrors.Is(err, crashError) {
 				os.Exit(1)
 			}
+			continue
+		}
+		if !succeed {
+			logrus.Errorf("Failed to process job: %#v, which returned an un-successful status!", job)
+			continue
+		}
+		hasDone := false
+		for x := 0; x < retryTimes; x++ {
+			time.Sleep(time.Second * 5)
+			//do health check.
+			succeed, err = handlers[1](job, a)
+			if err != nil {
+				logrus.Errorf("Failed to process job(Phase -> Health Check): %#v, error: %s", job, err.Error())
+				//send provisioning signal to master.
+				err = a.SendSignalToMaster(job, false, true, err.Error())
+				if xerrors.Is(err, crashError) {
+					os.Exit(1)
+				}
+				continue
+			}
+			if !succeed {
+				logrus.Warnf("Job %s's health check procedure returned an unhealthy status!", job.Name)
+				continue
+			}
+			//send provisioning signal to master.
+			err = a.SendSignalToMaster(job, true, false, "")
+			if err != nil {
+				logrus.Errorf("Failed to report status to master API, error: %s", err.Error())
+				continue
+			}
+			logrus.Infof("Job %s processed successfully!", job.Name)
+			hasDone = true
+			break
+		}
+		if !hasDone {
+			logrus.Errorf("Job %s processing failed over %d times retry!", job.Name, retryTimes)
 		}
 	}
 }
@@ -359,8 +413,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer() error {
 	}
 	_, _ = io.Copy(os.Stdout, reader)
 	resp, err := a.dockerClient.ContainerCreate(context.Background(), &container.Config{
-		Image: img,
-		Tty:   false,
+		Hostname: *a.arg.Address,
+		Image:    img,
+		Tty:      false,
 		Cmd: []string{
 			"kubelet",
 			fmt.Sprintf("--config=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet_settings.yml")),
@@ -380,8 +435,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer() error {
 		Volumes: map[string]struct{}{},
 	}, &container.HostConfig{
 		Binds: []string{
-			"/etc/kubernetes:/etc/kubernetes",
+			"/etc:/etc",
 			"/var/run:/var/run",
+			"/var/lib:/var/lib",
 		},
 		Privileged:  true,
 		NetworkMode: "host"}, &network.NetworkingConfig{}, "kubelet")
@@ -396,5 +452,57 @@ func (a *LightningMonkeyAgent) runKubeletContainer() error {
 		return xerrors.Errorf("Failed to retrieve container logs, error: %s %w", err.Error(), crashError)
 	}
 	_, _ = io.Copy(os.Stdout, out)
+	return nil
+}
+
+func (a *LightningMonkeyAgent) SendSignalToMaster(job *entities.AgentJob, succeed, failed bool, reason string) error {
+	statusObj := entities.AgentStatus{
+		IP:           *a.arg.Address,
+		ReportType:   entities.AgentReport_Provision,
+		ReportTarget: job.Name,
+	}
+	if succeed {
+		statusObj.Reason = fmt.Sprintf("Job [%s] has been finished provision procedure!", job.Name)
+		statusObj.Status = entities.AgentStatus_Provision_Succeed
+	} else if failed {
+		statusObj.Reason = fmt.Sprintf("Job [%s] had been failed with reason: %s", job.Name, reason)
+		statusObj.Status = entities.AgentStatus_Provision_Failed
+	} else {
+		statusObj.Reason = fmt.Sprintf("Job [%s]: %s", job.Name, reason)
+		statusObj.Status = entities.AgentStatus_Provisioning
+	}
+
+	bodyData, err := json.Marshal(statusObj)
+	if err != nil {
+		return xerrors.Errorf("%s %w", err.Error(), crashError)
+	}
+	client := http.Client{
+		Timeout:   time.Second * 5,
+		Transport: http.DefaultTransport,
+	}
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/apis/v1/agent/status?metadata-id=%s&cluster=%s", *a.arg.Server, *a.arg.MetadataId, *a.arg.ClusterId), bytes.NewBuffer(bodyData))
+	if err != nil {
+		return xerrors.Errorf("%s %w", err.Error(), crashError)
+	}
+	rsp, err := client.Do(req)
+	if err != nil {
+		return xerrors.Errorf("%s %w", err.Error(), crashError)
+	}
+	defer rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return xerrors.Errorf("Remote API server returned a non-zero HTTP status code: %d %w", rsp.StatusCode, crashError)
+	}
+	rspObj := entities.Response{}
+	rspData, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return xerrors.Errorf("%s %w", err.Error(), crashError)
+	}
+	err = json.Unmarshal(rspData, &rspObj)
+	if err != nil {
+		return xerrors.Errorf("%s %w", err.Error(), crashError)
+	}
+	if rspObj.ErrorId != entities.Succeed {
+		return fmt.Errorf("Remote API server returned a non-zero biz code: %d %w", rspObj.ErrorId, crashError)
+	}
 	return nil
 }

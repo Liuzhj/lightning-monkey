@@ -37,9 +37,11 @@ func RegisterAgent(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	agent.LastReportIP = ctx.RemoteAddr()
+	if agent.LastReportIP == "" {
+		agent.LastReportIP = ctx.RemoteAddr()
+	}
 	agent.LastReportStatus = entities.AgentStatus_Provisioning
-	err = managers.RegisterAgent(&agent)
+	cluster, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		rsp = entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)
@@ -47,7 +49,16 @@ func RegisterAgent(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	rsp = entities.RegisterAgentResponse{Response: entities.Response{ErrorId: entities.Succeed, Reason: ""}, BasicImages: common.BasicImages["1.12.5"] /*test only*/}
+	rsp = entities.RegisterAgentResponse{
+		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
+		BasicImages: common.BasicImages["1.12.5"], /*test only*/
+		MasterSettings: map[string]string{
+			entities.MasterSettings_PodCIDR:           cluster.PodNetworkCIDR,
+			entities.MasterSettings_ServiceCIDR:       cluster.ServiceCIDR,
+			entities.MasterSettings_ServiceDNSDomain:  cluster.ServiceDNSDomain,
+			entities.MasterSettings_KubernetesVersion: cluster.KubernetesVersion,
+		},
+	}
 	_, _ = ctx.JSON(rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()
@@ -102,7 +113,10 @@ func ReportStatus(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	status.IP = ctx.RemoteAddr()
+	if status.IP == "" {
+		status.IP = ctx.RemoteAddr()
+	}
+	logrus.Infof("[Report]: IP: %s, Type: %s, Status: [%s], Reason: %s", status.IP, status.ReportType, status.Status, status.Reason)
 	err = managers.AgentReportStatus(metadataId, status)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}

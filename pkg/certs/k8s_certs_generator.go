@@ -3,6 +3,7 @@ package certs
 import (
 	"bufio"
 	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -140,6 +141,53 @@ func GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent strin
 	var cmd *exec.Cmd
 	for i := 0; i < len(subCommands); i++ {
 		cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("%s --config=%s", subCommands[i], configFilePath))
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return err
+		}
+		if err = cmd.Start(); err != nil {
+			return err
+		}
+		reader := bufio.NewReader(stdout)
+		for {
+			traceData, _, err := reader.ReadLine()
+			if err != nil {
+				if err != io.EOF {
+					return err
+				}
+				break
+			}
+			logrus.Infof(string(traceData))
+		}
+		if err = cmd.Wait(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string) error {
+	subCommands := []string{
+		fmt.Sprintf("kubeadm init phase certs apiserver --apiserver-advertise-address=%s --service-dns-domain=%s --service-cidr=%s --cert-dir=%s",
+			address,
+			settings[entities.MasterSettings_ServiceDNSDomain],
+			settings[entities.MasterSettings_ServiceCIDR],
+			certPath,
+		),
+		fmt.Sprintf("kubeadm init phase certs apiserver-etcd-client --cert-dir=%s", certPath),
+		fmt.Sprintf("kubeadm init phase certs apiserver-kubelet-client --cert-dir=%s", certPath),
+		fmt.Sprintf("kubeadm init phase certs sa --cert-dir=%s", certPath),
+		fmt.Sprintf("kubeadm init phase control-plane all --apiserver-advertise-address=%s --kubernetes-version=%s --pod-network-cidr=%s --service-cidr=%s --cert-dir=%s",
+			address,
+			settings[entities.MasterSettings_KubernetesVersion],
+			settings[entities.MasterSettings_PodCIDR],
+			settings[entities.MasterSettings_ServiceCIDR],
+			certPath,
+		),
+	}
+	var cmd *exec.Cmd
+	for i := 0; i < len(subCommands); i++ {
+		cmd = exec.Command("/bin/bash", "-c", subCommands[i])
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			return err
