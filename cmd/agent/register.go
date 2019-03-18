@@ -108,7 +108,16 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	if err != nil {
 		return err
 	}
-	return a.runKubeletContainer()
+	//directly start kubelet up when it has not Minion role.
+	if !*a.arg.IsMinionRole {
+		return a.runKubeletContainer(*a.arg.Address)
+	}
+	if rspObj.KubernetesMasterAddresses == nil || len(rspObj.KubernetesMasterAddresses) == 0 {
+		logrus.Fatalf("Illegal address count of Kubernetes master!")
+		return
+	}
+	//otherwise, start kubelet up with specified Kubernetes Master address.
+	return a.runKubeletContainer(rspObj.KubernetesMasterAddresses[0])
 }
 
 func (a *LightningMonkeyAgent) downloadCertificates() error {
@@ -408,8 +417,13 @@ func (a *LightningMonkeyAgent) performJob() {
 	}
 }
 
-func (a *LightningMonkeyAgent) runKubeletContainer() error {
-	err := k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, *a.arg.Address)
+func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
+	var err error
+	if masterIP == "" {
+		err = k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, *a.arg.Address)
+	} else {
+		err = k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, masterIP)
+	}
 	if err != nil {
 		return xerrors.Errorf("Failed to generate kube-config, error: %s %w", err.Error(), crashError)
 	}
