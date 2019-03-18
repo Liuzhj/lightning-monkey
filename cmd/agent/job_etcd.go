@@ -30,10 +30,10 @@ etcd:
             initial-cluster: {{.SERVERS}}
             initial-cluster-state: new
             name: {{.NAME}}
-            listen-peer-urls: https://{{.HOST}}:2380
-            listen-client-urls: https://{{.HOST}}:2379
-            advertise-client-urls: https://{{.HOST}}:2379
-            initial-advertise-peer-urls: https://{{.HOST}}:2380`
+            listen-peer-urls: https://{{.ADDR}}:2380
+            listen-client-urls: https://{{.ADDR}}:2379
+            advertise-client-urls: https://{{.ADDR}}:2379
+            initial-advertise-peer-urls: https://{{.ADDR}}:2380`
 )
 
 func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
@@ -61,6 +61,7 @@ func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, er
 		"SERVERS": serversConnection,
 		"IMAGE":   a.basicImages["etcd"],
 		"DATADIR": "/data/etcd",
+		"ADDR":    "0.0.0.0",
 	}
 	buffer := bytes.Buffer{}
 	err = tmpl.Execute(&buffer, args)

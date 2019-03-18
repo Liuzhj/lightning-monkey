@@ -16,4 +16,5 @@ func (hf *AgentJobHandlerFactory) Initialize() {
 		hf.handlers = map[string][]AgentJobHandler{}
 	}
 	hf.handlers[entities.AgentJob_Deploy_ETCD] = []AgentJobHandler{HandleDeployETCD, CheckETCDHealth}
+	hf.handlers[entities.AgentJob_Deploy_Master] = []AgentJobHandler{HandleDeployMaster, CheckMasterHealth}
 }

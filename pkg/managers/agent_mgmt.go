@@ -101,7 +101,7 @@ func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
 	if agent.HasMinionRole && !agent.HasProvisionedMinion && canDeployMinion == entities.ConditionConfirmed {
 		return &entities.AgentJob{Name: entities.AgentJob_Deploy_Minion}, nil
 	}
-	return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Wait, no any operations should perform."}, nil
+	return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, no any operations should perform."}, nil
 }
 
 func AgentReportStatus(metadataId string, status entities.AgentStatus) error {

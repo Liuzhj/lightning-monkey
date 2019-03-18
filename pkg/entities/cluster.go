@@ -22,6 +22,7 @@ const (
 	MasterSettings_ServiceCIDR       = "service_ip_cidr"
 	MasterSettings_ServiceDNSDomain  = "service_dns_domain"
 	MasterSettings_KubernetesVersion = "k8s_version"
+	MasterSettings_DockerRegistry    = "docker_registry"
 )
 
 type Cluster struct {

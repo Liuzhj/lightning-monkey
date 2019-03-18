@@ -341,6 +341,20 @@ func (a *LightningMonkeyAgent) performJob() {
 			logrus.Warnf("No any handler could process this job: %s", job.Name)
 			continue
 		}
+		succeed, err = handlers[1](job, a)
+		if err != nil {
+			logrus.Errorf("Failed to process job(Phase -> Health Check): %#v, error: %s", job, err.Error())
+			//send provisioning signal to master.
+			err = a.SendSignalToMaster(job, false, true, err.Error())
+			if xerrors.Is(err, crashError) {
+				os.Exit(1)
+			}
+			continue
+		}
+		if succeed {
+			logrus.Infof("Skipped job: %s, It's already running...", job.Name)
+			continue
+		}
 		//send provisioning signal to master.
 		err = a.SendSignalToMaster(job, false, false, "Provisioning")
 		if err != nil {

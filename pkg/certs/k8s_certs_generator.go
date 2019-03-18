@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 )
 
 type GeneratedCertsMap struct {
@@ -177,8 +178,12 @@ func GenerateMasterCertificatesAndManifest(certPath, address string, settings ma
 		fmt.Sprintf("kubeadm init phase certs apiserver-etcd-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs apiserver-kubelet-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs sa --cert-dir=%s", certPath),
+		fmt.Sprintf("kubeadm init phase certs front-proxy-ca --cert-dir=%s", certPath),
+		fmt.Sprintf("kubeadm init phase certs front-proxy-client --cert-dir=%s", certPath),
+		fmt.Sprintf("kubeadm init phase kubeconfig controller-manager --cert-dir=%s", certPath),
+		fmt.Sprintf("kubeadm init phase kubeconfig scheduler --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase control-plane all --apiserver-advertise-address=%s --kubernetes-version=%s --pod-network-cidr=%s --service-cidr=%s --cert-dir=%s",
-			address,
+			"0.0.0.0", //address,
 			settings[entities.MasterSettings_KubernetesVersion],
 			settings[entities.MasterSettings_PodCIDR],
 			settings[entities.MasterSettings_ServiceCIDR],
@@ -210,7 +215,39 @@ func GenerateMasterCertificatesAndManifest(certPath, address string, settings ma
 			return err
 		}
 	}
-	return nil
+	//replace used docker registry.
+	manifestPath := filepath.Join(certPath, "../", "manifests")
+	logrus.Infof("Calculated manifest file path: %s", manifestPath)
+	err := filepath.Walk(manifestPath, func(p string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		f, e := os.OpenFile(p, os.O_RDWR, 0600)
+		if e != nil {
+			return e
+		}
+		defer f.Close()
+		fileData, e := ioutil.ReadAll(f)
+		if e != nil {
+			return e
+		}
+		e = f.Truncate(0)
+		if e != nil {
+			return e
+		}
+		_, e = f.Seek(0, 0)
+		if e != nil {
+			return e
+		}
+		re := regexp.MustCompile(`k8s.gcr.io/kube-apiserver|k8s.gcr.io/kube-scheduler|k8s.gcr.io/kube-controller-manager`)
+		newContent := re.ReplaceAllString(string(fileData), settings[entities.MasterSettings_DockerRegistry])
+		_, e = f.Write([]byte(newContent))
+		if e != nil {
+			return e
+		}
+		return f.Sync()
+	})
+	return err
 }
 
 func getCertificatesContent(path, title string, m *GeneratedCertsMap) (*GeneratedCertsMap, error) {

@@ -57,6 +57,7 @@ func RegisterAgent(ctx iris.Context) {
 			entities.MasterSettings_ServiceCIDR:       cluster.ServiceCIDR,
 			entities.MasterSettings_ServiceDNSDomain:  cluster.ServiceDNSDomain,
 			entities.MasterSettings_KubernetesVersion: cluster.KubernetesVersion,
+			entities.MasterSettings_DockerRegistry:    "mirrorgooglecontainers/hyperkube",
 		},
 	}
 	_, _ = ctx.JSON(rsp)
