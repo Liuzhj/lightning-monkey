@@ -23,9 +23,8 @@ type Response struct {
 
 type RegisterAgentResponse struct {
 	Response
-	BasicImages               map[string]string `json:"images"`
-	MasterSettings            map[string]string `json:"master_settings"`
-	KubernetesMasterAddresses []string          `json:"master_addresses"`
+	BasicImages    map[string]string `json:"images"`
+	MasterSettings map[string]string `json:"master_settings"`
 }
 
 type CreateClusterResponse struct {

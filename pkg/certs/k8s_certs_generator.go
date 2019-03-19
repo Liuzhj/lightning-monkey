@@ -183,7 +183,7 @@ func GenerateMasterCertificatesAndManifest(certPath, address string, settings ma
 		fmt.Sprintf("kubeadm init phase kubeconfig controller-manager --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase kubeconfig scheduler --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase control-plane all --apiserver-advertise-address=%s --kubernetes-version=%s --pod-network-cidr=%s --service-cidr=%s --cert-dir=%s",
-			"0.0.0.0", //address,
+			address, //address,
 			settings[entities.MasterSettings_KubernetesVersion],
 			settings[entities.MasterSettings_PodCIDR],
 			settings[entities.MasterSettings_ServiceCIDR],
@@ -239,8 +239,16 @@ func GenerateMasterCertificatesAndManifest(certPath, address string, settings ma
 		if e != nil {
 			return e
 		}
+		//replace docker registry.
 		re := regexp.MustCompile(`k8s.gcr.io/kube-apiserver|k8s.gcr.io/kube-scheduler|k8s.gcr.io/kube-controller-manager`)
 		newContent := re.ReplaceAllString(string(fileData), settings[entities.MasterSettings_DockerRegistry])
+		//replace ETCD settings.
+		re = regexp.MustCompile(`(etcd-servers=)(.*)`)
+		newContent = re.ReplaceAllString(newContent, fmt.Sprintf("${1}http://%s:2379", address))
+		re = regexp.MustCompile(`(advertise-address=)(.*)`)
+		newContent = re.ReplaceAllString(newContent, fmt.Sprintf("${1}%s", address))
+		re = regexp.MustCompile(`(host:)(.*)`)
+		newContent = re.ReplaceAllString(newContent, fmt.Sprintf("${1} %s", address))
 		_, e = f.Write([]byte(newContent))
 		if e != nil {
 			return e

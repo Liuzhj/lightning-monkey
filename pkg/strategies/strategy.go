@@ -12,6 +12,7 @@ type ClusterStatementStrategy interface {
 	CanDeployMasterComponents() entities.ConditionCheckedResult
 	CanDeployMinion() entities.ConditionCheckedResult
 	GetETCDNodeAddresses() []string
+	GetMasterNodeAddresses() []string
 }
 
 type DefaultClusterStatementStrategy struct {
@@ -110,6 +111,27 @@ func (ds *DefaultClusterStatementStrategy) GetETCDNodeAddresses() []string {
 	}
 	for _, as := range agents {
 		if as == nil || len(as) == 0 {
+			continue
+		}
+		for i := 0; i < len(as); i++ {
+			ips = append(ips, as[i].LastReportIP)
+		}
+	}
+	sort.Strings(ips)
+	return ips
+}
+
+func (ds *DefaultClusterStatementStrategy) GetMasterNodeAddresses() []string {
+	agents := ds.agents[entities.AgentRole_Master]
+	ips := []string{}
+	if agents == nil {
+		return ips
+	}
+	for status, as := range agents {
+		if as == nil || len(as) == 0 {
+			continue
+		}
+		if strings.ToLower(status) != strings.ToLower(entities.AgentStatus_Running) {
 			continue
 		}
 		for i := 0; i < len(as); i++ {

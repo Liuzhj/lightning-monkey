@@ -112,12 +112,8 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	if !*a.arg.IsMinionRole {
 		return a.runKubeletContainer(*a.arg.Address)
 	}
-	if rspObj.KubernetesMasterAddresses == nil || len(rspObj.KubernetesMasterAddresses) == 0 {
-		logrus.Fatalf("Illegal address count of Kubernetes master!")
-		return
-	}
-	//otherwise, start kubelet up with specified Kubernetes Master address.
-	return a.runKubeletContainer(rspObj.KubernetesMasterAddresses[0])
+	//otherwise, wait until all of depended components has been started.
+	return nil
 }
 
 func (a *LightningMonkeyAgent) downloadCertificates() error {
@@ -199,6 +195,12 @@ func (a *LightningMonkeyAgent) Initialize(arg AgentArgs) {
 	if a.workQueue == nil {
 		a.workQueue = make(chan *entities.AgentJob, 1)
 	}
+	c, err := client.NewEnvClient()
+	if err != nil {
+		logrus.Fatalf("Failed to initialize docker client, error: %s %w", err.Error(), crashError)
+		return
+	}
+	a.dockerClient = c
 }
 
 func (a *LightningMonkeyAgent) Start() {
@@ -425,13 +427,8 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 		err = k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, masterIP)
 	}
 	if err != nil {
-		return xerrors.Errorf("Failed to generate kube-config, error: %s %w", err.Error(), crashError)
+		return xerrors.Errorf("Failed to generate kube-config, master-ip: %s, error: %s %w", masterIP, err.Error(), crashError)
 	}
-	c, err := client.NewEnvClient()
-	if err != nil {
-		return xerrors.Errorf("Failed to initialize docker client, error: %s %w", err.Error(), crashError)
-	}
-	a.dockerClient = c
 	img := a.basicImages["k8s"]
 	infraContainer := a.basicImages["infra"]
 	logrus.Infof("Pulling docker image: %s", img)
@@ -467,8 +464,10 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 			"/var/run:/var/run",
 			"/var/lib:/var/lib",
 		},
-		Privileged:  true,
-		NetworkMode: "host"}, &network.NetworkingConfig{}, "kubelet")
+		Privileged:    true,
+		NetworkMode:   "host",
+		RestartPolicy: container.RestartPolicy{Name: "unless-stopped"},
+	}, &network.NetworkingConfig{}, "kubelet")
 	if err != nil {
 		return xerrors.Errorf("Failed to create container, error: %s %w", err.Error(), crashError)
 	}

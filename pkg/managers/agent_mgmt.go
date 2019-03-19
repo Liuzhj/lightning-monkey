@@ -85,21 +85,26 @@ func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
 	canDeployMinion := strategy.CanDeployMinion()
 	//1st, deploy ETCD components.
 	if canDeployETCD == entities.ConditionNotConfirmed {
-		return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Wait, All of agents of ETCD role are not ready yet."}, nil
+		return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, All of agents of ETCD role are not ready yet."}, nil
 	}
 	if agent.HasETCDRole && !agent.HasProvisionedETCD && canDeployETCD == entities.ConditionConfirmed {
 		return &entities.AgentJob{Name: entities.AgentJob_Deploy_ETCD, Arguments: map[string]string{"addresses": strings.Join(strategy.GetETCDNodeAddresses(), ",")}}, nil
 	}
 	//2ec, deploy Master components.
 	if canDeployMaster == entities.ConditionNotConfirmed {
-		return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Wait, All of agents of Kubernetes master role are not ready yet."}, nil
+		return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, All of agents of Kubernetes master role are not ready yet."}, nil
 	}
 	if agent.HasMasterRole && !agent.HasProvisionedMasterComponents && canDeployMaster == entities.ConditionConfirmed {
 		return &entities.AgentJob{Name: entities.AgentJob_Deploy_Master}, nil
 	}
 	//last, deploy Minion components.
 	if agent.HasMinionRole && !agent.HasProvisionedMinion && canDeployMinion == entities.ConditionConfirmed {
-		return &entities.AgentJob{Name: entities.AgentJob_Deploy_Minion}, nil
+		masterIps := strategy.GetMasterNodeAddresses()
+		if masterIps == nil || len(masterIps) == 0 {
+			return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, no any master are reported with running status."}, nil
+		} else {
+			return &entities.AgentJob{Name: entities.AgentJob_Deploy_Minion, Arguments: map[string]string{"addresses": strings.Join(masterIps, ",")}}, nil
+		}
 	}
 	return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, no any operations should perform."}, nil
 }

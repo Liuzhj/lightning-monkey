@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os/exec"
 	"path/filepath"
 )
@@ -85,11 +84,7 @@ volumeStatsAggPeriod: 1m0s`
 )
 
 func GenerateKubeletConfig(certPath, masterAPIAddr string) error {
-	uri, err := url.Parse(masterAPIAddr)
-	if err != nil {
-		return err
-	}
-	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig kubelet --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s", certPath, certPath, uri.Host))
+	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig kubelet --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s", certPath, certPath, masterAPIAddr))
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
