@@ -24,16 +24,18 @@ etcd:
         dataDir: {{.DATADIR}}
         serverCertSANs:
         - "{{.HOST}}"
+        - "127.0.0.1"
         peerCertSANs:
         - "{{.HOST}}"
+        - "127.0.0.1"
         extraArgs:
             initial-cluster: {{.SERVERS}}
             initial-cluster-state: new
             name: {{.NAME}}
-            listen-peer-urls: https://{{.HOST}}:2380
-            listen-client-urls: https://{{.HOST}}:2379
-            advertise-client-urls: https://{{.HOST}}:2379
-            initial-advertise-peer-urls: https://{{.HOST}}:2380`
+            listen-peer-urls: https://{{.ADDR}}:2380
+            listen-client-urls: https://{{.ADDR}}:2379
+            advertise-client-urls: https://{{.ADDR}}:2379
+            initial-advertise-peer-urls: https://{{.ADDR}}:2380`
 )
 
 func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
@@ -43,8 +45,12 @@ func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, er
 	servers := strings.Split(job.Arguments["addresses"], ",")
 	var sb strings.Builder
 	for i := 0; i < len(servers); i++ {
-		name := generateETCDName(servers[i])
-		sb.WriteString(fmt.Sprintf("%s=https://%s:2380", name, servers[i]))
+		ip := servers[i]
+		if ip == *a.arg.Address {
+			ip = "0.0.0.0"
+		}
+		name := generateETCDName(a, ip)
+		sb.WriteString(fmt.Sprintf("%s=https://%s:2380", name, ip))
 		if i != len(servers)-1 {
 			sb.WriteString(",")
 		}
@@ -56,11 +62,12 @@ func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, er
 	}
 	logrus.Infof("SERVER ADDR: %s", *a.arg.Address)
 	args := map[string]string{
-		"NAME":    generateETCDName(*a.arg.Address),
+		"NAME":    generateETCDName(a, *a.arg.Address),
 		"HOST":    *a.arg.Address,
 		"SERVERS": serversConnection,
 		"IMAGE":   a.basicImages["etcd"],
 		"DATADIR": "/data/etcd",
+		"ADDR":    "0.0.0.0",
 	}
 	buffer := bytes.Buffer{}
 	err = tmpl.Execute(&buffer, args)
@@ -96,7 +103,10 @@ func CheckETCDHealth(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, err
 	return false, nil
 }
 
-func generateETCDName(addr string) string {
+func generateETCDName(a *LightningMonkeyAgent, addr string) string {
+	if addr == *a.arg.Address {
+		addr = "0.0.0.0"
+	}
 	hasher := md5.New()
 	hasher.Write([]byte([]byte(addr)))
 	return hex.EncodeToString(hasher.Sum(nil))

@@ -242,9 +242,12 @@ func GenerateMasterCertificatesAndManifest(certPath, address string, settings ma
 		//replace docker registry.
 		re := regexp.MustCompile(`k8s.gcr.io/kube-apiserver|k8s.gcr.io/kube-scheduler|k8s.gcr.io/kube-controller-manager`)
 		newContent := re.ReplaceAllString(string(fileData), settings[entities.MasterSettings_DockerRegistry])
+		//replace kube-controller-manager & scheduler settings.
+		re = regexp.MustCompile(`(--address=)(.*)`)
+		newContent = re.ReplaceAllString(newContent, "${1}0.0.0.0")
 		//replace ETCD settings.
 		re = regexp.MustCompile(`(etcd-servers=)(.*)`)
-		newContent = re.ReplaceAllString(newContent, fmt.Sprintf("${1}http://%s:2379", address))
+		newContent = re.ReplaceAllString(newContent, fmt.Sprintf("${1}https://%s:2379", address))
 		re = regexp.MustCompile(`(advertise-address=)(.*)`)
 		newContent = re.ReplaceAllString(newContent, fmt.Sprintf("${1}%s", address))
 		re = regexp.MustCompile(`(host:)(.*)`)
