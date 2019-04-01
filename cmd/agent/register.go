@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -421,6 +422,24 @@ func (a *LightningMonkeyAgent) performJob() {
 
 func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	var err error
+	var cs []types.Container
+	cs, err = a.dockerClient.ContainerList(context.Background(), types.ContainerListOptions{})
+	if err != nil {
+		return xerrors.Errorf("Failed to get running container list, error: %s %w", err.Error(), crashError)
+	}
+	//check whether a container named "kubelet" has been started.
+	if cs != nil && len(cs) > 0 {
+		for i := 0; i < len(cs); i++ {
+			if cs[i].Names[0] == "/kubelet" {
+				if strings.Contains(cs[i].Status, "Up") {
+					//kubelet has been started successfully, skip other actions.
+					return nil
+				} else {
+					return xerrors.Errorf("\"kubelet\" has been started but with unhealthy container status, error: %s %w", err.Error(), crashError)
+				}
+			}
+		}
+	}
 	if masterIP == "" {
 		err = k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, *a.arg.Address)
 	} else {
