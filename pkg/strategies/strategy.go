@@ -1,6 +1,7 @@
 package strategies
 
 import (
+	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"sort"
 	"strings"
@@ -13,11 +14,14 @@ type ClusterStatementStrategy interface {
 	CanDeployMinion() entities.ConditionCheckedResult
 	GetETCDNodeAddresses() []string
 	GetMasterNodeAddresses() []string
+	GetAgent(metadataId string) (*entities.Agent, error)
+	GetAgents() []interface{}
 }
 
 type DefaultClusterStatementStrategy struct {
 	cluster                         *entities.Cluster
 	agents                          map[string] /*Agent Role*/ map[string] /*Agent Status*/ []*entities.Agent
+	agents_id_indexes               map[string] /*Metadata ID*/ *entities.Agent
 	TotalETCDAgentCount             int
 	TotalMasterAgentCount           int
 	TotalMinionAgentCount           int
@@ -30,11 +34,16 @@ func (ds *DefaultClusterStatementStrategy) Load(cluster *entities.Cluster, agent
 	if ds.agents == nil {
 		ds.agents = make(map[string]map[string][]*entities.Agent)
 	}
+	if ds.agents_id_indexes == nil {
+		ds.agents_id_indexes = make(map[string]*entities.Agent)
+	}
 	if agents == nil || len(agents) == 0 {
 		return
 	}
+	//build index by role & metadata ID.
 	for i := 0; i < len(agents); i++ {
 		agent := agents[i]
+		ds.agents_id_indexes[agent.MetadataId] = agent
 		var agentRoles []string
 		if agent.HasMasterRole {
 			agentRoles = append(agentRoles, entities.AgentRole_Master)
@@ -140,4 +149,22 @@ func (ds *DefaultClusterStatementStrategy) GetMasterNodeAddresses() []string {
 	}
 	sort.Strings(ips)
 	return ips
+}
+
+func (ds *DefaultClusterStatementStrategy) GetAgent(metadataId string) (*entities.Agent, error) {
+	agent := ds.agents_id_indexes[metadataId]
+	if agent == nil {
+		return nil, fmt.Errorf("Agent does not exist, Metadata-ID: %s", metadataId)
+	}
+	return agent, nil
+}
+
+func (ds *DefaultClusterStatementStrategy) GetAgents() []interface{} {
+	arr := make([]interface{}, 0, len(ds.agents_id_indexes))
+	i := 0
+	for _, agent := range ds.agents_id_indexes {
+		arr[i] = agent
+		i++
+	}
+	return arr
 }

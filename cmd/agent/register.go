@@ -274,7 +274,7 @@ func (a *LightningMonkeyAgent) reportStatusInternal() error {
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
 	}
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/apis/v1/agent/status?metadata-id=%s", *a.arg.Server, *a.arg.MetadataId), bytes.NewBuffer(bodyData))
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/apis/v1/agent/status?metadata-id=%s&cluster-id=%s", *a.arg.Server, *a.arg.MetadataId, *a.arg.ClusterId), bytes.NewBuffer(bodyData))
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
 	}

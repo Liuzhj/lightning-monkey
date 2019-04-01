@@ -109,21 +109,19 @@ func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
 	return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, no any operations should perform."}, nil
 }
 
-func AgentReportStatus(metadataId string, status entities.AgentStatus) error {
-	agent, err := common.StorageDriver.GetAgentByMetadataId(metadataId)
+func AgentReportStatus(clusterId, metadataId string, status entities.AgentStatus) error {
+	strategy := common.ClusterStatementController.GetClusterStrategy(clusterId)
+	if strategy == nil {
+		return fmt.Errorf("Failed to retrieve cluter strategy, error: cluster %s not found!", clusterId)
+	}
+	agent, err := strategy.GetAgent(metadataId)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve agent from database, error: %s", err.Error())
 	}
 	if agent == nil {
 		return errors.New("Current agent has not registered to Master.")
 	}
-	cluster, err := common.StorageDriver.GetCluster(agent.ClusterId.Hex())
-	if err != nil {
-		return fmt.Errorf("Failed to retrieve the cluster information which current agent belongs to, error: %s", err.Error())
-	}
-	if cluster == nil {
-		return errors.New("Agent's cluster information had been deleted(Maybe), not found.")
-	}
+	//update status.
 	agent.LastReportTime = time.Now()
 	agent.LastReportStatus = status.Status
 	agent.Reason = status.Reason
@@ -139,9 +137,5 @@ func AgentReportStatus(metadataId string, status entities.AgentStatus) error {
 		agent.HasProvisionedMinion = true
 		agent.MinionProvisionTime = time.Now()
 	}
-	//strategy := common.ClusterStatementController.GetClusterStrategy(agent.ClusterId.Hex())
-	//if strategy != nil {
-	//	strategy.UpdateAgentProvisionStatus()
-	//}
-	return common.StorageDriver.SaveAgent(agent)
+	return nil
 }

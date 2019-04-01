@@ -48,38 +48,29 @@ func (csc *ClusterStatementController) updateProc() {
 				return
 			}
 		default:
-			mapping, err := csc.getClustersInformation()
+			err := csc.dumpToDatabase()
 			if err != nil {
-				logrus.Error(err.Error())
-				break
+				logrus.Errorf("Failed to dump memory data to database, error: %s", err.Error())
 			}
-			csc.clusters = mapping
 		}
 		csc.lockObj.Unlock()
 		time.Sleep(time.Second * 5)
 	}
 }
 
-func (csc *ClusterStatementController) getClustersInformation() (map[string]ClusterStatementStrategy, error) {
-	mapping := make(map[string]ClusterStatementStrategy)
-	clusters, err := csc.storageDriver.GetAllClusters()
-	if err != nil {
-		return mapping, err
-	}
-	if clusters == nil || len(clusters) == 0 {
-		return mapping, nil
-	}
-	for i := 0; i < len(clusters); i++ {
-		clusterId := clusters[i].Id.Hex()
-		agents, err := csc.storageDriver.GetAllAgentsByClusterId(clusterId)
-		if err != nil {
-			return mapping, err
+func (csc *ClusterStatementController) dumpToDatabase() error {
+	var err error
+	for _, strategy := range csc.clusters {
+		agents := strategy.GetAgents()
+		if agents == nil || len(agents) == 0 {
+			continue
 		}
-		strategy := &DefaultClusterStatementStrategy{}
-		strategy.Load(clusters[i], agents)
-		mapping[clusterId] = strategy
+		err = csc.storageDriver.BatchUpdateAgentStatus(agents)
+		if err != nil {
+			logrus.Errorf("Failed to dump memory data to database, cluster: %s, error: %s", strategy, err.Error())
+		}
 	}
-	return mapping, nil
+	return nil
 }
 
 func (csc *ClusterStatementController) GetClusterStrategy(clusterId string) ClusterStatementStrategy {

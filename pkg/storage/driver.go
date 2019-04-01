@@ -18,6 +18,7 @@ type StorageDriver interface {
 	GetAgentByMetadataId(metadataId string) (*entities.Agent, error)
 	SaveAgent(agent *entities.Agent) error
 	UpdateAgentStatus(agent *entities.Agent) error
+	BatchUpdateAgentStatus(agents []interface{}) error
 }
 
 type StorageDriverFactory struct {

@@ -97,6 +97,14 @@ func ReportStatus(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
+	clusterId := ctx.URLParam("cluster-id")
+	if clusterId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"cluster-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
 	status := entities.AgentStatus{}
 	httpData, err := ioutil.ReadAll(ctx.Request().Body)
 	if err != nil {
@@ -118,7 +126,7 @@ func ReportStatus(ctx iris.Context) {
 		status.IP = ctx.RemoteAddr()
 	}
 	logrus.Infof("[Report]: IP: %s, Type: %s, Status: [%s], Reason: %s", status.IP, status.ReportType, status.Status, status.Reason)
-	err = managers.AgentReportStatus(metadataId, status)
+	err = managers.AgentReportStatus(clusterId, metadataId, status)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)

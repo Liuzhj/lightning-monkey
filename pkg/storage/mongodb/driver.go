@@ -154,3 +154,13 @@ func (sd *MongoDBStorageDriver) UpdateAgentStatus(agent *entities.Agent) error {
 			"reason":             agent.Reason,
 		}})
 }
+
+func (sd *MongoDBStorageDriver) BatchUpdateAgentStatus(agents []interface{}) error {
+	session := sd.NewSession()
+	defer session.Close()
+	//update: {"$set": {"some_key.param2": "val2_new", "some_key.param3": "val3_new"}}
+	bulk := session.DB("lightning_monkey").C("agents").Bulk()
+	bulk.Upsert(agents...)
+	_, err := bulk.Run()
+	return err
+}
