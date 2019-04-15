@@ -3,15 +3,18 @@
 package storage
 
 import (
-	"context"
-	"encoding"
 	"fmt"
-	"hash"
 	"path"
 	"strconv"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/docker/distribution/context"
 	storagedriver "github.com/docker/distribution/registry/storage/driver"
-	"github.com/sirupsen/logrus"
+	"github.com/stevvooe/resumable"
+
+	// register resumable hashes with import
+	_ "github.com/stevvooe/resumable/sha256"
+	_ "github.com/stevvooe/resumable/sha512"
 )
 
 // resumeDigest attempts to restore the state of the internal hash function
@@ -21,13 +24,12 @@ func (bw *blobWriter) resumeDigest(ctx context.Context) error {
 		return errResumableDigestNotAvailable
 	}
 
-	h, ok := bw.digester.Hash().(encoding.BinaryUnmarshaler)
+	h, ok := bw.digester.Hash().(resumable.Hash)
 	if !ok {
 		return errResumableDigestNotAvailable
 	}
-
 	offset := bw.fileWriter.Size()
-	if offset == bw.written {
+	if offset == int64(h.Len()) {
 		// State of digester is already at the requested offset.
 		return nil
 	}
@@ -50,21 +52,20 @@ func (bw *blobWriter) resumeDigest(ctx context.Context) error {
 
 	if hashStateMatch.offset == 0 {
 		// No need to load any state, just reset the hasher.
-		h.(hash.Hash).Reset()
+		h.Reset()
 	} else {
 		storedState, err := bw.driver.GetContent(ctx, hashStateMatch.path)
 		if err != nil {
 			return err
 		}
 
-		if err = h.UnmarshalBinary(storedState); err != nil {
+		if err = h.Restore(storedState); err != nil {
 			return err
 		}
-		bw.written = hashStateMatch.offset
 	}
 
 	// Mind the gap.
-	if gapLen := offset - bw.written; gapLen > 0 {
+	if gapLen := offset - int64(h.Len()); gapLen > 0 {
 		return errResumableDigestNotAvailable
 	}
 
@@ -119,26 +120,26 @@ func (bw *blobWriter) storeHashState(ctx context.Context) error {
 		return errResumableDigestNotAvailable
 	}
 
-	h, ok := bw.digester.Hash().(encoding.BinaryMarshaler)
+	h, ok := bw.digester.Hash().(resumable.Hash)
 	if !ok {
 		return errResumableDigestNotAvailable
-	}
-
-	state, err := h.MarshalBinary()
-	if err != nil {
-		return err
 	}
 
 	uploadHashStatePath, err := pathFor(uploadHashStatePathSpec{
 		name:   bw.blobStore.repository.Named().String(),
 		id:     bw.id,
 		alg:    bw.digester.Digest().Algorithm(),
-		offset: bw.written,
+		offset: int64(h.Len()),
 	})
 
 	if err != nil {
 		return err
 	}
 
-	return bw.driver.PutContent(ctx, uploadHashStatePath, state)
+	hashState, err := h.State()
+	if err != nil {
+		return err
+	}
+
+	return bw.driver.PutContent(ctx, uploadHashStatePath, hashState)
 }

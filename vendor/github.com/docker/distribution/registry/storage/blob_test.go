@@ -2,29 +2,28 @@ package storage
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path"
-	"reflect"
+	"os"
 	"testing"
 
 	"github.com/docker/distribution"
+	"github.com/docker/distribution/context"
+	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/storage/cache/memory"
-	"github.com/docker/distribution/registry/storage/driver/testdriver"
+	"github.com/docker/distribution/registry/storage/driver/inmemory"
 	"github.com/docker/distribution/testutil"
-	"github.com/opencontainers/go-digest"
 )
 
 // TestWriteSeek tests that the current file size can be
 // obtained using Seek
 func TestWriteSeek(t *testing.T) {
 	ctx := context.Background()
-	imageName, _ := reference.WithName("foo/bar")
-	driver := testdriver.New()
+	imageName, _ := reference.ParseNamed("foo/bar")
+	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
@@ -42,7 +41,6 @@ func TestWriteSeek(t *testing.T) {
 	}
 	contents := []byte{1, 2, 3}
 	blobUpload.Write(contents)
-	blobUpload.Close()
 	offset := blobUpload.Size()
 	if offset != int64(len(contents)) {
 		t.Fatalf("unexpected value for blobUpload offset:  %v != %v", offset, len(contents))
@@ -59,8 +57,8 @@ func TestSimpleBlobUpload(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	imageName, _ := reference.WithName("foo/bar")
-	driver := testdriver.New()
+	imageName, _ := reference.ParseNamed("foo/bar")
+	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
@@ -85,17 +83,8 @@ func TestSimpleBlobUpload(t *testing.T) {
 		t.Fatalf("unexpected error during upload cancellation: %v", err)
 	}
 
-	// get the enclosing directory
-	uploadPath := path.Dir(blobUpload.(*blobWriter).path)
-
-	// ensure state was cleaned up
-	_, err = driver.List(ctx, uploadPath)
-	if err == nil {
-		t.Fatal("files in upload path after cleanup")
-	}
-
 	// Do a resume, get unknown upload
-	_, err = bs.Resume(ctx, blobUpload.ID())
+	blobUpload, err = bs.Resume(ctx, blobUpload.ID())
 	if err != distribution.ErrBlobUploadUnknown {
 		t.Fatalf("unexpected error resuming upload, should be unknown: %v", err)
 	}
@@ -121,12 +110,11 @@ func TestSimpleBlobUpload(t *testing.T) {
 		t.Fatalf("layer data write incomplete")
 	}
 
-	blobUpload.Close()
-
 	offset := blobUpload.Size()
 	if offset != nn {
 		t.Fatalf("blobUpload not updated with correct offset: %v != %v", offset, nn)
 	}
+	blobUpload.Close()
 
 	// Do a resume, for good fun
 	blobUpload, err = bs.Resume(ctx, blobUpload.ID())
@@ -140,13 +128,6 @@ func TestSimpleBlobUpload(t *testing.T) {
 		t.Fatalf("unexpected error finishing layer upload: %v", err)
 	}
 
-	// ensure state was cleaned up
-	uploadPath = path.Dir(blobUpload.(*blobWriter).path)
-	_, err = driver.List(ctx, uploadPath)
-	if err == nil {
-		t.Fatal("files in upload path after commit")
-	}
-
 	// After finishing an upload, it should no longer exist.
 	if _, err := bs.Resume(ctx, blobUpload.ID()); err != distribution.ErrBlobUploadUnknown {
 		t.Fatalf("expected layer upload to be unknown, got %v", err)
@@ -158,7 +139,7 @@ func TestSimpleBlobUpload(t *testing.T) {
 		t.Fatalf("unexpected error checking for existence: %v, %#v", err, bs)
 	}
 
-	if !reflect.DeepEqual(statDesc, desc) {
+	if statDesc != desc {
 		t.Fatalf("descriptors not equal: %v != %v", statDesc, desc)
 	}
 
@@ -254,8 +235,8 @@ func TestSimpleBlobUpload(t *testing.T) {
 // other tests.
 func TestSimpleBlobRead(t *testing.T) {
 	ctx := context.Background()
-	imageName, _ := reference.WithName("foo/bar")
-	driver := testdriver.New()
+	imageName, _ := reference.ParseNamed("foo/bar")
+	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
@@ -277,7 +258,7 @@ func TestSimpleBlobRead(t *testing.T) {
 		t.Fatalf("expected not found error when testing for existence: %v", err)
 	}
 
-	_, err = bs.Open(ctx, dgst)
+	rc, err := bs.Open(ctx, dgst)
 	if err != distribution.ErrBlobUnknown {
 		t.Fatalf("expected not found error when opening non-existent blob: %v", err)
 	}
@@ -299,7 +280,7 @@ func TestSimpleBlobRead(t *testing.T) {
 		t.Fatalf("committed blob has incorrect length: %v != %v", desc.Size, randomLayerSize)
 	}
 
-	rc, err := bs.Open(ctx, desc.Digest) // note that we are opening with original digest.
+	rc, err = bs.Open(ctx, desc.Digest) // note that we are opening with original digest.
 	if err != nil {
 		t.Fatalf("error opening blob with %v: %v", dgst, err)
 	}
@@ -322,7 +303,7 @@ func TestSimpleBlobRead(t *testing.T) {
 	}
 
 	// Now seek back the blob, read the whole thing and check against randomLayerData
-	offset, err := rc.Seek(0, io.SeekStart)
+	offset, err := rc.Seek(0, os.SEEK_SET)
 	if err != nil {
 		t.Fatalf("error seeking blob: %v", err)
 	}
@@ -341,7 +322,7 @@ func TestSimpleBlobRead(t *testing.T) {
 	}
 
 	// Reset the randomLayerReader and read back the buffer
-	_, err = randomLayerReader.Seek(0, io.SeekStart)
+	_, err = randomLayerReader.Seek(0, os.SEEK_SET)
 	if err != nil {
 		t.Fatalf("error resetting layer reader: %v", err)
 	}
@@ -365,9 +346,9 @@ func TestBlobMount(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	imageName, _ := reference.WithName("foo/bar")
-	sourceImageName, _ := reference.WithName("foo/source")
-	driver := testdriver.New()
+	imageName, _ := reference.ParseNamed("foo/bar")
+	sourceImageName, _ := reference.ParseNamed("foo/source")
+	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
@@ -396,7 +377,7 @@ func TestBlobMount(t *testing.T) {
 		t.Fatalf("error getting seeker size of random data: %v", err)
 	}
 
-	_, err = io.Copy(blobUpload, randomDataReader)
+	nn, err := io.Copy(blobUpload, randomDataReader)
 	if err != nil {
 		t.Fatalf("unexpected error uploading layer data: %v", err)
 	}
@@ -412,7 +393,7 @@ func TestBlobMount(t *testing.T) {
 		t.Fatalf("unexpected error checking for existence: %v, %#v", err, sbs)
 	}
 
-	if !reflect.DeepEqual(statDesc, desc) {
+	if statDesc != desc {
 		t.Fatalf("descriptors not equal: %v != %v", statDesc, desc)
 	}
 
@@ -438,7 +419,7 @@ func TestBlobMount(t *testing.T) {
 		t.Fatalf("unexpected error mounting layer: %v", err)
 	}
 
-	if !reflect.DeepEqual(ebm.Descriptor, desc) {
+	if ebm.Descriptor != desc {
 		t.Fatalf("descriptors not equal: %v != %v", ebm.Descriptor, desc)
 	}
 
@@ -448,7 +429,7 @@ func TestBlobMount(t *testing.T) {
 		t.Fatalf("unexpected error checking for existence: %v, %#v", err, bs)
 	}
 
-	if !reflect.DeepEqual(statDesc, desc) {
+	if statDesc != desc {
 		t.Fatalf("descriptors not equal: %v != %v", statDesc, desc)
 	}
 
@@ -459,7 +440,7 @@ func TestBlobMount(t *testing.T) {
 	defer rc.Close()
 
 	h := sha256.New()
-	nn, err := io.Copy(h, rc)
+	nn, err = io.Copy(h, rc)
 	if err != nil {
 		t.Fatalf("error reading layer: %v", err)
 	}
@@ -517,8 +498,8 @@ func TestBlobMount(t *testing.T) {
 // TestLayerUploadZeroLength uploads zero-length
 func TestLayerUploadZeroLength(t *testing.T) {
 	ctx := context.Background()
-	imageName, _ := reference.WithName("foo/bar")
-	driver := testdriver.New()
+	imageName, _ := reference.ParseNamed("foo/bar")
+	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
@@ -529,7 +510,7 @@ func TestLayerUploadZeroLength(t *testing.T) {
 	}
 	bs := repository.Blobs(ctx)
 
-	simpleUpload(t, bs, []byte{}, digestSha256Empty)
+	simpleUpload(t, bs, []byte{}, digest.DigestSha256EmptyTar)
 }
 
 func simpleUpload(t *testing.T, bs distribution.BlobIngester, blob []byte, expectedDigest digest.Digest) {
@@ -572,17 +553,17 @@ func simpleUpload(t *testing.T, bs distribution.BlobIngester, blob []byte, expec
 // the original state, returning the size. The state of the seeker should be
 // treated as unknown if an error is returned.
 func seekerSize(seeker io.ReadSeeker) (int64, error) {
-	current, err := seeker.Seek(0, io.SeekCurrent)
+	current, err := seeker.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		return 0, err
 	}
 
-	end, err := seeker.Seek(0, io.SeekEnd)
+	end, err := seeker.Seek(0, os.SEEK_END)
 	if err != nil {
 		return 0, err
 	}
 
-	resumed, err := seeker.Seek(current, io.SeekStart)
+	resumed, err := seeker.Seek(current, os.SEEK_SET)
 	if err != nil {
 		return 0, err
 	}

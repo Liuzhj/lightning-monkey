@@ -9,7 +9,7 @@ import (
 // and sets the content-type header to 'application/json'. It will handle
 // ErrorCoder and Errors, and if necessary will create an envelope.
 func ServeJSON(w http.ResponseWriter, err error) error {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	var sc int
 
 	switch errs := err.(type) {
@@ -36,5 +36,9 @@ func ServeJSON(w http.ResponseWriter, err error) error {
 
 	w.WriteHeader(sc)
 
-	return json.NewEncoder(w).Encode(err)
+	if err := json.NewEncoder(w).Encode(err); err != nil {
+		return err
+	}
+
+	return nil
 }

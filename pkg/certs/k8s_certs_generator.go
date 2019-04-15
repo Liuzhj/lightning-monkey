@@ -19,6 +19,11 @@ type GeneratedCertsMap struct {
 	path string
 }
 
+func (gc *GeneratedCertsMap) InitializeData(data map[string]string) *GeneratedCertsMap {
+	gc.res = data
+	return gc
+}
+
 func (gm *GeneratedCertsMap) CleanResource() {
 	if _, err := os.Stat(gm.path); err != nil && os.IsExist(err) {
 		_ = os.RemoveAll(gm.path)
@@ -27,6 +32,38 @@ func (gm *GeneratedCertsMap) CleanResource() {
 
 func (gm *GeneratedCertsMap) GetResources() map[string]string {
 	return gm.res
+}
+
+func GenerateAdminKubeConfig(advertiseAddr string) (*GeneratedCertsMap, error) {
+	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
+	logrus.Infof("kube admin configuration file temporary storage path: %s", path)
+	defer func() {
+		//remove entire path.
+		_ = os.RemoveAll(path)
+	}()
+	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig admin --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s", path, path, advertiseAddr))
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err = cmd.Start(); err != nil {
+		return nil, err
+	}
+	reader := bufio.NewReader(stdout)
+	for {
+		traceData, _, err := reader.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				return nil, err
+			}
+			break
+		}
+		logrus.Infof(string(traceData))
+	}
+	if err = cmd.Wait(); err != nil {
+		return nil, err
+	}
+	return getCertificatesContent(path, "", nil)
 }
 
 func GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error) {

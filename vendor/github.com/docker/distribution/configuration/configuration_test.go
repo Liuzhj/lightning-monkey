@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	. "gopkg.in/check.v1"
 	"gopkg.in/yaml.v2"
@@ -20,17 +19,14 @@ func Test(t *testing.T) { TestingT(t) }
 var configStruct = Configuration{
 	Version: "0.1",
 	Log: struct {
-		AccessLog struct {
-			Disabled bool `yaml:"disabled,omitempty"`
-		} `yaml:"accesslog,omitempty"`
-		Level     Loglevel               `yaml:"level,omitempty"`
+		Level     Loglevel               `yaml:"level"`
 		Formatter string                 `yaml:"formatter,omitempty"`
 		Fields    map[string]interface{} `yaml:"fields,omitempty"`
 		Hooks     []LogHook              `yaml:"hooks,omitempty"`
 	}{
-		Level:  "info",
 		Fields: map[string]interface{}{"environment": "test"},
 	},
+	Loglevel: "info",
 	Storage: Storage{
 		"s3": Parameters{
 			"region":        "us-east-1",
@@ -63,65 +59,35 @@ var configStruct = Configuration{
 				Headers: http.Header{
 					"Authorization": []string{"Bearer <example>"},
 				},
-				IgnoredMediaTypes: []string{"application/octet-stream"},
-				Ignore: Ignore{
-					MediaTypes: []string{"application/octet-stream"},
-					Actions:    []string{"pull"},
-				},
 			},
 		},
 	},
 	HTTP: struct {
-		Addr         string        `yaml:"addr,omitempty"`
-		Net          string        `yaml:"net,omitempty"`
-		Host         string        `yaml:"host,omitempty"`
-		Prefix       string        `yaml:"prefix,omitempty"`
-		Secret       string        `yaml:"secret,omitempty"`
-		RelativeURLs bool          `yaml:"relativeurls,omitempty"`
-		DrainTimeout time.Duration `yaml:"draintimeout,omitempty"`
+		Addr         string `yaml:"addr,omitempty"`
+		Net          string `yaml:"net,omitempty"`
+		Host         string `yaml:"host,omitempty"`
+		Prefix       string `yaml:"prefix,omitempty"`
+		Secret       string `yaml:"secret,omitempty"`
+		RelativeURLs bool   `yaml:"relativeurls,omitempty"`
 		TLS          struct {
 			Certificate string   `yaml:"certificate,omitempty"`
 			Key         string   `yaml:"key,omitempty"`
 			ClientCAs   []string `yaml:"clientcas,omitempty"`
-			MinimumTLS  string   `yaml:"minimumtls,omitempty"`
-			LetsEncrypt struct {
-				CacheFile string   `yaml:"cachefile,omitempty"`
-				Email     string   `yaml:"email,omitempty"`
-				Hosts     []string `yaml:"hosts,omitempty"`
-			} `yaml:"letsencrypt,omitempty"`
 		} `yaml:"tls,omitempty"`
 		Headers http.Header `yaml:"headers,omitempty"`
 		Debug   struct {
-			Addr       string `yaml:"addr,omitempty"`
-			Prometheus struct {
-				Enabled bool   `yaml:"enabled,omitempty"`
-				Path    string `yaml:"path,omitempty"`
-			} `yaml:"prometheus,omitempty"`
+			Addr string `yaml:"addr,omitempty"`
 		} `yaml:"debug,omitempty"`
-		HTTP2 struct {
-			Disabled bool `yaml:"disabled,omitempty"`
-		} `yaml:"http2,omitempty"`
 	}{
 		TLS: struct {
 			Certificate string   `yaml:"certificate,omitempty"`
 			Key         string   `yaml:"key,omitempty"`
 			ClientCAs   []string `yaml:"clientcas,omitempty"`
-			MinimumTLS  string   `yaml:"minimumtls,omitempty"`
-			LetsEncrypt struct {
-				CacheFile string   `yaml:"cachefile,omitempty"`
-				Email     string   `yaml:"email,omitempty"`
-				Hosts     []string `yaml:"hosts,omitempty"`
-			} `yaml:"letsencrypt,omitempty"`
 		}{
 			ClientCAs: []string{"/path/to/ca.pem"},
 		},
 		Headers: http.Header{
 			"X-Content-Type-Options": []string{"nosniff"},
-		},
-		HTTP2: struct {
-			Disabled bool `yaml:"disabled,omitempty"`
-		}{
-			Disabled: false,
 		},
 	},
 }
@@ -130,9 +96,9 @@ var configStruct = Configuration{
 var configYamlV0_1 = `
 version: 0.1
 log:
-  level: info
   fields:
     environment: test
+loglevel: info
 storage:
   s3:
     region: us-east-1
@@ -154,13 +120,6 @@ notifications:
       url:  http://example.com
       headers:
         Authorization: [Bearer <example>]
-      ignoredmediatypes:
-        - application/octet-stream
-      ignore:
-        mediatypes:
-           - application/octet-stream
-        actions:
-           - pull
 reporting:
   bugsnag:
     apikey: BugsnagApiKey
@@ -175,8 +134,7 @@ http:
 // storage driver with no parameters
 var inmemoryConfigYamlV0_1 = `
 version: 0.1
-log:
-  level: info
+loglevel: info
 storage: inmemory
 auth:
   silly:
@@ -188,13 +146,6 @@ notifications:
       url:  http://example.com
       headers:
         Authorization: [Bearer <example>]
-      ignoredmediatypes:
-        - application/octet-stream
-      ignore:
-        mediatypes:
-           - application/octet-stream
-        actions:
-           - pull
 http:
   headers:
     X-Content-Type-Options: [nosniff]
@@ -217,7 +168,6 @@ func (suite *ConfigSuite) TestMarshalRoundtrip(c *C) {
 	configBytes, err := yaml.Marshal(suite.expectedConfig)
 	c.Assert(err, IsNil)
 	config, err := Parse(bytes.NewReader(configBytes))
-	c.Log(string(configBytes))
 	c.Assert(err, IsNil)
 	c.Assert(config, DeepEquals, suite.expectedConfig)
 }
@@ -340,9 +290,9 @@ func (suite *ConfigSuite) TestParseWithSameEnvLoglevel(c *C) {
 // TestParseWithDifferentEnvLoglevel validates that providing an environment variable defining the
 // log level will override the value provided in the yaml document
 func (suite *ConfigSuite) TestParseWithDifferentEnvLoglevel(c *C) {
-	suite.expectedConfig.Log.Level = "error"
+	suite.expectedConfig.Loglevel = "error"
 
-	os.Setenv("REGISTRY_LOG_LEVEL", "error")
+	os.Setenv("REGISTRY_LOGLEVEL", "error")
 
 	config, err := Parse(bytes.NewReader([]byte(configYamlV0_1)))
 	c.Assert(err, IsNil)
@@ -542,7 +492,9 @@ func copyConfig(config Configuration) *Configuration {
 	}
 
 	configCopy.Notifications = Notifications{Endpoints: []Endpoint{}}
-	configCopy.Notifications.Endpoints = append(configCopy.Notifications.Endpoints, config.Notifications.Endpoints...)
+	for _, v := range config.Notifications.Endpoints {
+		configCopy.Notifications.Endpoints = append(configCopy.Notifications.Endpoints, v)
+	}
 
 	configCopy.HTTP.Headers = make(http.Header)
 	for k, v := range config.HTTP.Headers {

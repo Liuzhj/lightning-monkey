@@ -17,6 +17,7 @@ type StorageDriver interface {
 	GetAllAgentsByClusterId(clusterId string) ([]*entities.Agent, error)
 	GetAgentByMetadataId(metadataId string) (*entities.Agent, error)
 	SaveAgent(agent *entities.Agent) error
+	SaveCertificateToCluster(cluster *entities.Cluster, certsMap *certs.GeneratedCertsMap) error
 	UpdateAgentStatus(agent *entities.Agent) error
 	BatchUpdateAgentStatus(agents []interface{}) error
 }

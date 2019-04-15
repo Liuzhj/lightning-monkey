@@ -20,6 +20,9 @@ import (
 	"encoding/json"
 	"time"
 
+	"k8s.io/apimachinery/pkg/openapi"
+
+	"github.com/go-openapi/spec"
 	"github.com/google/gofuzz"
 )
 
@@ -34,11 +37,11 @@ type Time struct {
 	time.Time `protobuf:"-"`
 }
 
-// DeepCopyInto creates a deep-copy of the Time value.  The underlying time.Time
+// DeepCopy returns a deep-copy of the Time value.  The underlying time.Time
 // type is effectively immutable in the time API, so it is safe to
 // copy-by-assign, despite the presence of (unexported) Pointer fields.
-func (t *Time) DeepCopyInto(out *Time) {
-	*out = *t
+func (t Time) DeepCopy() Time {
+	return t
 }
 
 // String returns the representation of the time.
@@ -71,19 +74,13 @@ func (t *Time) IsZero() bool {
 }
 
 // Before reports whether the time instant t is before u.
-func (t *Time) Before(u *Time) bool {
+func (t Time) Before(u Time) bool {
 	return t.Time.Before(u.Time)
 }
 
 // Equal reports whether the time instant t is equal to u.
-func (t *Time) Equal(u *Time) bool {
-	if t == nil && u == nil {
-		return true
-	}
-	if t != nil && u != nil {
-		return t.Time.Equal(u.Time)
-	}
-	return false
+func (t Time) Equal(u Time) bool {
+	return t.Time.Equal(u.Time)
 }
 
 // Unix returns the local time corresponding to the given Unix time
@@ -106,10 +103,7 @@ func (t *Time) UnmarshalJSON(b []byte) error {
 	}
 
 	var str string
-	err := json.Unmarshal(b, &str)
-	if err != nil {
-		return err
-	}
+	json.Unmarshal(b, &str)
 
 	pt, err := time.Parse(time.RFC3339, str)
 	if err != nil {
@@ -151,15 +145,16 @@ func (t Time) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t.UTC().Format(time.RFC3339))
 }
 
-// OpenAPISchemaType is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-//
-// See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
-func (_ Time) OpenAPISchemaType() []string { return []string{"string"} }
-
-// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-func (_ Time) OpenAPISchemaFormat() string { return "date-time" }
+func (_ Time) OpenAPIDefinition() openapi.OpenAPIDefinition {
+	return openapi.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type:   []string{"string"},
+				Format: "date-time",
+			},
+		},
+	}
+}
 
 // MarshalQueryParameter converts to a URL query parameter value
 func (t Time) MarshalQueryParameter() (string, error) {

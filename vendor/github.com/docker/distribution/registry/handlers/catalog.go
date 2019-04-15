@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/docker/distribution/registry/api/errcode"
-	"github.com/docker/distribution/registry/storage/driver"
 	"github.com/gorilla/handlers"
 )
 
@@ -46,16 +45,14 @@ func (ch *catalogHandler) GetCatalog(w http.ResponseWriter, r *http.Request) {
 	repos := make([]string, maxEntries)
 
 	filled, err := ch.App.registry.Repositories(ch.Context, repos, lastEntry)
-	_, pathNotFound := err.(driver.PathNotFoundError)
-
-	if err == io.EOF || pathNotFound {
+	if err == io.EOF {
 		moreEntries = false
 	} else if err != nil {
 		ch.Errors = append(ch.Errors, errcode.ErrorCodeUnknown.WithDetail(err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	// Add a link header if there are more entries to retrieve
 	if moreEntries {

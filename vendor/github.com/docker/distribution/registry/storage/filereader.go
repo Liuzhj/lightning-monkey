@@ -3,11 +3,12 @@ package storage
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 
+	"github.com/docker/distribution/context"
 	storagedriver "github.com/docker/distribution/registry/storage/driver"
 )
 
@@ -80,12 +81,12 @@ func (fr *fileReader) Seek(offset int64, whence int) (int64, error) {
 	newOffset := fr.offset
 
 	switch whence {
-	case io.SeekCurrent:
-		newOffset += offset
-	case io.SeekEnd:
-		newOffset = fr.size + offset
-	case io.SeekStart:
-		newOffset = offset
+	case os.SEEK_CUR:
+		newOffset += int64(offset)
+	case os.SEEK_END:
+		newOffset = fr.size + int64(offset)
+	case os.SEEK_SET:
+		newOffset = int64(offset)
 	}
 
 	if newOffset < 0 {

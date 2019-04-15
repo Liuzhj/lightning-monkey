@@ -1,13 +1,13 @@
 package common
 
 import (
+	"github.com/g0194776/lightningmonkey/pkg/controllers"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
-	"github.com/g0194776/lightningmonkey/pkg/strategies"
 )
 
 var (
 	StorageDriver              storage.StorageDriver
-	ClusterStatementController *strategies.ClusterStatementController
+	ClusterStatementController *controllers.ClusterStatementController
 	BasicImages                = map[string]map[string]string{
 		"1.12.5": {
 			"etcd":  "docker.io/mirrorgooglecontainers/etcd:3.2.24",

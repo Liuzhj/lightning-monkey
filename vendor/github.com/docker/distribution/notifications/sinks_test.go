@@ -3,11 +3,10 @@ package notifications
 import (
 	"fmt"
 	"math/rand"
-	"reflect"
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 
 	"testing"
 )
@@ -31,7 +30,7 @@ func TestBroadcaster(t *testing.T) {
 			wg.Add(1)
 			go func(block ...Event) {
 				if err := b.Write(block...); err != nil {
-					t.Errorf("error writing block of length %d: %v", len(block), err)
+					t.Fatalf("error writing block of length %d: %v", len(block), err)
 				}
 				wg.Done()
 			}(block...)
@@ -41,9 +40,6 @@ func TestBroadcaster(t *testing.T) {
 	}
 
 	wg.Wait() // Wait until writes complete
-	if t.Failed() {
-		t.FailNow()
-	}
 	checkClose(t, b)
 
 	// Iterate through the sinks and check that they all have the expected length.
@@ -82,7 +78,7 @@ func TestEventQueue(t *testing.T) {
 			wg.Add(1)
 			go func(block ...Event) {
 				if err := eq.Write(block...); err != nil {
-					t.Errorf("error writing event block: %v", err)
+					t.Fatalf("error writing event block: %v", err)
 				}
 				wg.Done()
 			}(block...)
@@ -92,9 +88,6 @@ func TestEventQueue(t *testing.T) {
 	}
 
 	wg.Wait()
-	if t.Failed() {
-		t.FailNow()
-	}
 	checkClose(t, eq)
 
 	ts.mu.Lock()
@@ -116,42 +109,6 @@ func TestEventQueue(t *testing.T) {
 
 	if metrics.Pending != 0 {
 		t.Fatalf("unexpected egress count: %d != %d", metrics.Pending, 0)
-	}
-}
-
-func TestIgnoredSink(t *testing.T) {
-	blob := createTestEvent("push", "library/test", "blob")
-	manifest := createTestEvent("pull", "library/test", "manifest")
-
-	type testcase struct {
-		ignoreMediaTypes []string
-		ignoreActions    []string
-		expected         []Event
-	}
-
-	cases := []testcase{
-		{nil, nil, []Event{blob, manifest}},
-		{[]string{"other"}, []string{"other"}, []Event{blob, manifest}},
-		{[]string{"blob"}, []string{"other"}, []Event{manifest}},
-		{[]string{"blob", "manifest"}, []string{"other"}, nil},
-		{[]string{"other"}, []string{"push"}, []Event{manifest}},
-		{[]string{"other"}, []string{"pull"}, []Event{blob}},
-		{[]string{"other"}, []string{"pull", "push"}, nil},
-	}
-
-	for _, c := range cases {
-		ts := &testSink{}
-		s := newIgnoredSink(ts, c.ignoreMediaTypes, c.ignoreActions)
-
-		if err := s.Write(blob, manifest); err != nil {
-			t.Fatalf("error writing event: %v", err)
-		}
-
-		ts.mu.Lock()
-		if !reflect.DeepEqual(ts.events, c.expected) {
-			t.Fatalf("unexpected events: %#v != %#v", ts.events, c.expected)
-		}
-		ts.mu.Unlock()
 	}
 }
 
@@ -183,7 +140,7 @@ func TestRetryingSink(t *testing.T) {
 			go func(block ...Event) {
 				defer wg.Done()
 				if err := s.Write(block...); err != nil {
-					t.Errorf("error writing event block: %v", err)
+					t.Fatalf("error writing event block: %v", err)
 				}
 			}(block...)
 
@@ -192,9 +149,6 @@ func TestRetryingSink(t *testing.T) {
 	}
 
 	wg.Wait()
-	if t.Failed() {
-		t.FailNow()
-	}
 	checkClose(t, s)
 
 	ts.mu.Lock()

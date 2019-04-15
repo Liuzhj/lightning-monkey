@@ -17,25 +17,25 @@ limitations under the License.
 package v1
 
 import (
-	gojson "encoding/json"
+	"encoding/json"
 	"reflect"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"github.com/ugorji/go/codec"
 )
 
-func TestVerbsMarshalJSON(t *testing.T) {
+func TestVerbsUgorjiMarshalJSON(t *testing.T) {
 	cases := []struct {
 		input  APIResource
 		result string
 	}{
-		{APIResource{}, `{"name":"","singularName":"","namespaced":false,"kind":"","verbs":null}`},
-		{APIResource{Verbs: Verbs([]string{})}, `{"name":"","singularName":"","namespaced":false,"kind":"","verbs":[]}`},
-		{APIResource{Verbs: Verbs([]string{"delete"})}, `{"name":"","singularName":"","namespaced":false,"kind":"","verbs":["delete"]}`},
+		{APIResource{}, `{"name":"","namespaced":false,"kind":"","verbs":null}`},
+		{APIResource{Verbs: Verbs([]string{})}, `{"name":"","namespaced":false,"kind":"","verbs":[]}`},
+		{APIResource{Verbs: Verbs([]string{"delete"})}, `{"name":"","namespaced":false,"kind":"","verbs":["delete"]}`},
 	}
 
 	for i, c := range cases {
-		result, err := gojson.Marshal(&c.input)
+		result, err := json.Marshal(&c.input)
 		if err != nil {
 			t.Errorf("[%d] Failed to marshal input: '%v': %v", i, c.input, err)
 		}
@@ -45,7 +45,7 @@ func TestVerbsMarshalJSON(t *testing.T) {
 	}
 }
 
-func TestVerbsJsonIterUnmarshalJSON(t *testing.T) {
+func TestVerbsUgorjiUnmarshalJSON(t *testing.T) {
 	cases := []struct {
 		input  string
 		result APIResource
@@ -56,10 +56,9 @@ func TestVerbsJsonIterUnmarshalJSON(t *testing.T) {
 		{`{"verbs":["delete"]}`, APIResource{Verbs: Verbs([]string{"delete"})}},
 	}
 
-	iter := json.CaseSensitiveJsonIterator()
 	for i, c := range cases {
 		var result APIResource
-		if err := iter.Unmarshal([]byte(c.input), &result); err != nil {
+		if err := codec.NewDecoderBytes([]byte(c.input), new(codec.JsonHandle)).Decode(&result); err != nil {
 			t.Errorf("[%d] Failed to unmarshal input '%v': %v", i, c.input, err)
 		}
 		if !reflect.DeepEqual(result, c.result) {
@@ -68,8 +67,8 @@ func TestVerbsJsonIterUnmarshalJSON(t *testing.T) {
 	}
 }
 
-// TestMarshalJSONWithOmit tests that we don't have regressions regarding nil and empty slices with "omit"
-func TestMarshalJSONWithOmit(t *testing.T) {
+// TestUgorjiMarshalJSONWithOmit tests that we don't have regressions regarding nil and empty slices with "omit"
+func TestUgorjiMarshalJSONWithOmit(t *testing.T) {
 	cases := []struct {
 		input  LabelSelector
 		result string
@@ -80,7 +79,7 @@ func TestMarshalJSONWithOmit(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		result, err := gojson.Marshal(&c.input)
+		result, err := json.Marshal(&c.input)
 		if err != nil {
 			t.Errorf("[%d] Failed to marshal input: '%v': %v", i, c.input, err)
 		}
@@ -103,7 +102,7 @@ func TestVerbsUnmarshalJSON(t *testing.T) {
 
 	for i, c := range cases {
 		var result APIResource
-		if err := gojson.Unmarshal([]byte(c.input), &result); err != nil {
+		if err := json.Unmarshal([]byte(c.input), &result); err != nil {
 			t.Errorf("[%d] Failed to unmarshal input '%v': %v", i, c.input, err)
 		}
 		if !reflect.DeepEqual(result, c.result) {

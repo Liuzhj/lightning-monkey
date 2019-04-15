@@ -3,6 +3,7 @@ package managers
 import (
 	"errors"
 	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/globalsign/mgo/bson"
@@ -49,6 +50,28 @@ func RegisterAgent(agent *entities.Agent) (*entities.Cluster, error) {
 		}
 		//duplicated registering.
 		return cluster, nil
+	}
+	//generate admin config for master role agent.
+	if agent.HasMasterRole {
+		adminKubeCert, err := certs.GenerateAdminKubeConfig(agent.LastReportIP)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to generate kube admin configuration file, error: %s", err.Error())
+		}
+		res := adminKubeCert.GetResources()
+		if res == nil || len(res) == 0 {
+			return nil, errors.New("Failed to generate kube admin configuration file, generated config file not found!")
+		}
+		adminContent := adminKubeCert.GetResources()["admin.conf"]
+		if adminContent == "" {
+			return nil, errors.New("Failed to generate kube admin configuration file, generated config file not found!")
+		}
+		cm := certs.GeneratedCertsMap{}
+		err = common.StorageDriver.SaveCertificateToCluster(cluster, cm.InitializeData(map[string]string{
+			fmt.Sprintf("%s/admin.conf", agent.LastReportIP): adminContent,
+		}))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to save generated admin configuration file to remote database, error: %s", err.Error())
+		}
 	}
 	agentId := bson.NewObjectId()
 	agent.Id = &agentId

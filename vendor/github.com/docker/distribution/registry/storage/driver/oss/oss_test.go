@@ -4,14 +4,16 @@ package oss
 
 import (
 	"io/ioutil"
-	"os"
-	"strconv"
-	"testing"
 
 	alioss "github.com/denverdino/aliyungo/oss"
 	"github.com/docker/distribution/context"
 	storagedriver "github.com/docker/distribution/registry/storage/driver"
 	"github.com/docker/distribution/registry/storage/driver/testsuites"
+	//"log"
+	"os"
+	"strconv"
+	"testing"
+
 	"gopkg.in/check.v1"
 )
 
@@ -31,7 +33,6 @@ func init() {
 	encrypt := os.Getenv("OSS_ENCRYPT")
 	secure := os.Getenv("OSS_SECURE")
 	endpoint := os.Getenv("OSS_ENDPOINT")
-	encryptionKeyID := os.Getenv("OSS_ENCRYPTIONKEYID")
 	root, err := ioutil.TempDir("", "driver-")
 	if err != nil {
 		panic(err)
@@ -74,7 +75,6 @@ func init() {
 			Encrypt:         encryptBool,
 			Secure:          secureBool,
 			Endpoint:        endpoint,
-			EncryptionKeyID: encryptionKeyID,
 		}
 
 		return New(parameters)

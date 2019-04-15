@@ -18,12 +18,9 @@ package spdy
 
 import (
 	"bufio"
-	"bytes"
-	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -36,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/httpstream"
-	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/third_party/forked/golang/netutil"
 )
 
@@ -63,54 +59,23 @@ type SpdyRoundTripper struct {
 	// proxier knows which proxy to use given a request, defaults to http.ProxyFromEnvironment
 	// Used primarily for mocking the proxy discovery in tests.
 	proxier func(req *http.Request) (*url.URL, error)
-
-	// followRedirects indicates if the round tripper should examine responses for redirects and
-	// follow them.
-	followRedirects bool
-	// requireSameHostRedirects restricts redirect following to only follow redirects to the same host
-	// as the original request.
-	requireSameHostRedirects bool
 }
-
-var _ utilnet.TLSClientConfigHolder = &SpdyRoundTripper{}
-var _ httpstream.UpgradeRoundTripper = &SpdyRoundTripper{}
-var _ utilnet.Dialer = &SpdyRoundTripper{}
 
 // NewRoundTripper creates a new SpdyRoundTripper that will use
 // the specified tlsConfig.
-func NewRoundTripper(tlsConfig *tls.Config, followRedirects, requireSameHostRedirects bool) httpstream.UpgradeRoundTripper {
-	return NewSpdyRoundTripper(tlsConfig, followRedirects, requireSameHostRedirects)
+func NewRoundTripper(tlsConfig *tls.Config) httpstream.UpgradeRoundTripper {
+	return NewSpdyRoundTripper(tlsConfig)
 }
 
 // NewSpdyRoundTripper creates a new SpdyRoundTripper that will use
 // the specified tlsConfig. This function is mostly meant for unit tests.
-func NewSpdyRoundTripper(tlsConfig *tls.Config, followRedirects, requireSameHostRedirects bool) *SpdyRoundTripper {
-	return &SpdyRoundTripper{
-		tlsConfig:                tlsConfig,
-		followRedirects:          followRedirects,
-		requireSameHostRedirects: requireSameHostRedirects,
-	}
+func NewSpdyRoundTripper(tlsConfig *tls.Config) *SpdyRoundTripper {
+	return &SpdyRoundTripper{tlsConfig: tlsConfig}
 }
 
-// TLSClientConfig implements pkg/util/net.TLSClientConfigHolder for proper TLS checking during
-// proxying with a spdy roundtripper.
+// implements pkg/util/net.TLSClientConfigHolder for proper TLS checking during proxying with a spdy roundtripper
 func (s *SpdyRoundTripper) TLSClientConfig() *tls.Config {
 	return s.tlsConfig
-}
-
-// Dial implements k8s.io/apimachinery/pkg/util/net.Dialer.
-func (s *SpdyRoundTripper) Dial(req *http.Request) (net.Conn, error) {
-	conn, err := s.dial(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := req.Write(conn); err != nil {
-		conn.Close()
-		return nil, err
-	}
-
-	return conn, nil
 }
 
 // dial dials the host specified by req, using TLS if appropriate, optionally
@@ -118,7 +83,7 @@ func (s *SpdyRoundTripper) Dial(req *http.Request) (net.Conn, error) {
 func (s *SpdyRoundTripper) dial(req *http.Request) (net.Conn, error) {
 	proxier := s.proxier
 	if proxier == nil {
-		proxier = utilnet.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment)
+		proxier = http.ProxyFromEnvironment
 	}
 	proxyURL, err := proxier(req)
 	if err != nil {
@@ -126,7 +91,7 @@ func (s *SpdyRoundTripper) dial(req *http.Request) (net.Conn, error) {
 	}
 
 	if proxyURL == nil {
-		return s.dialWithoutProxy(req.Context(), req.URL)
+		return s.dialWithoutProxy(req.URL)
 	}
 
 	// ensure we use a canonical host with proxyReq
@@ -144,7 +109,7 @@ func (s *SpdyRoundTripper) dial(req *http.Request) (net.Conn, error) {
 		proxyReq.Header.Set("Proxy-Authorization", pa)
 	}
 
-	proxyDialConn, err := s.dialWithoutProxy(req.Context(), proxyURL)
+	proxyDialConn, err := s.dialWithoutProxy(proxyURL)
 	if err != nil {
 		return nil, err
 	}
@@ -166,16 +131,15 @@ func (s *SpdyRoundTripper) dial(req *http.Request) (net.Conn, error) {
 		return nil, err
 	}
 
-	tlsConfig := s.tlsConfig
-	switch {
-	case tlsConfig == nil:
-		tlsConfig = &tls.Config{ServerName: host}
-	case len(tlsConfig.ServerName) == 0:
-		tlsConfig = tlsConfig.Clone()
-		tlsConfig.ServerName = host
+	if s.tlsConfig == nil {
+		s.tlsConfig = &tls.Config{}
 	}
 
-	tlsConn := tls.Client(rwc, tlsConfig)
+	if len(s.tlsConfig.ServerName) == 0 {
+		s.tlsConfig.ServerName = host
+	}
+
+	tlsConn := tls.Client(rwc, s.tlsConfig)
 
 	// need to manually call Handshake() so we can call VerifyHostname() below
 	if err := tlsConn.Handshake(); err != nil {
@@ -183,11 +147,11 @@ func (s *SpdyRoundTripper) dial(req *http.Request) (net.Conn, error) {
 	}
 
 	// Return if we were configured to skip validation
-	if tlsConfig.InsecureSkipVerify {
+	if s.tlsConfig != nil && s.tlsConfig.InsecureSkipVerify {
 		return tlsConn, nil
 	}
 
-	if err := tlsConn.VerifyHostname(tlsConfig.ServerName); err != nil {
+	if err := tlsConn.VerifyHostname(host); err != nil {
 		return nil, err
 	}
 
@@ -195,15 +159,14 @@ func (s *SpdyRoundTripper) dial(req *http.Request) (net.Conn, error) {
 }
 
 // dialWithoutProxy dials the host specified by url, using TLS if appropriate.
-func (s *SpdyRoundTripper) dialWithoutProxy(ctx context.Context, url *url.URL) (net.Conn, error) {
+func (s *SpdyRoundTripper) dialWithoutProxy(url *url.URL) (net.Conn, error) {
 	dialAddr := netutil.CanonicalAddr(url)
 
 	if url.Scheme == "http" {
 		if s.Dialer == nil {
-			var d net.Dialer
-			return d.DialContext(ctx, "tcp", dialAddr)
+			return net.Dial("tcp", dialAddr)
 		} else {
-			return s.Dialer.DialContext(ctx, "tcp", dialAddr)
+			return s.Dialer.Dial("tcp", dialAddr)
 		}
 	}
 
@@ -228,9 +191,6 @@ func (s *SpdyRoundTripper) dialWithoutProxy(ctx context.Context, url *url.URL) (
 	if err != nil {
 		return nil, err
 	}
-	if s.tlsConfig != nil && len(s.tlsConfig.ServerName) > 0 {
-		host = s.tlsConfig.ServerName
-	}
 	err = conn.VerifyHostname(host)
 	if err != nil {
 		return nil, err
@@ -253,39 +213,24 @@ func (s *SpdyRoundTripper) proxyAuth(proxyURL *url.URL) string {
 // clients may call SpdyRoundTripper.Connection() to retrieve the upgraded
 // connection.
 func (s *SpdyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	header := utilnet.CloneHeader(req.Header)
-	header.Add(httpstream.HeaderConnection, httpstream.HeaderUpgrade)
-	header.Add(httpstream.HeaderUpgrade, HeaderSpdy31)
+	// TODO what's the best way to clone the request?
+	r := *req
+	req = &r
+	req.Header.Add(httpstream.HeaderConnection, httpstream.HeaderUpgrade)
+	req.Header.Add(httpstream.HeaderUpgrade, HeaderSpdy31)
 
-	var (
-		conn        net.Conn
-		rawResponse []byte
-		err         error
-	)
-
-	if s.followRedirects {
-		conn, rawResponse, err = utilnet.ConnectWithRedirects(req.Method, req.URL, header, req.Body, s, s.requireSameHostRedirects)
-	} else {
-		clone := utilnet.CloneRequest(req)
-		clone.Header = header
-		conn, err = s.Dial(clone)
-	}
+	conn, err := s.dial(req)
 	if err != nil {
 		return nil, err
 	}
 
-	responseReader := bufio.NewReader(
-		io.MultiReader(
-			bytes.NewBuffer(rawResponse),
-			conn,
-		),
-	)
-
-	resp, err := http.ReadResponse(responseReader, nil)
+	err = req.Write(conn)
 	if err != nil {
-		if conn != nil {
-			conn.Close()
-		}
+		return nil, err
+	}
+
+	resp, err := http.ReadResponse(bufio.NewReader(conn), req)
+	if err != nil {
 		return nil, err
 	}
 

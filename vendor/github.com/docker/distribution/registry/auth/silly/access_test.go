@@ -16,12 +16,12 @@ func TestSillyAccessController(t *testing.T) {
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithRequest(context.Background(), r)
+		ctx := context.WithValue(nil, "http.request", r)
 		authCtx, err := ac.Authorized(ctx)
 		if err != nil {
 			switch err := err.(type) {
 			case auth.Challenge:
-				err.SetHeaders(r, w)
+				err.SetHeaders(w)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			default:

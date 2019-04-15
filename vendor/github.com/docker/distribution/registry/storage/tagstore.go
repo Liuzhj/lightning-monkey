@@ -1,12 +1,12 @@
 package storage
 
 import (
-	"context"
 	"path"
 
 	"github.com/docker/distribution"
+	"github.com/docker/distribution/context"
+	"github.com/docker/distribution/digest"
 	storagedriver "github.com/docker/distribution/registry/storage/driver"
-	"github.com/opencontainers/go-digest"
 )
 
 var _ distribution.TagService = &tagStore{}
@@ -48,6 +48,25 @@ func (ts *tagStore) All(ctx context.Context) ([]string, error) {
 	}
 
 	return tags, nil
+}
+
+// exists returns true if the specified manifest tag exists in the repository.
+func (ts *tagStore) exists(ctx context.Context, tag string) (bool, error) {
+	tagPath, err := pathFor(manifestTagCurrentPathSpec{
+		name: ts.repository.Named().Name(),
+		tag:  tag,
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	exists, err := exists(ctx, ts.blobStore.driver, tagPath)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
 
 // Tag tags the digest with the given tag, updating the the store to point at
@@ -103,20 +122,17 @@ func (ts *tagStore) Untag(ctx context.Context, tag string) error {
 		name: ts.repository.Named().Name(),
 		tag:  tag,
 	})
-	if err != nil {
+
+	switch err.(type) {
+	case storagedriver.PathNotFoundError:
+		return distribution.ErrTagUnknown{Tag: tag}
+	case nil:
+		break
+	default:
 		return err
 	}
 
-	if err := ts.blobStore.driver.Delete(ctx, tagPath); err != nil {
-		switch err.(type) {
-		case storagedriver.PathNotFoundError:
-			return nil // Untag is idempotent, we don't care if it didn't exist
-		default:
-			return err
-		}
-	}
-
-	return nil
+	return ts.blobStore.driver.Delete(ctx, tagPath)
 }
 
 // linkedBlobStore returns the linkedBlobStore for the named tag, allowing one
@@ -160,13 +176,9 @@ func (ts *tagStore) Lookup(ctx context.Context, desc distribution.Descriptor) ([
 			tag:  tag,
 		}
 
-		tagLinkPath, _ := pathFor(tagLinkPathSpec)
+		tagLinkPath, err := pathFor(tagLinkPathSpec)
 		tagDigest, err := ts.blobStore.readlink(ctx, tagLinkPath)
 		if err != nil {
-			switch err.(type) {
-			case storagedriver.PathNotFoundError:
-				continue
-			}
 			return nil, err
 		}
 

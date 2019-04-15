@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/api/errcode"
-	"github.com/opencontainers/go-digest"
 )
 
 var (
@@ -126,7 +126,7 @@ var (
 			},
 		},
 		Body: BodyDescriptor{
-			ContentType: "application/json",
+			ContentType: "application/json; charset=utf-8",
 			Format:      errorsBody,
 		},
 		ErrorCodes: []errcode.ErrorCode{
@@ -147,7 +147,7 @@ var (
 			},
 		},
 		Body: BodyDescriptor{
-			ContentType: "application/json",
+			ContentType: "application/json; charset=utf-8",
 			Format:      errorsBody,
 		},
 		ErrorCodes: []errcode.ErrorCode{
@@ -168,32 +168,11 @@ var (
 			},
 		},
 		Body: BodyDescriptor{
-			ContentType: "application/json",
+			ContentType: "application/json; charset=utf-8",
 			Format:      errorsBody,
 		},
 		ErrorCodes: []errcode.ErrorCode{
 			errcode.ErrorCodeDenied,
-		},
-	}
-
-	tooManyRequestsDescriptor = ResponseDescriptor{
-		Name:        "Too Many Requests",
-		StatusCode:  http.StatusTooManyRequests,
-		Description: "The client made too many requests within a time interval.",
-		Headers: []ParameterDescriptor{
-			{
-				Name:        "Content-Length",
-				Type:        "integer",
-				Description: "Length of the JSON response body.",
-				Format:      "<length>",
-			},
-		},
-		Body: BodyDescriptor{
-			ContentType: "application/json",
-			Format:      errorsBody,
-		},
-		ErrorCodes: []errcode.ErrorCode{
-			errcode.ErrorCodeTooManyRequests,
 		},
 	}
 )
@@ -218,6 +197,17 @@ const (
 	    {
             "code": <error code>,
             "message": "<error message>",
+            "detail": ...
+        },
+        ...
+    ]
+}`
+
+	unauthorizedErrorsBody = `{
+	"errors:" [
+	    {
+            "code": "UNAUTHORIZED",
+            "message": "access to the requested resource is not authorized",
             "detail": ...
         },
         ...
@@ -401,7 +391,6 @@ var routeDescriptors = []RouteDescriptor{
 								StatusCode:  http.StatusNotFound,
 							},
 							unauthorizedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -441,7 +430,7 @@ var routeDescriptors = []RouteDescriptor{
 									},
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format: `{
     "name": <name>,
     "tags": [
@@ -456,7 +445,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 					{
@@ -478,7 +466,7 @@ var routeDescriptors = []RouteDescriptor{
 									linkHeader,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format: `{
     "name": <name>,
     "tags": [
@@ -493,7 +481,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -541,14 +528,13 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeTagInvalid,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -592,7 +578,7 @@ var routeDescriptors = []RouteDescriptor{
 								Description: "The received manifest was invalid in some way, as described by the error codes. The client should resolve the issue and retry the request.",
 								StatusCode:  http.StatusBadRequest,
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 								ErrorCodes: []errcode.ErrorCode{
@@ -606,7 +592,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 							{
 								Name:        "Missing Layer(s)",
 								Description: "One or more layers may be missing during a manifest upload. If so, the missing layers will be enumerated in the error response.",
@@ -615,7 +600,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUnknown,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format: `{
     "errors:" [{
             "code": "BLOB_UNKNOWN",
@@ -669,14 +654,13 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeTagInvalid,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 							{
 								Name:        "Unknown Manifest",
 								Description: "The specified `name` or `reference` are unknown to the registry and the delete was unable to proceed. Clients can assume the manifest was already deleted if this response is returned.",
@@ -686,7 +670,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeManifestUnknown,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -766,7 +750,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeDigestInvalid,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -774,7 +758,7 @@ var routeDescriptors = []RouteDescriptor{
 								Description: "The blob, identified by `name` and `digest`, is unknown to the registry.",
 								StatusCode:  http.StatusNotFound,
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 								ErrorCodes: []errcode.ErrorCode{
@@ -785,7 +769,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 					{
@@ -838,7 +821,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeDigestInvalid,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -849,7 +832,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUnknown,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -860,7 +843,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -905,7 +887,7 @@ var routeDescriptors = []RouteDescriptor{
 								Description: "The blob, identified by `name` and `digest`, is unknown to the registry.",
 								StatusCode:  http.StatusNotFound,
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 								ErrorCodes: []errcode.ErrorCode{
@@ -917,7 +899,7 @@ var routeDescriptors = []RouteDescriptor{
 								Description: "Blob delete is not allowed because the registry is configured as a pull-through cache or `delete` has been disabled",
 								StatusCode:  http.StatusMethodNotAllowed,
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 								ErrorCodes: []errcode.ErrorCode{
@@ -927,7 +909,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -1012,7 +993,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 					{
@@ -1059,7 +1039,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 					{
@@ -1124,7 +1103,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -1179,7 +1157,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadInvalid,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -1190,14 +1168,13 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadUnknown,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -1254,7 +1231,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadInvalid,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -1265,14 +1242,13 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadUnknown,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 					{
@@ -1336,7 +1312,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadInvalid,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -1347,7 +1323,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadUnknown,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -1358,7 +1334,6 @@ var routeDescriptors = []RouteDescriptor{
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -1431,7 +1406,7 @@ var routeDescriptors = []RouteDescriptor{
 									errcode.ErrorCodeUnsupported,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -1442,14 +1417,13 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadUnknown,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -1488,7 +1462,7 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadInvalid,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
@@ -1499,14 +1473,13 @@ var routeDescriptors = []RouteDescriptor{
 									ErrorCodeBlobUploadUnknown,
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format:      errorsBody,
 								},
 							},
 							unauthorizedResponseDescriptor,
 							repositoryNotFoundResponseDescriptor,
 							deniedResponseDescriptor,
-							tooManyRequestsDescriptor,
 						},
 					},
 				},
@@ -1524,8 +1497,8 @@ var routeDescriptors = []RouteDescriptor{
 				Description: "Retrieve a sorted, json list of repositories available in the registry.",
 				Requests: []RequestDescriptor{
 					{
-						Name:        "Catalog Fetch",
-						Description: "Request an unabridged list of repositories available.  The implementation may impose a maximum limit and return a partial set with pagination links.",
+						Name:        "Catalog Fetch Complete",
+						Description: "Request an unabridged list of repositories available.",
 						Successes: []ResponseDescriptor{
 							{
 								Description: "Returns the unabridged list of repositories as a json response.",
@@ -1539,7 +1512,7 @@ var routeDescriptors = []RouteDescriptor{
 									},
 								},
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format: `{
 	"repositories": [
 		<name>,
@@ -1558,7 +1531,7 @@ var routeDescriptors = []RouteDescriptor{
 							{
 								StatusCode: http.StatusOK,
 								Body: BodyDescriptor{
-									ContentType: "application/json",
+									ContentType: "application/json; charset=utf-8",
 									Format: `{
 	"repositories": [
 		<name>,

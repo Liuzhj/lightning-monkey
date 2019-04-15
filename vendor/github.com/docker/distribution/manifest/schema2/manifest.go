@@ -6,31 +6,20 @@ import (
 	"fmt"
 
 	"github.com/docker/distribution"
+	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/manifest"
-	"github.com/opencontainers/go-digest"
 )
 
 const (
 	// MediaTypeManifest specifies the mediaType for the current version.
 	MediaTypeManifest = "application/vnd.docker.distribution.manifest.v2+json"
 
-	// MediaTypeImageConfig specifies the mediaType for the image configuration.
-	MediaTypeImageConfig = "application/vnd.docker.container.image.v1+json"
-
-	// MediaTypePluginConfig specifies the mediaType for plugin configuration.
-	MediaTypePluginConfig = "application/vnd.docker.plugin.v1+json"
+	// MediaTypeConfig specifies the mediaType for the image configuration.
+	MediaTypeConfig = "application/vnd.docker.container.image.v1+json"
 
 	// MediaTypeLayer is the mediaType used for layers referenced by the
 	// manifest.
 	MediaTypeLayer = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-
-	// MediaTypeForeignLayer is the mediaType used for layers that must be
-	// downloaded from foreign URLs.
-	MediaTypeForeignLayer = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
-
-	// MediaTypeUncompressedLayer is the mediaType used for layers which
-	// are not compressed.
-	MediaTypeUncompressedLayer = "application/vnd.docker.image.rootfs.diff.tar"
 )
 
 var (
@@ -71,15 +60,13 @@ type Manifest struct {
 	Layers []distribution.Descriptor `json:"layers"`
 }
 
-// References returns the descriptors of this manifests references.
+// References returnes the descriptors of this manifests references.
 func (m Manifest) References() []distribution.Descriptor {
-	references := make([]distribution.Descriptor, 0, 1+len(m.Layers))
-	references = append(references, m.Config)
-	references = append(references, m.Layers...)
-	return references
+	return m.Layers
+
 }
 
-// Target returns the target of this manifest.
+// Target returns the target of this signed manifest.
 func (m Manifest) Target() distribution.Descriptor {
 	return m.Config
 }
@@ -106,7 +93,7 @@ func FromStruct(m Manifest) (*DeserializedManifest, error) {
 
 // UnmarshalJSON populates a new Manifest struct from JSON data.
 func (m *DeserializedManifest) UnmarshalJSON(b []byte) error {
-	m.canonical = make([]byte, len(b))
+	m.canonical = make([]byte, len(b), len(b))
 	// store manifest in canonical
 	copy(m.canonical, b)
 
@@ -114,12 +101,6 @@ func (m *DeserializedManifest) UnmarshalJSON(b []byte) error {
 	var manifest Manifest
 	if err := json.Unmarshal(m.canonical, &manifest); err != nil {
 		return err
-	}
-
-	if manifest.MediaType != MediaTypeManifest {
-		return fmt.Errorf("mediaType in manifest should be '%s' not '%s'",
-			MediaTypeManifest, manifest.MediaType)
-
 	}
 
 	m.Manifest = manifest

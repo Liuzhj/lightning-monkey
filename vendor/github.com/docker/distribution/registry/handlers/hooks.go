@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 // logHook is for hooking Panic in web application
@@ -20,7 +20,7 @@ type logHook struct {
 func (hook *logHook) Fire(entry *logrus.Entry) error {
 	addr := strings.Split(hook.Mail.Addr, ":")
 	if len(addr) != 2 {
-		return errors.New("invalid Mail Address")
+		return errors.New("Invalid Mail Address")
 	}
 	host := addr[0]
 	subject := fmt.Sprintf("[%s] %s: %s", entry.Level, host, entry.Message)
@@ -37,7 +37,7 @@ func (hook *logHook) Fire(entry *logrus.Entry) error {
 	if err := t.Execute(b, entry); err != nil {
 		return err
 	}
-	body := b.String()
+	body := fmt.Sprintf("%s", b)
 
 	return hook.Mail.sendMail(subject, body)
 }

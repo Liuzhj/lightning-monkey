@@ -42,6 +42,7 @@ func (sd *MongoDBStorageDriver) Initialize(args map[string]string) error {
 	if connStr == "" {
 		return errors.New("ENV: \"DRIVER_CONNECTION_STR\" is required for initializing storage driver.")
 	}
+	sd.connectionStr = connStr
 	c, err := mgo.Dial(connStr)
 	if err != nil {
 		return err
@@ -85,6 +86,32 @@ func (sd *MongoDBStorageDriver) SaveCluster(cluster *entities.Cluster, certsMap 
 		return nil
 	}
 	err = db.C("certificates").Insert(certs...)
+	if err != nil {
+		return fmt.Errorf("Failed to save cluster to database, error: %s", err.Error())
+	}
+	return nil
+}
+
+func (sd *MongoDBStorageDriver) SaveCertificateToCluster(cluster *entities.Cluster, certsMap *certs.GeneratedCertsMap) error {
+	session := sd.NewSession()
+	defer session.Close()
+	certs := []interface{}{}
+	if certsMap != nil && certsMap.GetResources() != nil && len(certsMap.GetResources()) > 0 {
+		for name, ct := range certsMap.GetResources() {
+			certId := bson.NewObjectId()
+			certs = append(certs, &entities.Certificate{
+				Id:         &certId,
+				ClusterId:  cluster.Id,
+				Name:       name,
+				Content:    ct,
+				CreateTime: time.Now(),
+			})
+		}
+	}
+	if len(certs) <= 0 {
+		return nil
+	}
+	err := session.DB("lightning_monkey").C("certificates").Insert(certs...)
 	if err != nil {
 		return fmt.Errorf("Failed to save cluster to database, error: %s", err.Error())
 	}

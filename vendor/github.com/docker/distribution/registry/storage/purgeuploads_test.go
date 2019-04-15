@@ -1,12 +1,12 @@
 package storage
 
 import (
-	"context"
 	"path"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/registry/storage/driver"
 	"github.com/docker/distribution/registry/storage/driver/inmemory"
 	"github.com/docker/distribution/uuid"
@@ -118,7 +118,7 @@ func TestPurgeOnlyUploads(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	nonUploadPath := strings.Replace(dataPath, "_upload", "_important", -1)
-	if strings.Contains(nonUploadPath, "_upload") {
+	if strings.Index(nonUploadPath, "_upload") != -1 {
 		t.Fatalf("Non-upload path not created correctly")
 	}
 
@@ -132,7 +132,7 @@ func TestPurgeOnlyUploads(t *testing.T) {
 		t.Error("Unexpected errors", errs)
 	}
 	for _, file := range deleted {
-		if !strings.Contains(file, "_upload") {
+		if strings.Index(file, "_upload") == -1 {
 			t.Errorf("Non-upload file deleted")
 		}
 	}
@@ -142,7 +142,7 @@ func TestPurgeMissingStartedAt(t *testing.T) {
 	oneHourAgo := time.Now().Add(-1 * time.Hour)
 	fs, ctx := testUploadFS(t, 1, "test-repo", oneHourAgo)
 
-	err := fs.Walk(ctx, "/", func(fileInfo driver.FileInfo) error {
+	err := Walk(ctx, fs, "/", func(fileInfo driver.FileInfo) error {
 		filePath := fileInfo.Path()
 		_, file := path.Split(filePath)
 

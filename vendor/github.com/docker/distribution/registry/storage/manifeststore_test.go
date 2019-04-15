@@ -2,15 +2,14 @@ package storage
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"reflect"
 	"testing"
 
 	"github.com/docker/distribution"
+	"github.com/docker/distribution/context"
+	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/manifest"
-	"github.com/docker/distribution/manifest/manifestlist"
-	"github.com/docker/distribution/manifest/ocischema"
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/storage/cache/memory"
@@ -18,8 +17,6 @@ import (
 	"github.com/docker/distribution/registry/storage/driver/inmemory"
 	"github.com/docker/distribution/testutil"
 	"github.com/docker/libtrust"
-	"github.com/opencontainers/go-digest"
-	"github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 type manifestStoreTestEnv struct {
@@ -55,29 +52,26 @@ func newManifestStoreTestEnv(t *testing.T, name reference.Named, tag string, opt
 }
 
 func TestManifestStorage(t *testing.T) {
+	testManifestStorage(t, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
+}
+
+func TestManifestStorageDisabledSignatures(t *testing.T) {
 	k, err := libtrust.GenerateECP256PrivateKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	testManifestStorage(t, true, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect, Schema1SigningKey(k), EnableSchema1)
+	testManifestStorage(t, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect, DisableSchema1Signatures, Schema1SigningKey(k))
 }
 
-func TestManifestStorageV1Unsupported(t *testing.T) {
-	k, err := libtrust.GenerateECP256PrivateKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-	testManifestStorage(t, false, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect, Schema1SigningKey(k))
-}
-
-func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryOption) {
-	repoName, _ := reference.WithName("foo/bar")
+func testManifestStorage(t *testing.T, options ...RegistryOption) {
+	repoName, _ := reference.ParseNamed("foo/bar")
 	env := newManifestStoreTestEnv(t, repoName, "thetag", options...)
 	ctx := context.Background()
 	ms, err := env.repository.Manifests(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+	equalSignatures := env.registry.(*registry).schema1SignaturesEnabled
 
 	m := schema1.Manifest{
 		Versioned: manifest.Versioned{
@@ -91,12 +85,13 @@ func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryO
 	// readseekers for upload later.
 	testLayers := map[digest.Digest]io.ReadSeeker{}
 	for i := 0; i < 2; i++ {
-		rs, dgst, err := testutil.CreateRandomTarFile()
+		rs, ds, err := testutil.CreateRandomTarFile()
 		if err != nil {
 			t.Fatalf("unexpected error generating test layer file")
 		}
+		dgst := digest.Digest(ds)
 
-		testLayers[dgst] = rs
+		testLayers[digest.Digest(dgst)] = rs
 		m.FSLayers = append(m.FSLayers, schema1.FSLayer{
 			BlobSum: dgst,
 		})
@@ -119,15 +114,6 @@ func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryO
 	_, err = ms.Put(ctx, sm)
 	if err == nil {
 		t.Fatalf("expected errors putting manifest with full verification")
-	}
-
-	// If schema1 is not enabled, do a short version of this test, just checking
-	// if we get the right error when we Put
-	if !schema1Enabled {
-		if err != distribution.ErrSchemaV1Unsupported {
-			t.Fatalf("got the wrong error when schema1 is disabled: %s", err)
-		}
-		return
 	}
 
 	switch err := err.(type) {
@@ -189,6 +175,12 @@ func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryO
 		t.Fatalf("fetched payload does not match original payload: %q != %q", fetchedManifest.Canonical, sm.Canonical)
 	}
 
+	if equalSignatures {
+		if !reflect.DeepEqual(fetchedManifest, sm) {
+			t.Fatalf("fetched manifest not equal: %#v != %#v", fetchedManifest.Manifest, sm.Manifest)
+		}
+	}
+
 	_, pl, err := fetchedManifest.Payload()
 	if err != nil {
 		t.Fatalf("error getting payload %#v", err)
@@ -229,6 +221,12 @@ func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryO
 
 	if !bytes.Equal(byDigestManifest.Canonical, fetchedManifest.Canonical) {
 		t.Fatalf("fetched manifest not equal: %q != %q", byDigestManifest.Canonical, fetchedManifest.Canonical)
+	}
+
+	if equalSignatures {
+		if !reflect.DeepEqual(fetchedByDigest, fetchedManifest) {
+			t.Fatalf("fetched manifest not equal: %#v != %#v", fetchedByDigest, fetchedManifest)
+		}
 	}
 
 	sigs, err := fetchedJWS.Signatures()
@@ -287,6 +285,17 @@ func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryO
 		t.Fatalf("unexpected error verifying manifest: %v", err)
 	}
 
+	// Assemble our payload and two signatures to get what we expect!
+	expectedJWS, err := libtrust.NewJSONSignature(payload, sigs[0], sigs2[0])
+	if err != nil {
+		t.Fatalf("unexpected error merging jws: %v", err)
+	}
+
+	expectedSigs, err := expectedJWS.Signatures()
+	if err != nil {
+		t.Fatalf("unexpected error getting expected signatures: %v", err)
+	}
+
 	_, pl, err = fetched.Payload()
 	if err != nil {
 		t.Fatalf("error getting payload %#v", err)
@@ -304,6 +313,19 @@ func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryO
 
 	if !bytes.Equal(receivedPayload, payload) {
 		t.Fatalf("payloads are not equal")
+	}
+
+	if equalSignatures {
+		receivedSigs, err := receivedJWS.Signatures()
+		if err != nil {
+			t.Fatalf("error getting signatures: %v", err)
+		}
+
+		for i, sig := range receivedSigs {
+			if !bytes.Equal(sig, expectedSigs[i]) {
+				t.Fatalf("mismatched signatures from remote: %v != %v", string(sig), string(expectedSigs[i]))
+			}
+		}
 	}
 
 	// Test deleting manifests
@@ -375,174 +397,6 @@ func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryO
 	}
 }
 
-func TestOCIManifestStorage(t *testing.T) {
-	testOCIManifestStorage(t, "includeMediaTypes=true", true)
-	testOCIManifestStorage(t, "includeMediaTypes=false", false)
-}
-
-func testOCIManifestStorage(t *testing.T, testname string, includeMediaTypes bool) {
-	var imageMediaType string
-	var indexMediaType string
-	if includeMediaTypes {
-		imageMediaType = v1.MediaTypeImageManifest
-		indexMediaType = v1.MediaTypeImageIndex
-	} else {
-		imageMediaType = ""
-		indexMediaType = ""
-	}
-
-	repoName, _ := reference.WithName("foo/bar")
-	env := newManifestStoreTestEnv(t, repoName, "thetag",
-		BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()),
-		EnableDelete, EnableRedirect)
-
-	ctx := context.Background()
-	ms, err := env.repository.Manifests(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Build a manifest and store it and its layers in the registry
-
-	blobStore := env.repository.Blobs(ctx)
-	builder := ocischema.NewManifestBuilder(blobStore, []byte{}, map[string]string{})
-	err = builder.(*ocischema.Builder).SetMediaType(imageMediaType)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Add some layers
-	for i := 0; i < 2; i++ {
-		rs, dgst, err := testutil.CreateRandomTarFile()
-		if err != nil {
-			t.Fatalf("%s: unexpected error generating test layer file", testname)
-		}
-
-		wr, err := env.repository.Blobs(env.ctx).Create(env.ctx)
-		if err != nil {
-			t.Fatalf("%s: unexpected error creating test upload: %v", testname, err)
-		}
-
-		if _, err := io.Copy(wr, rs); err != nil {
-			t.Fatalf("%s: unexpected error copying to upload: %v", testname, err)
-		}
-
-		if _, err := wr.Commit(env.ctx, distribution.Descriptor{Digest: dgst}); err != nil {
-			t.Fatalf("%s: unexpected error finishing upload: %v", testname, err)
-		}
-
-		builder.AppendReference(distribution.Descriptor{Digest: dgst})
-	}
-
-	manifest, err := builder.Build(ctx)
-	if err != nil {
-		t.Fatalf("%s: unexpected error generating manifest: %v", testname, err)
-	}
-
-	// before putting the manifest test for proper handling of SchemaVersion
-
-	if manifest.(*ocischema.DeserializedManifest).Manifest.SchemaVersion != 2 {
-		t.Fatalf("%s: unexpected error generating default version for oci manifest", testname)
-	}
-	manifest.(*ocischema.DeserializedManifest).Manifest.SchemaVersion = 0
-
-	var manifestDigest digest.Digest
-	if manifestDigest, err = ms.Put(ctx, manifest); err != nil {
-		if err.Error() != "unrecognized manifest schema version 0" {
-			t.Fatalf("%s: unexpected error putting manifest: %v", testname, err)
-		}
-		manifest.(*ocischema.DeserializedManifest).Manifest.SchemaVersion = 2
-		if manifestDigest, err = ms.Put(ctx, manifest); err != nil {
-			t.Fatalf("%s: unexpected error putting manifest: %v", testname, err)
-		}
-	}
-
-	// Also create an image index that contains the manifest
-
-	descriptor, err := env.registry.BlobStatter().Stat(ctx, manifestDigest)
-	if err != nil {
-		t.Fatalf("%s: unexpected error getting manifest descriptor", testname)
-	}
-	descriptor.MediaType = v1.MediaTypeImageManifest
-
-	platformSpec := manifestlist.PlatformSpec{
-		Architecture: "atari2600",
-		OS:           "CP/M",
-	}
-
-	manifestDescriptors := []manifestlist.ManifestDescriptor{
-		{
-			Descriptor: descriptor,
-			Platform:   platformSpec,
-		},
-	}
-
-	imageIndex, err := manifestlist.FromDescriptorsWithMediaType(manifestDescriptors, indexMediaType)
-	if err != nil {
-		t.Fatalf("%s: unexpected error creating image index: %v", testname, err)
-	}
-
-	var indexDigest digest.Digest
-	if indexDigest, err = ms.Put(ctx, imageIndex); err != nil {
-		t.Fatalf("%s: unexpected error putting image index: %v", testname, err)
-	}
-
-	// Now check that we can retrieve the manifest
-
-	fromStore, err := ms.Get(ctx, manifestDigest)
-	if err != nil {
-		t.Fatalf("%s: unexpected error fetching manifest: %v", testname, err)
-	}
-
-	fetchedManifest, ok := fromStore.(*ocischema.DeserializedManifest)
-	if !ok {
-		t.Fatalf("%s: unexpected type for fetched manifest", testname)
-	}
-
-	if fetchedManifest.MediaType != imageMediaType {
-		t.Fatalf("%s: unexpected MediaType for result, %s", testname, fetchedManifest.MediaType)
-	}
-
-	if fetchedManifest.SchemaVersion != ocischema.SchemaVersion.SchemaVersion {
-		t.Fatalf("%s: unexpected schema version for result, %d", testname, fetchedManifest.SchemaVersion)
-	}
-
-	payloadMediaType, _, err := fromStore.Payload()
-	if err != nil {
-		t.Fatalf("%s: error getting payload %v", testname, err)
-	}
-
-	if payloadMediaType != v1.MediaTypeImageManifest {
-		t.Fatalf("%s: unexpected MediaType for manifest payload, %s", testname, payloadMediaType)
-	}
-
-	// and the image index
-
-	fromStore, err = ms.Get(ctx, indexDigest)
-	if err != nil {
-		t.Fatalf("%s: unexpected error fetching image index: %v", testname, err)
-	}
-
-	fetchedIndex, ok := fromStore.(*manifestlist.DeserializedManifestList)
-	if !ok {
-		t.Fatalf("%s: unexpected type for fetched manifest", testname)
-	}
-
-	if fetchedIndex.MediaType != indexMediaType {
-		t.Fatalf("%s: unexpected MediaType for result, %s", testname, fetchedManifest.MediaType)
-	}
-
-	payloadMediaType, _, err = fromStore.Payload()
-	if err != nil {
-		t.Fatalf("%s: error getting payload %v", testname, err)
-	}
-
-	if payloadMediaType != v1.MediaTypeImageIndex {
-		t.Fatalf("%s: unexpected MediaType for index payload, %s", testname, payloadMediaType)
-	}
-
-}
-
 // TestLinkPathFuncs ensures that the link path functions behavior are locked
 // down and implemented as expected.
 func TestLinkPathFuncs(t *testing.T) {
@@ -574,4 +428,5 @@ func TestLinkPathFuncs(t *testing.T) {
 			t.Fatalf("incorrect path returned: %q != %q", p, testcase.expected)
 		}
 	}
+
 }

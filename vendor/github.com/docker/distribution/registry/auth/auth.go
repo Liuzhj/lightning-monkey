@@ -21,7 +21,7 @@
 // 			if ctx, err := accessController.Authorized(ctx, access); err != nil {
 //				if challenge, ok := err.(auth.Challenge) {
 //					// Let the challenge write the response.
-//					challenge.SetHeaders(r, w)
+//					challenge.SetHeaders(w)
 //					w.WriteHeader(http.StatusUnauthorized)
 //					return
 //				} else {
@@ -33,10 +33,10 @@
 package auth
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/docker/distribution/context"
 )
 
 const (
@@ -49,14 +49,6 @@ const (
 	UserNameKey = "auth.user.name"
 )
 
-var (
-	// ErrInvalidCredential is returned when the auth token does not authenticate correctly.
-	ErrInvalidCredential = errors.New("invalid authorization credential")
-
-	// ErrAuthenticationFailure returned when authentication fails.
-	ErrAuthenticationFailure = errors.New("authentication failure")
-)
-
 // UserInfo carries information about
 // an autenticated/authorized client.
 type UserInfo struct {
@@ -65,9 +57,8 @@ type UserInfo struct {
 
 // Resource describes a resource by type and name.
 type Resource struct {
-	Type  string
-	Class string
-	Name  string
+	Type string
+	Name string
 }
 
 // Access describes a specific action that is
@@ -87,7 +78,7 @@ type Challenge interface {
 	// adding the an HTTP challenge header on the response message. Callers
 	// are expected to set the appropriate HTTP status code (e.g. 401)
 	// themselves.
-	SetHeaders(r *http.Request, w http.ResponseWriter)
+	SetHeaders(w http.ResponseWriter)
 }
 
 // AccessController controls access to registry resources based on a request
@@ -104,11 +95,6 @@ type AccessController interface {
 	// based on the Challenge header or response status. The returned context
 	// object should have a "auth.user" value set to a UserInfo struct.
 	Authorized(ctx context.Context, access ...Access) (context.Context, error)
-}
-
-// CredentialAuthenticator is an object which is able to authenticate credentials
-type CredentialAuthenticator interface {
-	AuthenticateUser(username, password string) error
 }
 
 // WithUser returns a context with the authorized user info.
@@ -133,39 +119,6 @@ func (uic userInfoContext) Value(key interface{}) interface{} {
 	}
 
 	return uic.Context.Value(key)
-}
-
-// WithResources returns a context with the authorized resources.
-func WithResources(ctx context.Context, resources []Resource) context.Context {
-	return resourceContext{
-		Context:   ctx,
-		resources: resources,
-	}
-}
-
-type resourceContext struct {
-	context.Context
-	resources []Resource
-}
-
-type resourceKey struct{}
-
-func (rc resourceContext) Value(key interface{}) interface{} {
-	if key == (resourceKey{}) {
-		return rc.resources
-	}
-
-	return rc.Context.Value(key)
-}
-
-// AuthorizedResources returns the list of resources which have
-// been authorized for this request.
-func AuthorizedResources(ctx context.Context) []Resource {
-	if resources, ok := ctx.Value(resourceKey{}).([]Resource); ok {
-		return resources
-	}
-
-	return nil
 }
 
 // InitFunc is the type of an AccessController factory function and is used

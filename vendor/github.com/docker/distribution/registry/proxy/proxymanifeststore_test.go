@@ -1,24 +1,23 @@
 package proxy
 
 import (
-	"context"
 	"io"
 	"sync"
 	"testing"
 
 	"github.com/docker/distribution"
+	"github.com/docker/distribution/context"
+	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/manifest"
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client/auth"
-	"github.com/docker/distribution/registry/client/auth/challenge"
 	"github.com/docker/distribution/registry/proxy/scheduler"
 	"github.com/docker/distribution/registry/storage"
 	"github.com/docker/distribution/registry/storage/cache/memory"
 	"github.com/docker/distribution/registry/storage/driver/inmemory"
 	"github.com/docker/distribution/testutil"
 	"github.com/docker/libtrust"
-	"github.com/opencontainers/go-digest"
 )
 
 type statsManifest struct {
@@ -61,6 +60,12 @@ func (sm statsManifest) Put(ctx context.Context, manifest distribution.Manifest,
 	return sm.manifests.Put(ctx, manifest)
 }
 
+/*func (sm statsManifest) Enumerate(ctx context.Context, manifests []distribution.Manifest, last distribution.Manifest) (n int, err error) {
+	sm.stats["enumerate"]++
+	return sm.manifests.Enumerate(ctx, manifests, last)
+}
+*/
+
 type mockChallenger struct {
 	sync.Mutex
 	count int
@@ -70,6 +75,7 @@ type mockChallenger struct {
 func (m *mockChallenger) tryEstablishChallenges(context.Context) error {
 	m.Lock()
 	defer m.Unlock()
+
 	m.count++
 	return nil
 }
@@ -78,25 +84,18 @@ func (m *mockChallenger) credentialStore() auth.CredentialStore {
 	return nil
 }
 
-func (m *mockChallenger) challengeManager() challenge.Manager {
+func (m *mockChallenger) challengeManager() auth.ChallengeManager {
 	return nil
 }
 
 func newManifestStoreTestEnv(t *testing.T, name, tag string) *manifestStoreTestEnv {
-	nameRef, err := reference.WithName(name)
+	nameRef, err := reference.ParseNamed(name)
 	if err != nil {
 		t.Fatalf("unable to parse reference: %s", err)
 	}
-	k, err := libtrust.GenerateECP256PrivateKey()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	ctx := context.Background()
-	truthRegistry, err := storage.NewRegistry(ctx, inmemory.New(),
-		storage.BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()),
-		storage.Schema1SigningKey(k),
-		storage.EnableSchema1)
+	truthRegistry, err := storage.NewRegistry(ctx, inmemory.New(), storage.BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()))
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
 	}
@@ -113,12 +112,12 @@ func newManifestStoreTestEnv(t *testing.T, name, tag string) *manifestStoreTestE
 		stats:     make(map[string]int),
 	}
 
-	manifestDigest, err := populateRepo(ctx, t, truthRepo, name, tag)
+	manifestDigest, err := populateRepo(t, ctx, truthRepo, name, tag)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	localRegistry, err := storage.NewRegistry(ctx, inmemory.New(), storage.BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), storage.EnableRedirect, storage.DisableDigestResumption, storage.Schema1SigningKey(k), storage.EnableSchema1)
+	localRegistry, err := storage.NewRegistry(ctx, inmemory.New(), storage.BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), storage.EnableRedirect, storage.DisableDigestResumption)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
 	}
@@ -150,7 +149,7 @@ func newManifestStoreTestEnv(t *testing.T, name, tag string) *manifestStoreTestE
 	}
 }
 
-func populateRepo(ctx context.Context, t *testing.T, repository distribution.Repository, name, tag string) (digest.Digest, error) {
+func populateRepo(t *testing.T, ctx context.Context, repository distribution.Repository, name, tag string) (digest.Digest, error) {
 	m := schema1.Manifest{
 		Versioned: manifest.Versioned{
 			SchemaVersion: 1,
@@ -165,10 +164,11 @@ func populateRepo(ctx context.Context, t *testing.T, repository distribution.Rep
 			t.Fatalf("unexpected error creating test upload: %v", err)
 		}
 
-		rs, dgst, err := testutil.CreateRandomTarFile()
+		rs, ts, err := testutil.CreateRandomTarFile()
 		if err != nil {
 			t.Fatalf("unexpected error generating test layer file")
 		}
+		dgst := digest.Digest(ts)
 		if _, err := io.Copy(wr, rs); err != nil {
 			t.Fatalf("unexpected error copying to upload: %v", err)
 		}
@@ -216,7 +216,7 @@ func TestProxyManifests(t *testing.T) {
 		t.Fatalf("Error checking existence")
 	}
 	if !exists {
-		t.Errorf("Unexpected non-existent manifest")
+		t.Errorf("Unexpected non-existant manifest")
 	}
 
 	if (*localStats)["exists"] != 1 && (*remoteStats)["exists"] != 1 {
@@ -251,7 +251,7 @@ func TestProxyManifests(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !exists {
-		t.Errorf("Unexpected non-existent manifest")
+		t.Errorf("Unexpected non-existant manifest")
 	}
 
 	if (*localStats)["exists"] != 2 && (*remoteStats)["exists"] != 1 {

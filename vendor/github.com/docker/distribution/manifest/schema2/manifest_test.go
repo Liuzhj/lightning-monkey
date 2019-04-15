@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/docker/distribution"
-	"github.com/docker/distribution/manifest"
 )
 
 var expectedManifestSerialization = []byte(`{
@@ -27,16 +26,13 @@ var expectedManifestSerialization = []byte(`{
    ]
 }`)
 
-func makeTestManifest(mediaType string) Manifest {
-	return Manifest{
-		Versioned: manifest.Versioned{
-			SchemaVersion: 2,
-			MediaType:     mediaType,
-		},
+func TestManifest(t *testing.T) {
+	manifest := Manifest{
+		Versioned: SchemaVersion,
 		Config: distribution.Descriptor{
 			Digest:    "sha256:1a9ec845ee94c202b2d5da74a24f0ed2058318bfa9879fa541efaecba272e86b",
 			Size:      985,
-			MediaType: MediaTypeImageConfig,
+			MediaType: MediaTypeConfig,
 		},
 		Layers: []distribution.Descriptor{
 			{
@@ -46,17 +42,13 @@ func makeTestManifest(mediaType string) Manifest {
 			},
 		},
 	}
-}
-
-func TestManifest(t *testing.T) {
-	manifest := makeTestManifest(MediaTypeManifest)
 
 	deserialized, err := FromStruct(manifest)
 	if err != nil {
 		t.Fatalf("error creating DeserializedManifest: %v", err)
 	}
 
-	mediaType, canonical, _ := deserialized.Payload()
+	mediaType, canonical, err := deserialized.Payload()
 
 	if mediaType != MediaTypeManifest {
 		t.Fatalf("unexpected media type: %s", mediaType)
@@ -90,7 +82,7 @@ func TestManifest(t *testing.T) {
 	if target.Digest != "sha256:1a9ec845ee94c202b2d5da74a24f0ed2058318bfa9879fa541efaecba272e86b" {
 		t.Fatalf("unexpected digest in target: %s", target.Digest.String())
 	}
-	if target.MediaType != MediaTypeImageConfig {
+	if target.MediaType != MediaTypeConfig {
 		t.Fatalf("unexpected media type in target: %s", target.MediaType)
 	}
 	if target.Size != 985 {
@@ -98,65 +90,16 @@ func TestManifest(t *testing.T) {
 	}
 
 	references := deserialized.References()
-	if len(references) != 2 {
+	if len(references) != 1 {
 		t.Fatalf("unexpected number of references: %d", len(references))
 	}
-
-	if !reflect.DeepEqual(references[0], target) {
-		t.Fatalf("first reference should be target: %v != %v", references[0], target)
-	}
-
-	// Test the second reference
-	if references[1].Digest != "sha256:62d8908bee94c202b2d35224a221aaa2058318bfa9879fa541efaecba272331b" {
+	if references[0].Digest != "sha256:62d8908bee94c202b2d35224a221aaa2058318bfa9879fa541efaecba272331b" {
 		t.Fatalf("unexpected digest in reference: %s", references[0].Digest.String())
 	}
-	if references[1].MediaType != MediaTypeLayer {
+	if references[0].MediaType != MediaTypeLayer {
 		t.Fatalf("unexpected media type in reference: %s", references[0].MediaType)
 	}
-	if references[1].Size != 153263 {
+	if references[0].Size != 153263 {
 		t.Fatalf("unexpected size in reference: %d", references[0].Size)
 	}
-}
-
-func mediaTypeTest(t *testing.T, mediaType string, shouldError bool) {
-	manifest := makeTestManifest(mediaType)
-
-	deserialized, err := FromStruct(manifest)
-	if err != nil {
-		t.Fatalf("error creating DeserializedManifest: %v", err)
-	}
-
-	unmarshalled, descriptor, err := distribution.UnmarshalManifest(
-		MediaTypeManifest,
-		deserialized.canonical)
-
-	if shouldError {
-		if err == nil {
-			t.Fatalf("bad content type should have produced error")
-		}
-	} else {
-		if err != nil {
-			t.Fatalf("error unmarshaling manifest, %v", err)
-		}
-
-		asManifest := unmarshalled.(*DeserializedManifest)
-		if asManifest.MediaType != mediaType {
-			t.Fatalf("Bad media type '%v' as unmarshalled", asManifest.MediaType)
-		}
-
-		if descriptor.MediaType != MediaTypeManifest {
-			t.Fatalf("Bad media type '%v' for descriptor", descriptor.MediaType)
-		}
-
-		unmarshalledMediaType, _, _ := unmarshalled.Payload()
-		if unmarshalledMediaType != MediaTypeManifest {
-			t.Fatalf("Bad media type '%v' for payload", unmarshalledMediaType)
-		}
-	}
-}
-
-func TestMediaTypes(t *testing.T) {
-	mediaTypeTest(t, "", true)
-	mediaTypeTest(t, MediaTypeManifest, false)
-	mediaTypeTest(t, MediaTypeManifest+"XXX", true)
 }

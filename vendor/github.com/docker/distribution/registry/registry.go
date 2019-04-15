@@ -1,38 +1,28 @@
 package registry
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
-	"rsc.io/letsencrypt"
-
-	"github.com/Shopify/logrus-bugsnag"
-	logstash "github.com/bshuster-repo/logrus-logstash-hook"
+	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus/formatters/logstash"
 	"github.com/bugsnag/bugsnag-go"
 	"github.com/docker/distribution/configuration"
-	dcontext "github.com/docker/distribution/context"
+	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/health"
 	"github.com/docker/distribution/registry/handlers"
 	"github.com/docker/distribution/registry/listener"
 	"github.com/docker/distribution/uuid"
 	"github.com/docker/distribution/version"
-	"github.com/docker/go-metrics"
 	gorhandlers "github.com/gorilla/handlers"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/yvasiyarov/gorelic"
 )
-
-// this channel gets notified when process receives signal. It is global to ease unit testing
-var quit = make(chan os.Signal, 1)
 
 // ServeCmd is a cobra command for running the registry.
 var ServeCmd = &cobra.Command{
@@ -42,7 +32,7 @@ var ServeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// setup context
-		ctx := dcontext.WithVersion(dcontext.Background(), version.Version)
+		ctx := context.WithVersion(context.Background(), version.Version)
 
 		config, err := resolveConfiguration(args)
 		if err != nil {
@@ -63,15 +53,6 @@ var ServeCmd = &cobra.Command{
 		registry, err := NewRegistry(ctx, config)
 		if err != nil {
 			log.Fatalln(err)
-		}
-
-		if config.HTTP.Debug.Prometheus.Enabled {
-			path := config.HTTP.Debug.Prometheus.Path
-			if path == "" {
-				path = "/metrics"
-			}
-			log.Info("providing prometheus metrics on ", path)
-			http.Handle(path, metrics.Handler())
 		}
 
 		if err = registry.ListenAndServe(); err != nil {
@@ -96,11 +77,9 @@ func NewRegistry(ctx context.Context, config *configuration.Configuration) (*Reg
 		return nil, fmt.Errorf("error configuring logger: %v", err)
 	}
 
-	configureBugsnag(config)
-
 	// inject a logger into the uuid library. warns us if there is a problem
 	// with uuid generation under low entropy.
-	uuid.Loggerf = dcontext.GetLogger(ctx).Warnf
+	uuid.Loggerf = context.GetLogger(ctx).Warnf
 
 	app := handlers.NewApp(ctx, config)
 	// TODO(aaronl): The global scope of the health checks means NewRegistry
@@ -110,9 +89,7 @@ func NewRegistry(ctx context.Context, config *configuration.Configuration) (*Reg
 	handler = alive("/", handler)
 	handler = health.Handler(handler)
 	handler = panicHandler(handler)
-	if !config.Log.AccessLog.Disabled {
-		handler = gorhandlers.CombinedLoggingHandler(os.Stdout, handler)
-	}
+	handler = gorhandlers.CombinedLoggingHandler(os.Stdout, handler)
 
 	server := &http.Server{
 		Handler: handler,
@@ -134,27 +111,12 @@ func (registry *Registry) ListenAndServe() error {
 		return err
 	}
 
-	if config.HTTP.TLS.Certificate != "" || config.HTTP.TLS.LetsEncrypt.CacheFile != "" {
-		var tlsMinVersion uint16
-		if config.HTTP.TLS.MinimumTLS == "" {
-			tlsMinVersion = tls.VersionTLS10
-		} else {
-			switch config.HTTP.TLS.MinimumTLS {
-			case "tls1.0":
-				tlsMinVersion = tls.VersionTLS10
-			case "tls1.1":
-				tlsMinVersion = tls.VersionTLS11
-			case "tls1.2":
-				tlsMinVersion = tls.VersionTLS12
-			default:
-				return fmt.Errorf("unknown minimum TLS level '%s' specified for http.tls.minimumtls", config.HTTP.TLS.MinimumTLS)
-			}
-			dcontext.GetLogger(registry.app).Infof("restricting TLS to %s or higher", config.HTTP.TLS.MinimumTLS)
-		}
+	if config.HTTP.TLS.Certificate != "" {
 		tlsConf := &tls.Config{
 			ClientAuth:               tls.NoClientCert,
-			NextProtos:               nextProtos(config),
-			MinVersion:               tlsMinVersion,
+			NextProtos:               []string{"http/1.1"},
+			Certificates:             make([]tls.Certificate, 1),
+			MinVersion:               tls.VersionTLS10,
 			PreferServerCipherSuites: true,
 			CipherSuites: []uint16{
 				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
@@ -163,32 +125,14 @@ func (registry *Registry) ListenAndServe() error {
 				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
 				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 			},
 		}
 
-		if config.HTTP.TLS.LetsEncrypt.CacheFile != "" {
-			if config.HTTP.TLS.Certificate != "" {
-				return fmt.Errorf("cannot specify both certificate and Let's Encrypt")
-			}
-			var m letsencrypt.Manager
-			if err := m.CacheFile(config.HTTP.TLS.LetsEncrypt.CacheFile); err != nil {
-				return err
-			}
-			if !m.Registered() {
-				if err := m.Register(config.HTTP.TLS.LetsEncrypt.Email, nil); err != nil {
-					return err
-				}
-			}
-			if len(config.HTTP.TLS.LetsEncrypt.Hosts) > 0 {
-				m.SetHosts(config.HTTP.TLS.LetsEncrypt.Hosts)
-			}
-			tlsConf.GetCertificate = m.GetCertificate
-		} else {
-			tlsConf.Certificates = make([]tls.Certificate, 1)
-			tlsConf.Certificates[0], err = tls.LoadX509KeyPair(config.HTTP.TLS.Certificate, config.HTTP.TLS.Key)
-			if err != nil {
-				return err
-			}
+		tlsConf.Certificates[0], err = tls.LoadX509KeyPair(config.HTTP.TLS.Certificate, config.HTTP.TLS.Key)
+		if err != nil {
+			return err
 		}
 
 		if len(config.HTTP.TLS.ClientCAs) != 0 {
@@ -201,12 +145,12 @@ func (registry *Registry) ListenAndServe() error {
 				}
 
 				if ok := pool.AppendCertsFromPEM(caPem); !ok {
-					return fmt.Errorf("could not add CA to pool")
+					return fmt.Errorf("Could not add CA to pool")
 				}
 			}
 
 			for _, subj := range pool.Subjects() {
-				dcontext.GetLogger(registry.app).Debugf("CA Subject: %s", string(subj))
+				context.GetLogger(registry.app).Debugf("CA Subject: %s", string(subj))
 			}
 
 			tlsConf.ClientAuth = tls.RequireAndVerifyClientCert
@@ -214,40 +158,31 @@ func (registry *Registry) ListenAndServe() error {
 		}
 
 		ln = tls.NewListener(ln, tlsConf)
-		dcontext.GetLogger(registry.app).Infof("listening on %v, tls", ln.Addr())
+		context.GetLogger(registry.app).Infof("listening on %v, tls", ln.Addr())
 	} else {
-		dcontext.GetLogger(registry.app).Infof("listening on %v", ln.Addr())
+		context.GetLogger(registry.app).Infof("listening on %v", ln.Addr())
 	}
 
-	if config.HTTP.DrainTimeout == 0 {
-		return registry.server.Serve(ln)
-	}
-
-	// setup channel to get notified on SIGTERM signal
-	signal.Notify(quit, syscall.SIGTERM)
-	serveErr := make(chan error)
-
-	// Start serving in goroutine and listen for stop signal in main thread
-	go func() {
-		serveErr <- registry.server.Serve(ln)
-	}()
-
-	select {
-	case err := <-serveErr:
-		return err
-	case <-quit:
-		dcontext.GetLogger(registry.app).Info("stopping server gracefully. Draining connections for ", config.HTTP.DrainTimeout)
-		// shutdown the server with a grace period of configured timeout
-		c, cancel := context.WithTimeout(context.Background(), config.HTTP.DrainTimeout)
-		defer cancel()
-		return registry.server.Shutdown(c)
-	}
+	return registry.server.Serve(ln)
 }
 
 func configureReporting(app *handlers.App) http.Handler {
 	var handler http.Handler = app
 
 	if app.Config.Reporting.Bugsnag.APIKey != "" {
+		bugsnagConfig := bugsnag.Configuration{
+			APIKey: app.Config.Reporting.Bugsnag.APIKey,
+			// TODO(brianbland): provide the registry version here
+			// AppVersion: "2.0",
+		}
+		if app.Config.Reporting.Bugsnag.ReleaseStage != "" {
+			bugsnagConfig.ReleaseStage = app.Config.Reporting.Bugsnag.ReleaseStage
+		}
+		if app.Config.Reporting.Bugsnag.Endpoint != "" {
+			bugsnagConfig.Endpoint = app.Config.Reporting.Bugsnag.Endpoint
+		}
+		bugsnag.Configure(bugsnagConfig)
+
 		handler = bugsnag.Handler(handler)
 	}
 
@@ -270,6 +205,13 @@ func configureReporting(app *handlers.App) http.Handler {
 // configureLogging prepares the context with a logger using the
 // configuration.
 func configureLogging(ctx context.Context, config *configuration.Configuration) (context.Context, error) {
+	if config.Log.Level == "" && config.Log.Formatter == "" {
+		// If no config for logging is set, fallback to deprecated "Loglevel".
+		log.SetLevel(logLevel(config.Loglevel))
+		ctx = context.WithLogger(ctx, context.GetLogger(ctx))
+		return ctx, nil
+	}
+
 	log.SetLevel(logLevel(config.Log.Level))
 
 	formatter := config.Log.Formatter
@@ -308,8 +250,8 @@ func configureLogging(ctx context.Context, config *configuration.Configuration) 
 			fields = append(fields, k)
 		}
 
-		ctx = dcontext.WithValues(ctx, config.Log.Fields)
-		ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, fields...))
+		ctx = context.WithValues(ctx, config.Log.Fields)
+		ctx = context.WithLogger(ctx, context.GetLogger(ctx, fields...))
 	}
 
 	return ctx, nil
@@ -325,33 +267,7 @@ func logLevel(level configuration.Loglevel) log.Level {
 	return l
 }
 
-// configureBugsnag configures bugsnag reporting, if enabled
-func configureBugsnag(config *configuration.Configuration) {
-	if config.Reporting.Bugsnag.APIKey == "" {
-		return
-	}
-
-	bugsnagConfig := bugsnag.Configuration{
-		APIKey: config.Reporting.Bugsnag.APIKey,
-	}
-	if config.Reporting.Bugsnag.ReleaseStage != "" {
-		bugsnagConfig.ReleaseStage = config.Reporting.Bugsnag.ReleaseStage
-	}
-	if config.Reporting.Bugsnag.Endpoint != "" {
-		bugsnagConfig.Endpoint = config.Reporting.Bugsnag.Endpoint
-	}
-	bugsnag.Configure(bugsnagConfig)
-
-	// configure logrus bugsnag hook
-	hook, err := logrus_bugsnag.NewBugsnagHook()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	log.AddHook(hook)
-}
-
-// panicHandler add an HTTP handler to web app. The handler recover the happening
+// panicHandler add a HTTP handler to web app. The handler recover the happening
 // panic. logrus.Panic transmits panic message to pre-config log hooks, which is
 // defined in config.yml.
 func panicHandler(handler http.Handler) http.Handler {
@@ -408,13 +324,4 @@ func resolveConfiguration(args []string) (*configuration.Configuration, error) {
 	}
 
 	return config, nil
-}
-
-func nextProtos(config *configuration.Configuration) []string {
-	switch config.HTTP.HTTP2.Disabled {
-	case true:
-		return []string{"http/1.1"}
-	default:
-		return []string{"h2", "http/1.1"}
-	}
 }
