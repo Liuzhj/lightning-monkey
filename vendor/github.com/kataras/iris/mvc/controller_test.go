@@ -272,20 +272,9 @@ type testControllerBindDeep struct {
 	testControllerBindStruct
 }
 
-func (t *testControllerBindDeep) BeforeActivation(b BeforeActivation) {
-	b.Dependencies().Add(func(ctx iris.Context) (v testCustomStruct, err error) {
-		err = ctx.ReadJSON(&v)
-		return
-	})
-}
-
 func (t *testControllerBindDeep) Get() {
 	// 	t.testControllerBindStruct.Get()
 	t.Ctx.Writef(t.TitlePointer.title + t.TitleValue.title + t.Other)
-}
-
-func (t *testControllerBindDeep) Post(v testCustomStruct) string {
-	return v.Name
 }
 
 func TestControllerDependencies(t *testing.T) {
@@ -310,12 +299,6 @@ func TestControllerDependencies(t *testing.T) {
 
 	e.GET("/deep").Expect().Status(iris.StatusOK).
 		Body().Equal(expected)
-
-	e.POST("/deep").WithJSON(iris.Map{"name": "kataras"}).Expect().Status(iris.StatusOK).
-		Body().Equal("kataras")
-
-	e.POST("/deep").Expect().Status(iris.StatusBadRequest).
-		Body().Equal("unexpected end of JSON input")
 }
 
 type testCtrl0 struct {

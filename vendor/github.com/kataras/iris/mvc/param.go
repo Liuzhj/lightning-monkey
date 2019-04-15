@@ -35,21 +35,16 @@ func getPathParamsForInput(params []macro.TemplateParam, funcIn ...reflect.Type)
 	// 	}
 	// }
 
-	consumed := make(map[int]struct{})
-	for _, in := range funcIn {
-		for j, param := range params {
-			if _, ok := consumed[j]; ok {
-				continue
-			}
-			funcDep, ok := context.ParamResolverByTypeAndIndex(in, param.Index)
-			if !ok {
-				continue
-			}
-
-			values = append(values, funcDep)
-			consumed[j] = struct{}{}
-			break
+	for i, param := range params {
+		if len(funcIn) <= i {
+			return
 		}
+		funcDep, ok := context.ParamResolverByTypeAndIndex(funcIn[i], param.Index)
+		if !ok {
+			continue
+		}
+
+		values = append(values, funcDep)
 	}
 
 	return

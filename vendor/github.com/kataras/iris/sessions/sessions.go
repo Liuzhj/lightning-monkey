@@ -35,7 +35,7 @@ func (s *Sessions) UseDatabase(db Database) {
 }
 
 // updateCookie gains the ability of updating the session browser cookie to any method which wants to update it
-func (s *Sessions) updateCookie(ctx context.Context, sid string, expires time.Duration, options ...context.CookieOption) {
+func (s *Sessions) updateCookie(ctx context.Context, sid string, expires time.Duration) {
 	cookie := &http.Cookie{}
 
 	// The RFC makes no mention of encoding url value, so here I think to encode both sessionid key and the value using the safe(to put and to use as cookie) url-encoding
@@ -65,16 +65,11 @@ func (s *Sessions) updateCookie(ctx context.Context, sid string, expires time.Du
 
 	// encode the session id cookie client value right before send it.
 	cookie.Value = s.encodeCookieValue(cookie.Value)
-
-	for _, opt := range options {
-		opt(cookie)
-	}
-
 	AddCookie(ctx, cookie, s.config.AllowReclaim)
 }
 
-// Start creates or retrieves an existing session for the particular request.
-func (s *Sessions) Start(ctx context.Context, cookieOptions ...context.CookieOption) *Session {
+// Start should start the session for the particular request.
+func (s *Sessions) Start(ctx context.Context) *Session {
 	cookieValue := s.decodeCookieValue(GetCookie(ctx, s.config.Cookie))
 
 	if cookieValue == "" { // cookie doesn't exists, let's generate a session and add set a cookie
@@ -83,7 +78,7 @@ func (s *Sessions) Start(ctx context.Context, cookieOptions ...context.CookieOpt
 		sess := s.provider.Init(sid, s.config.Expires)
 		sess.isNew = s.provider.db.Len(sid) == 0
 
-		s.updateCookie(ctx, sid, s.config.Expires, cookieOptions...)
+		s.updateCookie(ctx, sid, s.config.Expires)
 
 		return sess
 	}
@@ -93,23 +88,18 @@ func (s *Sessions) Start(ctx context.Context, cookieOptions ...context.CookieOpt
 	return sess
 }
 
-// StartWithPath same as `Start` but it explicitly accepts the cookie path option.
-func (s *Sessions) StartWithPath(ctx context.Context, path string) *Session {
-	return s.Start(ctx, context.CookiePath(path))
-}
-
 // ShiftExpiration move the expire date of a session to a new date
 // by using session default timeout configuration.
 // It will return `ErrNotImplemented` if a database is used and it does not support this feature, yet.
-func (s *Sessions) ShiftExpiration(ctx context.Context, cookieOptions ...context.CookieOption) error {
-	return s.UpdateExpiration(ctx, s.config.Expires, cookieOptions...)
+func (s *Sessions) ShiftExpiration(ctx context.Context) error {
+	return s.UpdateExpiration(ctx, s.config.Expires)
 }
 
 // UpdateExpiration change expire date of a session to a new date
 // by using timeout value passed by `expires` receiver.
 // It will return `ErrNotFound` when trying to update expiration on a non-existence or not valid session entry.
 // It will return `ErrNotImplemented` if a database is used and it does not support this feature, yet.
-func (s *Sessions) UpdateExpiration(ctx context.Context, expires time.Duration, cookieOptions ...context.CookieOption) error {
+func (s *Sessions) UpdateExpiration(ctx context.Context, expires time.Duration) error {
 	cookieValue := s.decodeCookieValue(GetCookie(ctx, s.config.Cookie))
 	if cookieValue == "" {
 		return ErrNotFound
@@ -118,7 +108,7 @@ func (s *Sessions) UpdateExpiration(ctx context.Context, expires time.Duration, 
 	// we should also allow it to expire when the browser closed
 	err := s.provider.UpdateExpiration(cookieValue, expires)
 	if err == nil || expires == -1 {
-		s.updateCookie(ctx, cookieValue, expires, cookieOptions...)
+		s.updateCookie(ctx, cookieValue, expires)
 	}
 
 	return err

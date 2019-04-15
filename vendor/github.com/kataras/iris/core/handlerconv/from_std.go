@@ -75,7 +75,6 @@ func FromStd(handler interface{}) context.Handler {
 func FromStdWithNext(h func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc)) context.Handler {
 	return func(ctx context.Context) {
 		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx.ResetRequest(r)
 			ctx.Next()
 		})
 

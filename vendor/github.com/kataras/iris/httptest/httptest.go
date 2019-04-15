@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/kataras/iris"
-
 	"github.com/iris-contrib/httpexpect"
+	"github.com/kataras/iris"
 )
 
 type (

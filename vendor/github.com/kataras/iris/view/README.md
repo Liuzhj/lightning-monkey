@@ -77,7 +77,7 @@ func main() {
     // - amber          | iris.Amber(...)
     tmpl := iris.HTML("./templates", ".html")
 
-    // builtin template funcs are:
+    // built'n template funcs are:
     //
     // - {{ urlpath "mynamedroute" "pathParameter_ifneeded" }}
     // - {{ render "header.html" }}

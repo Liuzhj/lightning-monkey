@@ -4,6 +4,11 @@ Source code and other details for the project are available at GitHub:
 
    https://github.com/kataras/iris/tree/master/websocket
 
+Installation
+
+    $ go get -u github.com/kataras/iris/websocket
+
+
 Example code:
 
 
@@ -47,7 +52,7 @@ Example code:
 		// this endpoint is used to connect to the server.
 		app.Get("/echo", ws.Handler())
 
-		// serve the javascript builtin client-side library,
+		// serve the javascript built'n client-side library,
 		// see websockets.html script tags, this path is used.
 		app.Any("/iris-ws.js", func(ctx context.Context) {
 			ctx.Write(websocket.ClientSource)

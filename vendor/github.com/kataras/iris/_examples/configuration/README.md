@@ -134,7 +134,7 @@ func main() {
 
 ```
 
-## Builtin Configurators
+## Built'n Configurators
 
 ```go
 // WithoutServerError will cause to ignore the matched "errors"

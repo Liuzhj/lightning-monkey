@@ -3,7 +3,6 @@ package websocket
 import (
 	"bytes"
 	"sync"
-	"sync/atomic"
 
 	"github.com/kataras/iris/context"
 
@@ -15,13 +14,26 @@ type (
 	// Receives one parameter which is the Connection
 	ConnectionFunc func(Connection)
 
+	// websocketRoomPayload is used as payload from the connection to the Server
+	websocketRoomPayload struct {
+		roomName     string
+		connectionID string
+	}
+
+	// payloads, connection -> Server
+	websocketMessagePayload struct {
+		from string
+		to   string
+		data []byte
+	}
+
 	// Server is the websocket Server's implementation.
 	//
 	// It listens for websocket clients (either from the javascript client-side or from any websocket implementation).
 	// See `OnConnection` , to register a single event which will handle all incoming connections and
 	// the `Handler` which builds the upgrader handler that you can register to a route based on an Endpoint.
 	//
-	// To serve the builtin javascript client-side library look the `websocket.ClientHandler`.
+	// To serve the built'n javascript client-side library look the `websocket.ClientHandler`.
 	Server struct {
 		config Config
 		// ClientSource contains the javascript side code
@@ -31,6 +43,7 @@ type (
 		// Use a route to serve this file on a specific path, i.e
 		// app.Any("/iris-ws.js", func(ctx iris.Context) { ctx.Write(mywebsocketServer.ClientSource) })
 		ClientSource          []byte
+		messageSerializer     *messageSerializer
 		connections           sync.Map            // key = the Connection ID.
 		rooms                 map[string][]string // by default a connection is joined to a room which has the connection id as its name
 		mu                    sync.RWMutex        // for rooms.
@@ -44,13 +57,13 @@ type (
 // See `OnConnection` , to register a single event which will handle all incoming connections and
 // the `Handler` which builds the upgrader handler that you can register to a route based on an Endpoint.
 //
-// To serve the builtin javascript client-side library look the `websocket.ClientHandler`.
+// To serve the built'n javascript client-side library look the `websocket.ClientHandler`.
 func New(cfg Config) *Server {
 	cfg = cfg.Validate()
-
-	s := &Server{
+	return &Server{
 		config:                cfg,
 		ClientSource:          bytes.Replace(ClientSource, []byte(DefaultEvtMessageKey), cfg.EvtMessagePrefix, -1),
+		messageSerializer:     newMessageSerializer(cfg.EvtMessagePrefix),
 		connections:           sync.Map{}, // ready-to-use, this is not necessary.
 		rooms:                 make(map[string][]string),
 		onConnectionListeners: make([]ConnectionFunc, 0),
@@ -64,8 +77,6 @@ func New(cfg Config) *Server {
 			EnableCompression: cfg.EnableCompression,
 		},
 	}
-
-	return s
 }
 
 // Handler builds the handler based on the configuration and returns it.
@@ -75,7 +86,7 @@ func New(cfg Config) *Server {
 //
 // Endpoint is the path which the websocket Server will listen for clients/connections.
 //
-// To serve the builtin javascript client-side library look the `websocket.ClientHandler`.
+// To serve the built'n javascript client-side library look the `websocket.ClientHandler`.
 func (s *Server) Handler() context.Handler {
 	return func(ctx context.Context) {
 		c := s.Upgrade(ctx)
@@ -107,14 +118,14 @@ func (s *Server) Handler() context.Handler {
 // If the upgrade fails, then Upgrade replies to the client with an HTTP error
 // response and the return `Connection.Err()` is filled with that error.
 //
-// For a more high-level function use the `Handler()` and `OnConnection` events.
+// For a more high-level function use the `Handler()` and `OnConnecton` events.
 // This one does not starts the connection's writer and reader, so after your `On/OnMessage` events registration
 // the caller has to call the `Connection#Wait` function, otherwise the connection will be not handled.
 func (s *Server) Upgrade(ctx context.Context) Connection {
 	conn, err := s.upgrader.Upgrade(ctx.ResponseWriter(), ctx.Request(), ctx.ResponseWriter().Header())
 	if err != nil {
 		ctx.Application().Logger().Warnf("websocket error: %v\n", err)
-		// ctx.StatusCode(503) // Status Service Unavailable
+		ctx.StatusCode(503) // Status Service Unavailable
 		return &connection{err: err}
 	}
 
@@ -139,11 +150,11 @@ func (s *Server) getConnection(connID string) (*connection, bool) {
 
 // wrapConnection wraps an underline connection to an iris websocket connection.
 // It does NOT starts its writer, reader and event mux, the caller is responsible for that.
-func (s *Server) handleConnection(ctx context.Context, websocketConn *websocket.Conn) *connection {
+func (s *Server) handleConnection(ctx context.Context, websocketConn UnderlineConnection) *connection {
 	// use the config's id generator (or the default) to create a websocket client/connection id
 	cid := s.config.IDGenerator(ctx)
 	// create the new connection
-	c := newServerConnection(ctx, s, websocketConn, cid)
+	c := newConnection(ctx, s, websocketConn, cid)
 	// add the connection to the Server's list
 	s.addConnection(c)
 
@@ -152,6 +163,29 @@ func (s *Server) handleConnection(ctx context.Context, websocketConn *websocket.
 
 	return c
 }
+
+/* Notes:
+   We use the id as the signature of the connection because with the custom IDGenerator
+	 the developer can share this ID with a database field, so we want to give the oportunnity to handle
+	 his/her websocket connections without even use the connection itself.
+
+	 Another question may be:
+	 Q: Why you use Server as the main actioner for all of the connection actions?
+	 	  For example the Server.Disconnect(connID) manages the connection internal fields, is this code-style correct?
+	 A: It's the correct code-style for these type of applications and libraries, Server manages all, the connnection's functions
+	 should just do some internal checks (if needed) and push the action to its parent, which is the Server, the Server is able to
+	 remove a connection, the rooms of its connected and all these things, so in order to not split the logic, we have the main logic
+	 here, in the Server, and let the connection with some exported functions whose exists for the per-connection action user's code-style.
+
+	 Ok my english are s** I can feel it, but these comments are mostly for me.
+*/
+
+/*
+   connection actions, same as the connection's method,
+    but these methods accept the connection ID,
+    which is useful when the developer maps
+    this id with a database field (using config.IDGenerator).
+*/
 
 // OnConnection is the main event you, as developer, will work with each of the websocket connections.
 func (s *Server) OnConnection(cb ConnectionFunc) {
@@ -254,7 +288,7 @@ func (s *Server) leave(roomName string, connID string) (left bool) {
 	return
 }
 
-// GetTotalConnections returns the number of total connections.
+// GetTotalConnections returns the number of total connections
 func (s *Server) GetTotalConnections() (n int) {
 	s.connections.Range(func(k, v interface{}) bool {
 		n++
@@ -264,8 +298,13 @@ func (s *Server) GetTotalConnections() (n int) {
 	return n
 }
 
-// GetConnections returns all connections.
-func (s *Server) GetConnections() (conns []Connection) {
+// GetConnections returns all connections
+func (s *Server) GetConnections() []Connection {
+	// first call of Range to get the total length, we don't want to use append or manually grow the list here for many reasons.
+	length := s.GetTotalConnections()
+	conns := make([]Connection, length, length)
+	i := 0
+	// second call of Range.
 	s.connections.Range(func(k, v interface{}) bool {
 		conn, ok := v.(*connection)
 		if !ok {
@@ -274,11 +313,12 @@ func (s *Server) GetConnections() (conns []Connection) {
 			// in order to avoid any issues while end-dev will try to iterate a nil entry.
 			return false
 		}
-		conns = append(conns, conn)
+		conns[i] = conn
+		i++
 		return true
 	})
 
-	return
+	return conns
 }
 
 // GetConnection returns single connection
@@ -293,7 +333,9 @@ func (s *Server) GetConnection(connID string) Connection {
 
 // GetConnectionsByRoom returns a list of Connection
 // which are joined to this room.
-func (s *Server) GetConnectionsByRoom(roomName string) (conns []Connection) {
+func (s *Server) GetConnectionsByRoom(roomName string) []Connection {
+	var conns []Connection
+	s.mu.RLock()
 	if connIDs, found := s.rooms[roomName]; found {
 		for _, connID := range connIDs {
 			// existence check is not necessary here.
@@ -305,7 +347,9 @@ func (s *Server) GetConnectionsByRoom(roomName string) (conns []Connection) {
 		}
 	}
 
-	return
+	s.mu.RUnlock()
+
+	return conns
 }
 
 // emitMessage is the main 'router' of the messages coming from the connection
@@ -382,7 +426,7 @@ func (s *Server) Disconnect(connID string) (err error) {
 
 	// remove the connection from the list.
 	if conn, ok := s.getConnection(connID); ok {
-		atomic.StoreUint32(&conn.disconnected, 1)
+		conn.disconnected = true
 		// fire the disconnect callbacks, if any.
 		conn.fireDisconnect()
 		// close the underline connection and return its error, if any.

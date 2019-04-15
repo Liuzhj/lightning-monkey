@@ -2,7 +2,6 @@
 package handlerconv_test
 
 import (
-	stdContext "context"
 	"net/http"
 	"testing"
 
@@ -43,8 +42,7 @@ func TestFromStdWithNext(t *testing.T) {
 	stdWNext := func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 		if username, password, ok := r.BasicAuth(); ok &&
 			username == basicauth && password == basicauth {
-			ctx := stdContext.WithValue(r.Context(), "key", "ok")
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r)
 			return
 		}
 		w.WriteHeader(iris.StatusForbidden)
@@ -52,7 +50,7 @@ func TestFromStdWithNext(t *testing.T) {
 
 	h := handlerconv.FromStdWithNext(stdWNext)
 	next := func(ctx context.Context) {
-		ctx.WriteString(ctx.Request().Context().Value("key").(string))
+		ctx.WriteString(passed)
 	}
 
 	app := iris.New()
