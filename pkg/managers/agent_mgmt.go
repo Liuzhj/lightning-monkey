@@ -53,7 +53,11 @@ func RegisterAgent(agent *entities.Agent) (*entities.Cluster, error) {
 	}
 	//generate admin config for master role agent.
 	if agent.HasMasterRole {
-		adminKubeCert, err := certs.GenerateAdminKubeConfig(agent.LastReportIP)
+		certMap, err := common.StorageDriver.GetCertificatesByClusterId(cluster.Id.Hex())
+		if err != nil {
+			return nil, fmt.Errorf("Failed to retrieve all generated certificates for given cluster: %s, error: %s", cluster.Id.Hex(), err.Error())
+		}
+		adminKubeCert, err := certs.GenerateAdminKubeConfig(agent.LastReportIP, certMap)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to generate kube admin configuration file, error: %s", err.Error())
 		}

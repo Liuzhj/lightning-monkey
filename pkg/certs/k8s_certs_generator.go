@@ -34,13 +34,26 @@ func (gm *GeneratedCertsMap) GetResources() map[string]string {
 	return gm.res
 }
 
-func GenerateAdminKubeConfig(advertiseAddr string) (*GeneratedCertsMap, error) {
+func GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.CertificateCollection) (*GeneratedCertsMap, error) {
 	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
-	logrus.Infof("kube admin configuration file temporary storage path: %s", path)
+	err := os.MkdirAll(path, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create temporary path: %s, error: %s", path, err.Error())
+	}
+	logrus.Infof("Kube admin configuration file temporary storage path: %s", path)
 	defer func() {
 		//remove entire path.
 		_ = os.RemoveAll(path)
 	}()
+	if basicCertMap != nil {
+		for i := 0; i < len(basicCertMap); i++ {
+			_ = os.MkdirAll(filepath.Dir(filepath.Join(path, basicCertMap[i].Name)), 0644)
+			ioErr := ioutil.WriteFile(filepath.Join(path, basicCertMap[i].Name), []byte(basicCertMap[i].Content), 0644)
+			if ioErr != nil {
+				return nil, fmt.Errorf("Failed to save basic certificate(%s) to path: %s, error: %s", basicCertMap[i].Name, path, ioErr.Error())
+			}
+		}
+	}
 	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig admin --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s", path, path, advertiseAddr))
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
