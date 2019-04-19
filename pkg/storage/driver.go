@@ -18,8 +18,9 @@ type StorageDriver interface {
 	GetAgentByMetadataId(metadataId string) (*entities.Agent, error)
 	SaveAgent(agent *entities.Agent) error
 	SaveCertificateToCluster(cluster *entities.Cluster, certsMap *certs.GeneratedCertsMap) error
+	UpdateCluster(cluster *entities.Cluster) error
 	UpdateAgentStatus(agent *entities.Agent) error
-	BatchUpdateAgentStatus(agents []interface{}) error
+	BatchUpdateAgentStatus(agents []*entities.Agent) error
 }
 
 type StorageDriverFactory struct {

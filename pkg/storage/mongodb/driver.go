@@ -92,6 +92,17 @@ func (sd *MongoDBStorageDriver) SaveCluster(cluster *entities.Cluster, certsMap 
 	return nil
 }
 
+func (sd *MongoDBStorageDriver) UpdateCluster(cluster *entities.Cluster) error {
+	session := sd.NewSession()
+	defer session.Close()
+	db := session.DB("lightning_monkey")
+	err := db.C("clusters").UpdateId(cluster.Id, cluster)
+	if err != nil {
+		return fmt.Errorf("Failed to save cluster to database, error: %s", err.Error())
+	}
+	return nil
+}
+
 func (sd *MongoDBStorageDriver) SaveCertificateToCluster(cluster *entities.Cluster, certsMap *certs.GeneratedCertsMap) error {
 	session := sd.NewSession()
 	defer session.Close()
@@ -182,12 +193,16 @@ func (sd *MongoDBStorageDriver) UpdateAgentStatus(agent *entities.Agent) error {
 		}})
 }
 
-func (sd *MongoDBStorageDriver) BatchUpdateAgentStatus(agents []interface{}) error {
+func (sd *MongoDBStorageDriver) BatchUpdateAgentStatus(agents []*entities.Agent) error {
 	session := sd.NewSession()
 	defer session.Close()
 	//update: {"$set": {"some_key.param2": "val2_new", "some_key.param3": "val3_new"}}
 	bulk := session.DB("lightning_monkey").C("agents").Bulk()
-	bulk.Upsert(agents...)
+	for i := 0; i < len(agents); i++ {
+		a := agents[i]
+		selector := bson.M{"_id": a.Id}
+		bulk.Upsert(selector, a)
+	}
 	_, err := bulk.Run()
 	return err
 }

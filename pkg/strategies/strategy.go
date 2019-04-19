@@ -3,28 +3,27 @@ package strategies
 import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/sirupsen/logrus"
 	"sort"
-	"strings"
 	"sync"
-	"time"
 )
 
+type agentExp func(a *entities.Agent) bool
 type ClusterStatementStrategy interface {
 	CanDeployETCD() entities.ConditionCheckedResult
 	CanDeployMasterComponents() entities.ConditionCheckedResult
 	CanDeployMinion() entities.ConditionCheckedResult
-	GetETCDNodeAddresses() []string
-	GetMasterNodeAddresses() []string
+	GetAgentsAddress(role string, mustRunningStatus bool) []string
 	GetAgent(metadataId string) (*entities.Agent, error)
-	GetAgents() []interface{}
+	GetAgents() []*entities.Agent
 	Load(cluster *entities.Cluster, agents []*entities.Agent)
 	UpdateCache(agents []*entities.Agent)
 }
 
 type DefaultClusterStatementStrategy struct {
-	lockObj                         *sync.RWMutex
-	cluster                         *entities.Cluster
-	agents                          map[string] /*Agent Role*/ map[string] /*Agent Status*/ []*entities.Agent
+	lockObj *sync.RWMutex
+	cluster *entities.Cluster
+	//agents                          map[string] /*Agent Role*/ map[string] /*Agent Status*/ []*entities.Agent
 	agents_id_indexes               map[string] /*Metadata ID*/ *entities.Agent
 	TotalETCDAgentCount             int
 	TotalMasterAgentCount           int
@@ -35,9 +34,6 @@ type DefaultClusterStatementStrategy struct {
 
 func (ds *DefaultClusterStatementStrategy) Load(cluster *entities.Cluster, agents []*entities.Agent) {
 	ds.cluster = cluster
-	if ds.agents == nil {
-		ds.agents = make(map[string]map[string][]*entities.Agent)
-	}
 	if ds.agents_id_indexes == nil {
 		ds.agents_id_indexes = make(map[string]*entities.Agent)
 	}
@@ -47,6 +43,8 @@ func (ds *DefaultClusterStatementStrategy) Load(cluster *entities.Cluster, agent
 	if agents == nil || len(agents) == 0 {
 		return
 	}
+	ds.lockObj.Lock()
+	defer ds.lockObj.Unlock()
 	//build index by role & metadata ID.
 	for i := 0; i < len(agents); i++ {
 		ds.addAgentToCache(agents[i])
@@ -85,43 +83,30 @@ func (ds *DefaultClusterStatementStrategy) CanDeployMinion() entities.ConditionC
 }
 
 //TODO: may occur errors while building an ETCD cluster.
-func (ds *DefaultClusterStatementStrategy) GetETCDNodeAddresses() []string {
+func (ds *DefaultClusterStatementStrategy) GetAgentsAddress(role string, mustRunningStatus bool) []string {
 	ds.lockObj.RLock()
 	defer ds.lockObj.RUnlock()
-	agents := ds.agents[entities.AgentRole_ETCD]
+	var expFunc agentExp
+	switch role {
+	case entities.AgentRole_ETCD:
+		expFunc = func(a *entities.Agent) bool { return a.HasETCDRole }
+	case entities.AgentRole_Master:
+		expFunc = func(a *entities.Agent) bool { return a.HasMasterRole }
+	case entities.AgentRole_Minion:
+		expFunc = func(a *entities.Agent) bool { return a.HasMinionRole }
+	default:
+		//fast fail when occurs internal serious BUG.
+		logrus.Fatalf("Illegal type of role name: %s", role)
+		return nil
+	}
 	ips := []string{}
-	if agents == nil {
-		return ips
-	}
-	for _, as := range agents {
-		if as == nil || len(as) == 0 {
-			continue
-		}
-		for i := 0; i < len(as); i++ {
-			ips = append(ips, as[i].LastReportIP)
-		}
-	}
-	sort.Strings(ips)
-	return ips
-}
-
-func (ds *DefaultClusterStatementStrategy) GetMasterNodeAddresses() []string {
-	ds.lockObj.RLock()
-	defer ds.lockObj.RUnlock()
-	agents := ds.agents[entities.AgentRole_Master]
-	ips := []string{}
-	if agents == nil {
-		return ips
-	}
-	for status, as := range agents {
-		if as == nil || len(as) == 0 {
-			continue
-		}
-		if strings.ToLower(status) != strings.ToLower(entities.AgentStatus_Running) {
-			continue
-		}
-		for i := 0; i < len(as); i++ {
-			ips = append(ips, as[i].LastReportIP)
+	for _, as := range ds.agents_id_indexes {
+		if expFunc(as) {
+			if mustRunningStatus && !as.IsRunning() {
+				//unhealthy or report timed out.
+				continue
+			}
+			ips = append(ips, as.LastReportIP)
 		}
 	}
 	sort.Strings(ips)
@@ -138,10 +123,13 @@ func (ds *DefaultClusterStatementStrategy) GetAgent(metadataId string) (*entitie
 	return agent, nil
 }
 
-func (ds *DefaultClusterStatementStrategy) GetAgents() []interface{} {
+func (ds *DefaultClusterStatementStrategy) GetAgents() []*entities.Agent {
 	ds.lockObj.RLock()
 	defer ds.lockObj.RUnlock()
-	arr := make([]interface{}, 0, len(ds.agents_id_indexes))
+	if len(ds.agents_id_indexes) == 0 {
+		return nil
+	}
+	arr := make([]*entities.Agent, len(ds.agents_id_indexes))
 	i := 0
 	for _, agent := range ds.agents_id_indexes {
 		arr[i] = agent
@@ -164,8 +152,6 @@ func (ds *DefaultClusterStatementStrategy) UpdateCache(agents []*entities.Agent)
 }
 
 func (ds *DefaultClusterStatementStrategy) updateAgentInternalStatus(oldAgent, newAgent *entities.Agent) {
-	ds.lockObj.Lock()
-	defer ds.lockObj.Unlock()
 	if newAgent.HasProvisionedETCD && !oldAgent.HasProvisionedETCD {
 		oldAgent.HasProvisionedETCD = true
 		oldAgent.ETCDProvisionTime = newAgent.ETCDProvisionTime
@@ -181,46 +167,23 @@ func (ds *DefaultClusterStatementStrategy) updateAgentInternalStatus(oldAgent, n
 }
 
 func (ds *DefaultClusterStatementStrategy) addAgentToCache(agent *entities.Agent) {
-	ds.lockObj.Lock()
-	defer ds.lockObj.Unlock()
 	ds.agents_id_indexes[agent.MetadataId] = agent
-	var agentRoles []string
+	if !agent.IsRunning() {
+		return
+	}
 	if agent.HasMasterRole {
-		agentRoles = append(agentRoles, entities.AgentRole_Master)
-		if time.Since(agent.LastReportTime).Seconds() <= 30 && (agent.LastReportStatus == entities.AgentStatus_Running || agent.LastReportStatus == entities.AgentStatus_Provisioning) {
-			ds.TotalMasterAgentCount++
-			if agent.HasProvisionedMasterComponents {
-				ds.TotalProvisionedMasterNodeCount++
-			}
+		ds.TotalMasterAgentCount++
+		if agent.HasProvisionedMasterComponents {
+			ds.TotalProvisionedMasterNodeCount++
 		}
 	}
 	if agent.HasETCDRole {
-		agentRoles = append(agentRoles, entities.AgentRole_ETCD)
-		if time.Since(agent.LastReportTime).Seconds() <= 30 && (agent.LastReportStatus == entities.AgentStatus_Running || agent.LastReportStatus == entities.AgentStatus_Provisioning) {
-			ds.TotalETCDAgentCount++
-			if agent.HasProvisionedETCD {
-				ds.TotalProvisionedETCDNodeCount++
-			}
+		ds.TotalETCDAgentCount++
+		if agent.HasProvisionedETCD {
+			ds.TotalProvisionedETCDNodeCount++
 		}
 	}
 	if agent.HasMinionRole {
-		agentRoles = append(agentRoles, entities.AgentRole_Minion)
-		if time.Since(agent.LastReportTime).Seconds() <= 30 && (agent.LastReportStatus == entities.AgentStatus_Running || agent.LastReportStatus == entities.AgentStatus_Provisioning) {
-			ds.TotalMinionAgentCount++
-		}
-	}
-	for j := 0; j < len(agentRoles); j++ {
-		var isOK bool
-		var as map[string][]*entities.Agent
-		var m []*entities.Agent
-		if as, isOK = ds.agents[strings.ToLower(agentRoles[j])]; !isOK {
-			as = make(map[string][]*entities.Agent)
-		}
-		if m, isOK = as[strings.ToLower(agent.LastReportStatus)]; !isOK {
-			m = []*entities.Agent{}
-		}
-		m = append(m, agent)
-		as[strings.ToLower(agent.LastReportStatus)] = m
-		ds.agents[strings.ToLower(agentRoles[j])] = as
+		ds.TotalMinionAgentCount++
 	}
 }

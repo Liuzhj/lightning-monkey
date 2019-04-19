@@ -12,6 +12,9 @@ const (
 	AgentRole_Master                                      = "master"
 	AgentRole_ETCD                                        = "etcd"
 	AgentRole_Minion                                      = "minion"
+	ClusterNew                                            = "New"
+	ClusterProvisioning                                   = "Provisiong"
+	ClusterReady                                          = "Ready"
 	ClusterDeleted                                        = "ClusterDeleted"
 	ClusterBlockedAgentRegistering                        = "ClusterBlockedAgentRegistering"
 	_                              ConditionCheckedResult = iota
@@ -26,17 +29,19 @@ const (
 )
 
 type Cluster struct {
-	Id                   *bson.ObjectId `json:"id" bson:"_id"`
-	CreateTime           time.Time      `json:"create_time" bson:"create_time"`
-	LastStatusChangeTime time.Time      `json:"last_status_change_time" bson:"last_status_change_time"`
-	Name                 string         `json:"name" bson:"name"`
-	ExpectedETCDCount    int            `json:"expected_etcd_count" bson:"expected_etcd_count"`
-	ServiceCIDR          string         `json:"service_cidr" bson:"service_cidr"`
-	KubernetesVersion    string         `json:"kubernetes_version" bson:"kubernetes_version"`
-	PodNetworkCIDR       string         `json:"pod_network_cidr" bson:"pod_network_cidr"`
-	SecurityToken        string         `json:"security_token" bson:"security_token"`
-	Status               string         `json:"status" bson:"status"`
-	ServiceDNSDomain     string         `json:"service_dns_domain" bson:"service_dns_domain"`
+	Id                         *bson.ObjectId `json:"id" bson:"_id"`
+	CreateTime                 time.Time      `json:"create_time" bson:"create_time"`
+	HasProvisionedNetworkStack bool           `json:"has_provisioned_network_stack" bson:"has_provisioned_network_stack"`
+	NetworkStackProvisionTime  time.Time      `json:"network_stack_provision_time" bson:"network_stack_provision_time"`
+	LastStatusChangeTime       time.Time      `json:"last_status_change_time" bson:"last_status_change_time"`
+	Name                       string         `json:"name" bson:"name"`
+	ExpectedETCDCount          int            `json:"expected_etcd_count" bson:"expected_etcd_count"`
+	ServiceCIDR                string         `json:"service_cidr" bson:"service_cidr"`
+	KubernetesVersion          string         `json:"kubernetes_version" bson:"kubernetes_version"`
+	PodNetworkCIDR             string         `json:"pod_network_cidr" bson:"pod_network_cidr"`
+	SecurityToken              string         `json:"security_token" bson:"security_token"`
+	Status                     string         `json:"status" bson:"status"`
+	ServiceDNSDomain           string         `json:"service_dns_domain" bson:"service_dns_domain"`
 }
 
 type Certificate struct {

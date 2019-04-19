@@ -17,6 +17,7 @@ const (
 	AgentStatus_Provision_Failed  = "Provision Failed"
 	AgentReport_Provision         = "Provision"
 	AgentReport_Heartbeat         = "Heartbeat"
+	MaxAgentReportTimeoutSecs     = 30
 )
 
 type Agent struct {
@@ -38,6 +39,15 @@ type Agent struct {
 	HasETCDRole                    bool           `json:"has_etcd_role" bson:"has_etcd_role"`
 	HasMasterRole                  bool           `json:"has_master_role" bson:"has_master_role"`
 	HasMinionRole                  bool           `json:"has_minion_role" bson:"has_minion_role"`
+}
+
+func (a *Agent) IsRunning() bool {
+	//"provisioning" phase is considered as running status which indicated that it's performing some initiative scripts.
+	if (a.LastReportStatus == AgentStatus_Running || a.LastReportStatus == AgentStatus_Provisioning) && time.Since(a.LastReportTime).Seconds() <= MaxAgentReportTimeoutSecs {
+		return true
+	}
+	//unhealthy or report timed out.
+	return false
 }
 
 type AgentJob struct {

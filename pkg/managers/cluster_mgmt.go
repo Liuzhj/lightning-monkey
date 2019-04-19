@@ -37,7 +37,7 @@ func NewCluster(cluster *entities.Cluster) error {
 	}
 	//reset cluster fields.
 	clusterId := bson.NewObjectId()
-	cluster.Status = "NEW"
+	cluster.Status = entities.ClusterNew
 	cluster.Id = &clusterId
 	cluster.SecurityToken = "abc"
 	cluster.CreateTime = time.Now()

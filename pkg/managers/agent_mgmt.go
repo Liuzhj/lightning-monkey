@@ -115,7 +115,7 @@ func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
 		return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, All of agents of ETCD role are not ready yet."}, nil
 	}
 	if agent.HasETCDRole && !agent.HasProvisionedETCD && canDeployETCD == entities.ConditionConfirmed {
-		return &entities.AgentJob{Name: entities.AgentJob_Deploy_ETCD, Arguments: map[string]string{"addresses": strings.Join(strategy.GetETCDNodeAddresses(), ",")}}, nil
+		return &entities.AgentJob{Name: entities.AgentJob_Deploy_ETCD, Arguments: map[string]string{"addresses": strings.Join(strategy.GetAgentsAddress(entities.AgentRole_ETCD, false), ",")}}, nil
 	}
 	//2ec, deploy Master components.
 	if canDeployMaster == entities.ConditionNotConfirmed {
@@ -126,7 +126,7 @@ func QueryAgentNextWorkItem(metadataId string) (*entities.AgentJob, error) {
 	}
 	//last, deploy Minion components.
 	if agent.HasMinionRole && !agent.HasProvisionedMinion && canDeployMinion == entities.ConditionConfirmed {
-		masterIps := strategy.GetMasterNodeAddresses()
+		masterIps := strategy.GetAgentsAddress(entities.AgentRole_Master, true)
 		if masterIps == nil || len(masterIps) == 0 {
 			return &entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, no any master are reported with running status."}, nil
 		} else {
