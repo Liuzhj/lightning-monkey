@@ -1,12 +1,18 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/g0194776/lightningmonkey/pkg/strategies"
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	k8s "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -75,10 +81,6 @@ func (cc *ClusterController) UpdateCache(agents []*entities.Agent) {
 	cc.strategy.UpdateCache(agents)
 }
 
-func (cc *ClusterController) ensureMasterConnection() error {
-	return nil
-}
-
 func (cc *ClusterController) updateClusterStatusProc() {
 	cc.onceObj.Do(func() {
 		var err error
@@ -94,7 +96,7 @@ func (cc *ClusterController) updateClusterStatusProc() {
 				masterCount := len(cc.strategy.GetAgentsAddress(entities.AgentRole_Master, true))
 				minionCount := len(cc.strategy.GetAgentsAddress(entities.AgentRole_Minion, true))
 				if masterCount <= 0 {
-					cc.cluster.Status = entities.ClusterNew
+					//skipping set new status with no any available master nodes cluster.
 				} else if (masterCount > 0 && minionCount <= 0) || (!cc.cluster.HasProvisionedNetworkStack) {
 					cc.cluster.Status = entities.ClusterProvisioning
 				} else if masterCount > 0 && minionCount > 0 && cc.cluster.HasProvisionedNetworkStack {
@@ -127,4 +129,52 @@ func (cc *ClusterController) deployNetworkStack() error {
 		return fmt.Errorf("Failed to ensure an available Kubernetes client instance, error: %s", err.Error())
 	}
 	return nil
+}
+
+func (cc *ClusterController) ensureMasterConnection() error {
+	if cc.masterClient != nil {
+		return nil
+	}
+	certContent, err := cc.getMasterCerficiate()
+	if err != nil {
+		return err
+	}
+	path := fmt.Sprintf("/tmp/kubernetes-certs/%s/admin.conf", uuid.NewV4().String())
+	err = os.MkdirAll(filepath.Dir(path), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary path for writing Kubernetes certificate: %s, error: %s", filepath.Dir(path), err.Error())
+	}
+	defer func() {
+		//clean resource.
+		_ = os.RemoveAll(filepath.Dir(path))
+	}()
+	err = ioutil.WriteFile(path, []byte(certContent), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to write Kubernetes certificate content, error: %s", err.Error())
+	}
+	config, err := clientcmd.BuildConfigFromFlags("", path)
+	if err != nil {
+		return fmt.Errorf("Failed to initialize Kubernetes certificate content client for cluster: %s, error: %s", cc.cluster.Id.Hex(), err.Error())
+	}
+	cc.masterClient, err = k8s.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("Failed to initialize Kubernetes client for cluster: %s, error: %s", cc.cluster.Id.Hex(), err.Error())
+	}
+	return nil
+}
+
+func (cc *ClusterController) getMasterCerficiate() (string, error) {
+	addresses := cc.GetAgentsAddress(entities.AgentRole_Master, true)
+	if addresses == nil || len(addresses) == 0 {
+		return "", errors.New("No any available master nodes.")
+	}
+	certName := fmt.Sprintf("%s/admin", addresses[0])
+	cert, err := cc.storageDriver.GetCertificatesByClusterIdAndName(cc.cluster.Id.Hex(), certName)
+	if err != nil {
+		return "", fmt.Errorf("Failed to get certificiate content with given name: %s, error: %s", certName, err.Error())
+	}
+	if cert == nil || cert.Content == "" {
+		return "", fmt.Errorf("Certificate name: \"%s\" not found.", certName)
+	}
+	return cert.Content, nil
 }

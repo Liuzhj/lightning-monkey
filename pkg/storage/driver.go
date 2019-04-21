@@ -13,6 +13,7 @@ type StorageDriver interface {
 	GetCluster(clusterId string) (*entities.Cluster, error)
 	SaveCluster(cluster *entities.Cluster, certsMap *certs.GeneratedCertsMap) error
 	GetCertificatesByClusterId(clusterId string) (entities.CertificateCollection, error)
+	GetCertificatesByClusterIdAndName(clusterId string, name string) (*entities.Certificate, error)
 	GetAllClusters() ([]*entities.Cluster, error)
 	GetAllAgentsByClusterId(clusterId string) ([]*entities.Agent, error)
 	GetAgentByMetadataId(metadataId string) (*entities.Agent, error)

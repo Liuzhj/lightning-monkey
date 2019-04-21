@@ -206,3 +206,7 @@ func (sd *MongoDBStorageDriver) BatchUpdateAgentStatus(agents []*entities.Agent)
 	_, err := bulk.Run()
 	return err
 }
+
+func (sd *MongoDBStorageDriver) GetCertificatesByClusterIdAndName(clusterId string, name string) (*entities.Certificate, error) {
+	return nil, nil
+}
