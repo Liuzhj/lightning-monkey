@@ -2,10 +2,19 @@ package k8s
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8s "k8s.io/client-go/kubernetes"
+	ko "k8s.io/client-go/pkg/api/v1"
+	ko_v1beta "k8s.io/client-go/pkg/apis/apps/v1beta1"
+	ko_v2alpha1 "k8s.io/client-go/pkg/apis/batch/v2alpha1"
+	ko_ext_v1beta "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	v1 "k8s.io/client-go/pkg/apis/storage/v1"
 	"os/exec"
 	"path/filepath"
 )
@@ -111,4 +120,122 @@ func GenerateKubeletConfig(certPath, masterAPIAddr string) error {
 		return fmt.Errorf("Failed to write kubelet settings file, error: %s", err.Error())
 	}
 	return nil
+}
+
+func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Object, error) {
+	var o runtime.Object
+	var err error
+	metadata, _ := meta_v1.ObjectMetaFor(obj)
+	switch obj.(type) {
+	case *ko.ReplicationController:
+		o, err = client.ReplicationControllers(metadata.Namespace).Create(obj.(*ko.ReplicationController))
+	case *ko.Service:
+		o, err = client.Services(metadata.Namespace).Create(obj.(*ko.Service))
+	case *ko.Pod:
+		o, err = client.Pods(metadata.Namespace).Create(obj.(*ko.Pod))
+	case *ko_v1beta.Deployment:
+		o, err = client.AppsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ko_v1beta.Deployment))
+	case *ko_v2alpha1.CronJob:
+		o, err = client.CronJobs(metadata.Namespace).Create(obj.(*ko_v2alpha1.CronJob))
+	case *ko_ext_v1beta.DaemonSet:
+		o, err = client.DaemonSets(metadata.Namespace).Create(obj.(*ko_ext_v1beta.DaemonSet))
+	case *ko.ConfigMap:
+		o, err = client.ConfigMaps(metadata.Namespace).Create(obj.(*ko.ConfigMap))
+	case *ko.ServiceAccount:
+		o, err = client.ServiceAccounts(metadata.Namespace).Create(obj.(*ko.ServiceAccount))
+	case *ko_ext_v1beta.Ingress:
+		o, err = client.Ingresses(metadata.Namespace).Create(obj.(*ko_ext_v1beta.Ingress))
+	case *ko.PersistentVolumeClaim:
+		o, err = client.PersistentVolumeClaims(metadata.Namespace).Create(obj.(*ko.PersistentVolumeClaim))
+	case *ko.PersistentVolume:
+		o, err = client.PersistentVolumes().Create(obj.(*ko.PersistentVolume))
+	default:
+		return nil, fmt.Errorf("Unsupported obj kind %s", obj.GetObjectKind().GroupVersionKind().Kind)
+	}
+	if err != nil {
+		return nil, err
+	}
+	o.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+	return o, nil
+}
+
+func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool, error) {
+	metadata, _ := meta_v1.ObjectMetaFor(obj)
+	switch obj.(type) {
+	case *ko.ReplicationController:
+		realObj, err := client.ReplicationControllers(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.Service:
+		realObj, err := client.Services(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.Pod:
+		realObj, err := client.Pods(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko_v1beta.Deployment:
+		realObj, err := client.AppsV1beta1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko_v2alpha1.CronJob:
+		realObj, err := client.CronJobs(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko_ext_v1beta.DaemonSet:
+		realObj, err := client.DaemonSets(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.ConfigMap:
+		realObj, err := client.ConfigMaps(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.ServiceAccount:
+		realObj, err := client.ServiceAccounts(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko_ext_v1beta.Ingress:
+		realObj, err := client.Ingresses(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.PersistentVolumeClaim:
+		realObj, err := client.PersistentVolumeClaims(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.PersistentVolume:
+		realObj, err := client.PersistentVolumes().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	default:
+	}
+	if sc, ok := obj.(*v1.StorageClass); ok {
+		realObj, err := client.StorageV1Client.StorageClasses().Get(sc.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	}
+	return false, errors.New("Unsupported obj kind: " + obj.GetObjectKind().GroupVersionKind().Kind)
 }

@@ -208,5 +208,11 @@ func (sd *MongoDBStorageDriver) BatchUpdateAgentStatus(agents []*entities.Agent)
 }
 
 func (sd *MongoDBStorageDriver) GetCertificatesByClusterIdAndName(clusterId string, name string) (*entities.Certificate, error) {
-	return nil, nil
+	cId := bson.ObjectIdHex(clusterId)
+	session := sd.NewSession()
+	defer session.Close()
+	cert := entities.Certificate{}
+	c := session.DB("lightning_monkey").C("certificates")
+	err := c.Find(bson.M{"cluster_id": &cId, "name": name}).One(&cert)
+	return &cert, err
 }

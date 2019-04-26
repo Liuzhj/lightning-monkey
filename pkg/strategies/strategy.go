@@ -13,7 +13,7 @@ type ClusterStatementStrategy interface {
 	CanDeployETCD() entities.ConditionCheckedResult
 	CanDeployMasterComponents() entities.ConditionCheckedResult
 	CanDeployMinion() entities.ConditionCheckedResult
-	GetAgentsAddress(role string, mustRunningStatus bool) []string
+	GetAgentsAddress(role string, mustStatusFlag entities.AgentStatusFlag) []string
 	GetAgent(metadataId string) (*entities.Agent, error)
 	GetAgents() []*entities.Agent
 	Load(cluster *entities.Cluster, agents []*entities.Agent)
@@ -83,7 +83,7 @@ func (ds *DefaultClusterStatementStrategy) CanDeployMinion() entities.ConditionC
 }
 
 //TODO: may occur errors while building an ETCD cluster.
-func (ds *DefaultClusterStatementStrategy) GetAgentsAddress(role string, mustRunningStatus bool) []string {
+func (ds *DefaultClusterStatementStrategy) GetAgentsAddress(role string, mustStatusFlag entities.AgentStatusFlag) []string {
 	ds.lockObj.RLock()
 	defer ds.lockObj.RUnlock()
 	var expFunc agentExp
@@ -102,7 +102,11 @@ func (ds *DefaultClusterStatementStrategy) GetAgentsAddress(role string, mustRun
 	ips := []string{}
 	for _, as := range ds.agents_id_indexes {
 		if expFunc(as) {
-			if mustRunningStatus && !as.IsRunning() {
+			if mustStatusFlag == entities.AgentStatusFlag_Running /*running*/ && !as.IsRunning() {
+				//unhealthy or report timed out.
+				continue
+			}
+			if mustStatusFlag == entities.AgentStatusFlag_Provisioned /*provisioned*/ && !as.IsProvisioned() {
 				//unhealthy or report timed out.
 				continue
 			}

@@ -18,13 +18,14 @@ import (
 )
 
 type ClusterController struct {
-	onceObj       *sync.Once
-	cluster       *entities.Cluster
-	lockObj       *sync.RWMutex
-	masterClient  *k8s.Clientset
-	stopChan      chan int
-	storageDriver storage.StorageDriver
-	strategy      strategies.ClusterStatementStrategy
+	onceObj           *sync.Once
+	cluster           *entities.Cluster
+	lockObj           *sync.RWMutex
+	masterClient      *k8s.Clientset
+	networkController NetworkStackController
+	stopChan          chan int
+	storageDriver     storage.StorageDriver
+	strategy          strategies.ClusterStatementStrategy
 }
 
 func (cc *ClusterController) Initialize(storageDriver storage.StorageDriver, strategy strategies.ClusterStatementStrategy) {
@@ -56,8 +57,8 @@ func (cc *ClusterController) Dispose() {
 	}
 }
 
-func (cc *ClusterController) GetAgentsAddress(role string, mustRunningStatus bool) []string {
-	return cc.strategy.GetAgentsAddress(role, mustRunningStatus)
+func (cc *ClusterController) GetAgentsAddress(role string, mustStatusFlag entities.AgentStatusFlag) []string {
+	return cc.strategy.GetAgentsAddress(role, mustStatusFlag)
 }
 
 func (cc *ClusterController) GetAgent(metadataId string) (*entities.Agent, error) {
@@ -93,10 +94,12 @@ func (cc *ClusterController) updateClusterStatusProc() {
 			default:
 				//4 steps cluster status flow:
 				//new -> provisioning -> ready -> available
-				masterCount := len(cc.strategy.GetAgentsAddress(entities.AgentRole_Master, true))
-				minionCount := len(cc.strategy.GetAgentsAddress(entities.AgentRole_Minion, true))
+				masterCount := len(cc.strategy.GetAgentsAddress(entities.AgentRole_Master, entities.AgentStatusFlag_Provisioned))
+				minionCount := len(cc.strategy.GetAgentsAddress(entities.AgentRole_Minion, entities.AgentStatusFlag_Provisioned))
 				if masterCount <= 0 {
-					//skipping set new status with no any available master nodes cluster.
+					if cc.cluster.Status != entities.ClusterNew {
+						cc.cluster.Status = entities.ClusterUncontrollable
+					}
 				} else if (masterCount > 0 && minionCount <= 0) || (!cc.cluster.HasProvisionedNetworkStack) {
 					cc.cluster.Status = entities.ClusterProvisioning
 				} else if masterCount > 0 && minionCount > 0 && cc.cluster.HasProvisionedNetworkStack {
@@ -118,7 +121,7 @@ func (cc *ClusterController) updateClusterStatusProc() {
 					logrus.Error(err)
 				}
 			}
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 5)
 		}
 	})
 }
@@ -128,7 +131,13 @@ func (cc *ClusterController) deployNetworkStack() error {
 	if err != nil {
 		return fmt.Errorf("Failed to ensure an available Kubernetes client instance, error: %s", err.Error())
 	}
-	return nil
+	if cc.networkController == nil {
+		cc.networkController, err = CreateNetworkStackController(cc.masterClient, cc.cluster)
+		if err != nil {
+			return err
+		}
+	}
+	return cc.networkController.Install()
 }
 
 func (cc *ClusterController) ensureMasterConnection() error {
@@ -164,7 +173,7 @@ func (cc *ClusterController) ensureMasterConnection() error {
 }
 
 func (cc *ClusterController) getMasterCerficiate() (string, error) {
-	addresses := cc.GetAgentsAddress(entities.AgentRole_Master, true)
+	addresses := cc.GetAgentsAddress(entities.AgentRole_Master, entities.AgentStatusFlag_Provisioned)
 	if addresses == nil || len(addresses) == 0 {
 		return "", errors.New("No any available master nodes.")
 	}

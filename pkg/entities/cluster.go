@@ -7,6 +7,7 @@ import (
 )
 
 type ConditionCheckedResult int
+type AgentStatusFlag int
 
 const (
 	AgentRole_Master                                      = "master"
@@ -14,6 +15,7 @@ const (
 	AgentRole_Minion                                      = "minion"
 	ClusterNew                                            = "New"
 	ClusterProvisioning                                   = "Provisiong"
+	ClusterUncontrollable                                 = "Uncontrollable"
 	ClusterReady                                          = "Ready"
 	ClusterDeleted                                        = "ClusterDeleted"
 	ClusterBlockedAgentRegistering                        = "ClusterBlockedAgentRegistering"
@@ -21,27 +23,40 @@ const (
 	ConditionConfirmed
 	ConditionNotConfirmed
 	ConditionInapplicable
-	MasterSettings_PodCIDR           = "pod_ip_cidr"
-	MasterSettings_ServiceCIDR       = "service_ip_cidr"
-	MasterSettings_ServiceDNSDomain  = "service_dns_domain"
-	MasterSettings_KubernetesVersion = "k8s_version"
-	MasterSettings_DockerRegistry    = "docker_registry"
+	MasterSettings_PodCIDR                           = "pod_ip_cidr"
+	MasterSettings_ServiceCIDR                       = "service_ip_cidr"
+	MasterSettings_ServiceDNSDomain                  = "service_dns_domain"
+	MasterSettings_KubernetesVersion                 = "k8s_version"
+	MasterSettings_DockerRegistry                    = "docker_registry"
+	NetworkStack_Flannel                             = "flannel"
+	NetworkStack_Calico                              = "calico"
+	NetworkStack_KubeRouter                          = "kuberouter"
+	_                                AgentStatusFlag = iota
+	AgentStatusFlag_Whatever
+	AgentStatusFlag_Running
+	AgentStatusFlag_Provisioned
 )
 
 type Cluster struct {
-	Id                         *bson.ObjectId `json:"id" bson:"_id"`
-	CreateTime                 time.Time      `json:"create_time" bson:"create_time"`
-	HasProvisionedNetworkStack bool           `json:"has_provisioned_network_stack" bson:"has_provisioned_network_stack"`
-	NetworkStackProvisionTime  time.Time      `json:"network_stack_provision_time" bson:"network_stack_provision_time"`
-	LastStatusChangeTime       time.Time      `json:"last_status_change_time" bson:"last_status_change_time"`
-	Name                       string         `json:"name" bson:"name"`
-	ExpectedETCDCount          int            `json:"expected_etcd_count" bson:"expected_etcd_count"`
-	ServiceCIDR                string         `json:"service_cidr" bson:"service_cidr"`
-	KubernetesVersion          string         `json:"kubernetes_version" bson:"kubernetes_version"`
-	PodNetworkCIDR             string         `json:"pod_network_cidr" bson:"pod_network_cidr"`
-	SecurityToken              string         `json:"security_token" bson:"security_token"`
-	Status                     string         `json:"status" bson:"status"`
-	ServiceDNSDomain           string         `json:"service_dns_domain" bson:"service_dns_domain"`
+	Id                         *bson.ObjectId        `json:"id" bson:"_id"`
+	CreateTime                 time.Time             `json:"create_time" bson:"create_time"`
+	HasProvisionedNetworkStack bool                  `json:"has_provisioned_network_stack" bson:"has_provisioned_network_stack"`
+	NetworkStackProvisionTime  time.Time             `json:"network_stack_provision_time" bson:"network_stack_provision_time"`
+	LastStatusChangeTime       time.Time             `json:"last_status_change_time" bson:"last_status_change_time"`
+	Name                       string                `json:"name" bson:"name"`
+	ExpectedETCDCount          int                   `json:"expected_etcd_count" bson:"expected_etcd_count"`
+	ServiceCIDR                string                `json:"service_cidr" bson:"service_cidr"`
+	KubernetesVersion          string                `json:"kubernetes_version" bson:"kubernetes_version"`
+	PodNetworkCIDR             string                `json:"pod_network_cidr" bson:"pod_network_cidr"`
+	SecurityToken              string                `json:"security_token" bson:"security_token"`
+	Status                     string                `json:"status" bson:"status"`
+	ServiceDNSDomain           string                `json:"service_dns_domain" bson:"service_dns_domain"`
+	NetworkStack               *NetworkStackSettings `json:"network_stack" bson:"network_stack"`
+}
+
+type NetworkStackSettings struct {
+	Type       string            `json:"type"` //flannel, kube-router, calico...
+	Attributes map[string]string `json:"attributes" bson:"attributes"`
 }
 
 type Certificate struct {
