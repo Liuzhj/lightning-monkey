@@ -125,7 +125,11 @@ func ReportStatus(ctx iris.Context) {
 	if status.IP == "" {
 		status.IP = ctx.RemoteAddr()
 	}
-	logrus.Infof("[Report]: IP: %s, Type: %s, Status: [%s], Reason: %s", status.IP, status.ReportType, status.Status, status.Reason)
+	if status.Reason == "" {
+		logrus.Infof("[Report]: IP: %s, Type: %s, Status: [%s]", status.IP, status.ReportType, status.Status)
+	} else {
+		logrus.Infof("[Report]: IP: %s, Type: %s, Status: [%s], Reason: %s", status.IP, status.ReportType, status.Status, status.Reason)
+	}
 	err = managers.AgentReportStatus(clusterId, metadataId, status)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}

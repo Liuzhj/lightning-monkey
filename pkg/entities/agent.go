@@ -50,15 +50,6 @@ func (a *Agent) IsRunning() bool {
 	return false
 }
 
-func (a *Agent) IsProvisioned() bool {
-	//"provisioning" phase is considered as running status which indicated that it's performing some initiative scripts.
-	if a.LastReportStatus == AgentStatus_Provisioning && time.Since(a.LastReportTime).Seconds() <= MaxAgentReportTimeoutSecs {
-		return true
-	}
-	//unhealthy or report timed out.
-	return false
-}
-
 type AgentJob struct {
 	Name      string            `json:"name"`
 	Arguments map[string]string `json:"arguments"`

@@ -11,7 +11,7 @@ FROM centos:7
 COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/extras/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/agent/lm-agent /opt
 
-RUN yum install -y kubeadm net-tools --disableexcludes=kubernetes
+RUN yum install -y kubeadm-1.13.5-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-agent
 
 #Update time zone to Asia-Shanghai

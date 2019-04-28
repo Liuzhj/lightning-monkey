@@ -23,5 +23,4 @@ func CreateNetworkStackController(client *k8s.Clientset, cluster *entities.Clust
 	default:
 		return nil, fmt.Errorf("No any types of supported network stack were matched current cluster settings: %s", cluster.NetworkStack.Type)
 	}
-	return nil, nil
 }

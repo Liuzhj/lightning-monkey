@@ -6,6 +6,7 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/g0194776/lightningmonkey/pkg/utils"
 	"github.com/sirupsen/logrus"
+	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -227,7 +228,7 @@ func (nc *KubeRouterNetworkController) Install() error {
 	var existed bool
 	for i := 0; i < len(nc.parsedObjects); i++ {
 		metadata, _ := meta_v1.ObjectMetaFor(nc.parsedObjects[i])
-		if existed, err = k8s.IsKubernetesResourceExists(nc.client, nc.parsedObjects[i]); err != nil {
+		if existed, err = k8s.IsKubernetesResourceExists(nc.client, nc.parsedObjects[i]); err != nil && !k8sErr.IsNotFound(err) {
 			return fmt.Errorf("Failed to check Kubernetes resource existence, error: %s", err.Error())
 		} else if !existed {
 			_, err = k8s.CreateK8SResource(nc.client, nc.parsedObjects[i])

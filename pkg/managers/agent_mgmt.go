@@ -7,6 +7,7 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/globalsign/mgo/bson"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 )
@@ -152,17 +153,10 @@ func AgentReportStatus(clusterId, metadataId string, status entities.AgentStatus
 	agent.LastReportTime = time.Now()
 	agent.LastReportStatus = status.Status
 	agent.Reason = status.Reason
-	if status.Status == entities.AgentStatus_Provision_Succeed && status.ReportTarget == entities.AgentJob_Deploy_ETCD {
-		agent.HasProvisionedETCD = true
-		agent.ETCDProvisionTime = time.Now()
-	}
-	if status.Status == entities.AgentStatus_Provision_Succeed && status.ReportTarget == entities.AgentJob_Deploy_Master {
-		agent.HasProvisionedMasterComponents = true
-		agent.MasterComponentsProvisionTime = time.Now()
-	}
-	if status.Status == entities.AgentStatus_Provision_Succeed && status.ReportTarget == entities.AgentJob_Deploy_Minion {
-		agent.HasProvisionedMinion = true
-		agent.MinionProvisionTime = time.Now()
+	if status.Status == entities.AgentStatus_Provision_Succeed {
+		if err = strategy.ProvisionedComponent(agent.MetadataId, status.ReportTarget); err != nil {
+			logrus.Errorf("Error occurs while reporting its status, error: %s", err.Error())
+		}
 	}
 	return nil
 }
