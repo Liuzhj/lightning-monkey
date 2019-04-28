@@ -70,7 +70,7 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
 	}
 	client := http.Client{
-		Timeout:   time.Second * 5,
+		Timeout:   time.Second * 120,
 		Transport: http.DefaultTransport,
 	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/apis/v1/agent/register", *a.arg.Server), bytes.NewReader(bodyData))
@@ -526,7 +526,7 @@ func (a *LightningMonkeyAgent) SendSignalToMaster(job *entities.AgentJob, succee
 		Timeout:   time.Second * 5,
 		Transport: http.DefaultTransport,
 	}
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/apis/v1/agent/status?metadata-id=%s&cluster=%s", *a.arg.Server, *a.arg.MetadataId, *a.arg.ClusterId), bytes.NewBuffer(bodyData))
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/apis/v1/agent/status?metadata-id=%s&cluster-id=%s", *a.arg.Server, *a.arg.MetadataId, *a.arg.ClusterId), bytes.NewBuffer(bodyData))
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
 	}

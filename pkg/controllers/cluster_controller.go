@@ -177,7 +177,7 @@ func (cc *ClusterController) getMasterCerficiate() (string, error) {
 	if addresses == nil || len(addresses) == 0 {
 		return "", errors.New("No any available master nodes.")
 	}
-	certName := fmt.Sprintf("%s/admin", addresses[0])
+	certName := fmt.Sprintf("%s/admin.conf", addresses[0])
 	cert, err := cc.storageDriver.GetCertificatesByClusterIdAndName(cc.cluster.Id.Hex(), certName)
 	if err != nil {
 		return "", fmt.Errorf("Failed to get certificiate content with given name: %s, error: %s", certName, err.Error())

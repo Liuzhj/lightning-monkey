@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	//ensures version of kubeadm is "1.13.5"
 	etcdConfigTemplate string = `apiVersion: "kubeadm.k8s.io/v1alpha3"
 kind: ClusterConfiguration
 etcd:
