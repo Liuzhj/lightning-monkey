@@ -27,6 +27,15 @@ func main() {
 	if driverType == "" {
 		driverType = "mongo"
 	}
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel != "" {
+		l, err := logrus.ParseLevel(logLevel)
+		if err != nil {
+			logrus.Fatalf("Unable to set log level to logrus: %s, error: %s", logLevel, err.Error())
+			return
+		}
+		logrus.SetLevel(l)
+	}
 	sdf := storage.StorageDriverFactory{}
 	//handle args.
 	driverArgsStr := os.Getenv("BACKEND_STORAGE_ARGS")

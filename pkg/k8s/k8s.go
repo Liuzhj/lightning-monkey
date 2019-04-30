@@ -14,6 +14,7 @@ import (
 	ko_v1beta "k8s.io/client-go/pkg/apis/apps/v1beta1"
 	ko_v2alpha1 "k8s.io/client-go/pkg/apis/batch/v2alpha1"
 	ko_ext_v1beta "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	rbacv1 "k8s.io/client-go/pkg/apis/rbac/v1beta1"
 	v1 "k8s.io/client-go/pkg/apis/storage/v1"
 	"os/exec"
 	"path/filepath"
@@ -149,6 +150,10 @@ func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Objec
 		o, err = client.PersistentVolumeClaims(metadata.Namespace).Create(obj.(*ko.PersistentVolumeClaim))
 	case *ko.PersistentVolume:
 		o, err = client.PersistentVolumes().Create(obj.(*ko.PersistentVolume))
+	case *rbacv1.ClusterRole:
+		o, err = client.RbacV1beta1().ClusterRoles().Create(obj.(*rbacv1.ClusterRole))
+	case *rbacv1.ClusterRoleBinding:
+		o, err = client.RbacV1beta1().ClusterRoleBindings().Create(obj.(*rbacv1.ClusterRoleBinding))
 	default:
 		return nil, fmt.Errorf("Unsupported obj kind %s", obj.GetObjectKind().GroupVersionKind().Kind)
 	}
@@ -224,6 +229,18 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 		return realObj != nil, nil
 	case *ko.PersistentVolume:
 		realObj, err := client.PersistentVolumes().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbacv1.ClusterRole:
+		realObj, err := client.RbacV1beta1().ClusterRoles().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbacv1.ClusterRoleBinding:
+		realObj, err := client.RbacV1beta1().ClusterRoleBindings().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}

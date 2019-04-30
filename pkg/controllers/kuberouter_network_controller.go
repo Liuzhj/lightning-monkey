@@ -236,7 +236,7 @@ func (nc *KubeRouterNetworkController) Install() error {
 				return fmt.Errorf("Failed to create Kubernetes resource: %s, error: %s", metadata.Name, err.Error())
 			}
 		}
-		logrus.Infof("Kubernetes resource %s has been created successfully!", metadata.Name)
+		logrus.Infof("Kubernetes resource %s(%s) has been created successfully!", metadata.Name, nc.parsedObjects[i].GetObjectKind().GroupVersionKind().Kind)
 	}
 	return nil
 }

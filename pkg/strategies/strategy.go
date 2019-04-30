@@ -217,19 +217,19 @@ func (ds *DefaultClusterStatementStrategy) UpdateCache(agents []*entities.Agent)
 }
 
 func (ds *DefaultClusterStatementStrategy) updateAgentInternalStatus(oldAgent, newAgent *entities.Agent) {
-	if newAgent.HasProvisionedETCD && !oldAgent.HasProvisionedETCD {
+	if newAgent.HasProvisionedETCD {
 		oldAgent.HasProvisionedETCD = true
 		oldAgent.ETCDProvisionTime = newAgent.ETCDProvisionTime
 		ds.provisionedETCDNodeIds[oldAgent.MetadataId] = 1
 		ds.TotalProvisionedETCDNodeCount = len(ds.provisionedETCDNodeIds)
 	}
-	if newAgent.HasProvisionedMasterComponents && !oldAgent.HasProvisionedMasterComponents {
+	if newAgent.HasProvisionedMasterComponents {
 		oldAgent.HasProvisionedMasterComponents = true
 		oldAgent.MasterComponentsProvisionTime = newAgent.MasterComponentsProvisionTime
 		ds.provisionedMasterNodeIds[oldAgent.MetadataId] = 1
 		ds.TotalProvisionedMasterNodeCount = len(ds.provisionedMasterNodeIds)
 	}
-	if newAgent.HasProvisionedMinion && !oldAgent.HasProvisionedMinion {
+	if newAgent.HasProvisionedMinion {
 		oldAgent.HasProvisionedMinion = true
 		oldAgent.MinionProvisionTime = newAgent.MinionProvisionTime
 	}
