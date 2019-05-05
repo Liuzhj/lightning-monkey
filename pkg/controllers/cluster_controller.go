@@ -90,7 +90,7 @@ func (cc *ClusterController) updateClusterStatusProc() {
 	cc.onceObj.Do(func() {
 		var err error
 		for {
-			logrus.Infof("Cluster %s status check loop...", cc.cluster.Id.Hex())
+			logrus.Debugf("Cluster %s status check loop...", cc.cluster.Id.Hex())
 			select {
 			case _, isOpen := <-cc.stopChan:
 				if !isOpen {
@@ -101,7 +101,7 @@ func (cc *ClusterController) updateClusterStatusProc() {
 				//new -> provisioning -> ready -> available
 				masterCount := len(cc.strategy.GetAgentsAddress(entities.AgentRole_Master, entities.AgentStatusFlag_Provisioned))
 				minionCount := len(cc.strategy.GetAgentsAddress(entities.AgentRole_Minion, entities.AgentStatusFlag_Provisioned))
-				logrus.Infof("Cluster %s, Master=%d, Minion=%d", cc.cluster.Id.Hex(), masterCount, minionCount)
+				logrus.Debugf("Cluster %s, Master=%d, Minion=%d", cc.cluster.Id.Hex(), masterCount, minionCount)
 				if masterCount <= 0 {
 					if cc.cluster.Status != entities.ClusterNew {
 						cc.cluster.Status = entities.ClusterUncontrollable

@@ -66,7 +66,7 @@ func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, er
 		"NAME":    generateETCDName(a, *a.arg.Address),
 		"HOST":    *a.arg.Address,
 		"SERVERS": serversConnection,
-		"IMAGE":   a.basicImages["etcd"],
+		"IMAGE":   a.basicImages.Images["etcd"].ImageName,
 		"DATADIR": "/data/etcd",
 		"ADDR":    "0.0.0.0",
 	}

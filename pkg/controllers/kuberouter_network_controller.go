@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
@@ -11,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"strings"
+	"text/template"
 )
 
 const (
@@ -37,7 +39,7 @@ data:
   kubeconfig: |
     apiVersion: v1
     kind: Config
-    clusterCIDR: "20.20.0.0/16"
+    clusterCIDR: "{{ .CIDR }}"
 ---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -205,7 +207,18 @@ type KubeRouterNetworkController struct {
 func (nc *KubeRouterNetworkController) Initialize(client *kubernetes.Clientset, cluster *entities.Cluster) error {
 	nc.client = client
 	nc.cluster = cluster
-	yamlContentArr := strings.Split(kuberouter_deployment_payload, "---")
+	attributes := map[string]string{"CIDR": nc.cluster.PodNetworkCIDR}
+	t := template.New("t1")
+	t, err := t.Parse(kuberouter_deployment_payload)
+	if err != nil {
+		return fmt.Errorf("Failed to parse Kube-Router deployment metadata as golang template content, error: %s", err.Error())
+	}
+	buf := bytes.Buffer{}
+	err = t.Execute(&buf, attributes)
+	if err != nil {
+		return fmt.Errorf("Failed to execute replacing procedure of golang template for Kube-Router deployment metadata, error: %s", err.Error())
+	}
+	yamlContentArr := strings.Split(buf.String(), "---")
 	if yamlContentArr == nil || len(yamlContentArr) == 0 {
 		return nil
 	}

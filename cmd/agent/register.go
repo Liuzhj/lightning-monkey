@@ -10,6 +10,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
+	"github.com/g0194776/lightningmonkey/pkg/managers"
 	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -28,10 +29,11 @@ import (
 type LightningMonkeyAgent struct {
 	arg                *AgentArgs
 	dockerClient       *client.Client
+	dockerImageManager managers.DockerImageManager
 	lastRegisteredTime time.Time
 	lastReportTime     time.Time
 	hasRegistered      int32
-	basicImages        map[string]string
+	basicImages        *entities.DockerImageCollection
 	masterSettings     map[string]string
 	workQueue          chan *entities.AgentJob
 	handlerFactory     *AgentJobHandlerFactory
@@ -100,14 +102,20 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	if rspObj.ErrorId != entities.Succeed {
 		return fmt.Errorf("Remote API server returned a non-zero biz code: %d %w", rspObj.ErrorId, crashError)
 	}
-	if rspObj.BasicImages == nil || len(rspObj.BasicImages) == 0 {
-		return fmt.Errorf("Remote API server returned an empty basic image collection! %w", crashError)
-	}
-	a.basicImages = rspObj.BasicImages
+	a.basicImages = &rspObj.BasicImages
 	a.masterSettings = rspObj.MasterSettings
+	a.dockerImageManager, err = managers.NewDockerImageManager(*a.arg.Server, a.dockerClient, &rspObj.BasicImages)
+	if err != nil {
+		return xerrors.Errorf("Failed to create new docker image manager: %s %w", err.Error(), crashError)
+	}
+	logrus.Info("Preparing downloading certificates & loading docker images...")
 	err = a.downloadCertificates()
 	if err != nil {
-		return err
+		return xerrors.Errorf("%s %w", err.Error(), crashError)
+	}
+	err = a.dockerImageManager.Ready()
+	if err != nil {
+		return xerrors.Errorf("%s %w", err.Error(), crashError)
 	}
 	//directly start kubelet up when it has not Minion role.
 	if !*a.arg.IsMinionRole {
@@ -448,14 +456,8 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	if err != nil {
 		return xerrors.Errorf("Failed to generate kube-config, master-ip: %s, error: %s %w", masterIP, err.Error(), crashError)
 	}
-	img := a.basicImages["k8s"]
-	infraContainer := a.basicImages["infra"]
-	logrus.Infof("Pulling docker image: %s", img)
-	reader, err := a.dockerClient.ImagePull(context.Background(), img, types.ImagePullOptions{})
-	if err != nil {
-		return xerrors.Errorf("Failed to pull docker image, error: %s %w", err.Error(), crashError)
-	}
-	_, _ = io.Copy(os.Stdout, reader)
+	img := a.basicImages.Images["k8s"].ImageName
+	infraContainer := a.basicImages.Images["infra"].ImageName
 	resp, err := a.dockerClient.ContainerCreate(context.Background(), &container.Config{
 		Hostname: *a.arg.Address,
 		Image:    img,

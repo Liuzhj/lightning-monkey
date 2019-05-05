@@ -1,17 +1,23 @@
 package entities
 
 const (
-	Succeed                 int = 0
-	BizError                int = 40000
-	ParameterError          int = 40001
-	DeserializeError        int = 40002
-	UnsupportedError        int = 40003
-	AuthError               int = 40004
-	OperationFailed         int = 40005
-	ResourceHasBeingDeleted int = 40006
-	NotFound                int = 40007
-	InternalError           int = 50000
-	RESPONSEINFO                = "HTTP_RESPONSE_INFO"
+	Succeed                          int = 0
+	BizError                         int = 40000
+	ParameterError                   int = 40001
+	DeserializeError                 int = 40002
+	UnsupportedError                 int = 40003
+	AuthError                        int = 40004
+	OperationFailed                  int = 40005
+	ResourceHasBeingDeleted          int = 40006
+	NotFound                         int = 40007
+	InternalError                    int = 50000
+	RESPONSEINFO                         = "HTTP_RESPONSE_INFO"
+	DockerImageDownloadType_Registry     = "REGISTRY"
+	DockerImageDownloadType_HTTP         = "HTTP"
+)
+
+var (
+	HTTPDockerImageDownloadToken = ""
 )
 
 type Response struct {
@@ -23,8 +29,8 @@ type Response struct {
 
 type RegisterAgentResponse struct {
 	Response
-	BasicImages    map[string]string `json:"images"`
-	MasterSettings map[string]string `json:"master_settings"`
+	BasicImages    DockerImageCollection `json:"image_collection"`
+	MasterSettings map[string]string     `json:"master_settings"`
 }
 
 type CreateClusterResponse struct {
@@ -41,4 +47,15 @@ type GetCertificateResponse struct {
 type GetNextAgentJobResponse struct {
 	Response
 	Job *AgentJob `json:"job"`
+}
+
+type DockerImageCollection struct {
+	DownloadType      string                 `json:"download_type"` //"REGISTRY", "HTTP"
+	HTTPDownloadToken string                 `json:"http_download_token"`
+	Images            map[string]DockerImage `json:"images"`
+}
+
+type DockerImage struct {
+	DownloadAddr string `json:"download_addr"` //remote download address.
+	ImageName    string `json:"image_name"`    //used for tagging a docker image as expected name on the local machine.
 }

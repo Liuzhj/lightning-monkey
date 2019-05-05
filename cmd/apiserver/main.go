@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"github.com/g0194776/lightningmonkey/cmd/apiserver/apis"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/controllers"
+	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
+	"math/rand"
 	"os"
 	"strings"
 )
@@ -22,6 +25,7 @@ func main() {
 		logrus.Fatalf("Failed to register API group to web engine, error: %s", err.Error())
 		return
 	}
+	entities.HTTPDockerImageDownloadToken = os.Getenv("GET_TOKEN")
 	logrus.Infof("Creating backend storage driver...")
 	driverType := os.Getenv("BACKEND_STORAGE_TYPE")
 	if driverType == "" {
@@ -65,6 +69,25 @@ func main() {
 	csc.Initialize(driver)
 	csc.Start()
 	common.ClusterStatementController = csc
+	//generates readonly token for downloading payloads.
+	if entities.HTTPDockerImageDownloadToken == "" {
+		count := 24
+		b := make([]byte, count)
+		if _, err := rand.Read(b); err != nil {
+			logrus.Fatalf("Could not generate token, error: %s", err.Error())
+			return
+		}
+		entities.HTTPDockerImageDownloadToken = fmt.Sprintf("%x", b)
+		logrus.Infof("*** Please kindly record this auto-generated token for downloading the deployment payloads ***")
+		logrus.Info("***")
+		logrus.Info("*** " + entities.HTTPDockerImageDownloadToken)
+		logrus.Info("***")
+	} else {
+		logrus.Infof("*** Please kindly record this user-specified token for downloading the deployment payloads ***")
+		logrus.Info("***")
+		logrus.Info("*** " + entities.HTTPDockerImageDownloadToken)
+		logrus.Info("***")
+	}
 	logrus.Infof("Starting Web Engine...")
 	app.Run(iris.Addr("0.0.0.0:8080"))
 }
