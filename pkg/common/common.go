@@ -15,7 +15,7 @@ var (
 			HTTPDownloadToken: entities.HTTPDockerImageDownloadToken,
 			Images: map[string]entities.DockerImage{
 				"etcd":  {ImageName: "docker.io/mirrorgooglecontainers/etcd:3.2.24", DownloadAddr: "%s/apis/v1/registry/1.12.5/etcd.tar?token=%s"},
-				"k8s":   {ImageName: "docker.io/mirrorgooglecontainers/hyperkube:v1.12.5", DownloadAddr: "%s/apis/v1/registry/1.12.5/hyperkube.tar?token=%s"},
+				"k8s":   {ImageName: "docker.io/g0194776/lightning-monkey-hyperkube:v1.12.5", DownloadAddr: "%s/apis/v1/registry/1.12.5/hyperkube.tar?token=%s"},
 				"infra": {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.12.5/pause.tar?token=%s"},
 			},
 		},

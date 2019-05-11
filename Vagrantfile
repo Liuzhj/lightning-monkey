@@ -33,4 +33,20 @@ Vagrant.configure("2") do |config|
     vm3.vm.provision "shell", inline: "setenforce 0 && swapoff -a"
     vm3.vm.hostname = "192.168.33.13"
   end
+
+  config.vm.define "vm4" do |vm4|
+    vm4.vm.box = "centos/7"
+    vm4.vm.network "private_network", ip: "192.168.33.14"
+    vm4.vm.provision "shell", inline: "setenforce 0 && swapoff -a"
+    vm4.vm.hostname = "192.168.33.14"
+  end
+
+  config.vm.define "vm5" do |vm5|
+    vm5.vm.box = "centos/7"
+    vm5.vm.network "private_network", ip: "192.168.33.15"
+    vm5.vm.provision "shell", inline: "setenforce 0 && swapoff -a"
+    vm5.vm.hostname = "192.168.33.15"
+  end
+
+
 end
