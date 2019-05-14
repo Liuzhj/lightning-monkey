@@ -105,6 +105,8 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	a.basicImages = &rspObj.BasicImages
 	a.masterSettings = rspObj.MasterSettings
 	a.dockerImageManager, err = managers.NewDockerImageManager(*a.arg.Server, a.dockerClient, &rspObj.BasicImages)
+	logrus.Debugf("API file server readonly token: %s", rspObj.BasicImages.HTTPDownloadToken)
+	entities.HTTPDockerImageDownloadToken = rspObj.BasicImages.HTTPDownloadToken
 	if err != nil {
 		return xerrors.Errorf("Failed to create new docker image manager: %s %w", err.Error(), crashError)
 	}
@@ -484,6 +486,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 			"/etc:/etc",
 			"/var/run:/var/run",
 			"/var/lib:/var/lib",
+			"/opt/cni/bin:/opt/cni/bin",
 		},
 		Privileged:    true,
 		NetworkMode:   "host",

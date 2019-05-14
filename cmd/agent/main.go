@@ -4,9 +4,19 @@ import (
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	"net"
+	"os"
+	"os/exec"
 )
 
 func main() {
+	logrus.Infof("Copying depended CNI binary files...")
+	cmd := exec.Command("/bin/sh", "-c", "cp -rf /tmp/cni/* /opt/cni/bin/")
+	cmd.Stdout = os.Stdout
+	err := cmd.Run()
+	if err != nil {
+		logrus.Fatalf("Failed to copy depended CNI binary files to specified OS path, error: %s", err.Error())
+		return
+	}
 	arg := AgentArgs{}
 	arg.Server = flag.String("server", "", "api address")
 	arg.Address = flag.String("address", "", "local node address")

@@ -12,7 +12,7 @@ COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/extras/kubernete
 COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/agent/lm-agent /opt
 
 RUN yum install -y kubeadm-1.13.5-0 net-tools --disableexcludes=kubernetes
-RUN chmod +x /opt/lm-agent
+RUN chmod +x /opt/lm-agent && mkdir /tmp/cni && cp -r /opt/cni/bin/* /tmp/cni
 
 #Update time zone to Asia-Shanghai
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime

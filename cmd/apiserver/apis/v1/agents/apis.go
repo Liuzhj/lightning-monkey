@@ -49,7 +49,7 @@ func RegisterAgent(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	rsp = entities.RegisterAgentResponse{
+	r := entities.RegisterAgentResponse{
 		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
 		BasicImages: common.BasicImages["1.12.5"], /*test only*/
 		MasterSettings: map[string]string{
@@ -60,6 +60,8 @@ func RegisterAgent(ctx iris.Context) {
 			entities.MasterSettings_DockerRegistry:    "mirrorgooglecontainers/hyperkube",
 		},
 	}
+	r.BasicImages.HTTPDownloadToken = entities.HTTPDockerImageDownloadToken
+	rsp = r
 	_, _ = ctx.JSON(rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()

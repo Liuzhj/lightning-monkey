@@ -14,8 +14,8 @@ COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/extras/kubernete
 COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/apiserver/lm-apiserver /opt
 
 COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/registry/1.12.5/etcd.tar /opt/registry/1.12.5/etcd.tar
-COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/registry/1.12.5/hyperkube.tar /opt/registry/1.12.5/hyperkube.tar
-COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/registry/1.12.5/pause.tar /opt/registry/1.12.5/pause.tar
+COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/registry/1.12.5/k8s.tar /opt/registry/1.12.5/k8s.tar
+COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/registry/1.12.5/infra.tar /opt/registry/1.12.5/infra.tar
 
 RUN yum install -y kubeadm-1.13.5-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-apiserver

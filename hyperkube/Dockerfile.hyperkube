@@ -1,5 +1,7 @@
 FROM mirrorgooglecontainers/hyperkube:v1.12.5
 
+COPY init.sh /tmp
+RUN chmod +x /tmp/init.sh
 RUN mkdir /tmp/cni && cp -r /opt/cni/bin/* /tmp/cni
 
-CMD ["bash", "-c", "cp /tmp/cni/* /opt/cni/bin/"]
+CMD ["/tmp/init.sh"]

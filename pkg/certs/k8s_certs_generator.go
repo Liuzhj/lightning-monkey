@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 type GeneratedCertsMap struct {
@@ -217,7 +218,7 @@ func GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent strin
 	return nil
 }
 
-func GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string) error {
+func GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error {
 	subCommands := []string{
 		fmt.Sprintf("kubeadm init phase certs apiserver --apiserver-advertise-address=%s --service-dns-domain=%s --service-cidr=%s --cert-dir=%s",
 			address,
@@ -289,9 +290,17 @@ func GenerateMasterCertificatesAndManifest(certPath, address string, settings ma
 		if e != nil {
 			return e
 		}
+		var re *regexp.Regexp
+		var newContent string
+		logrus.Debugf("Being replace file: %s", p)
 		//replace docker registry.
-		re := regexp.MustCompile(`k8s.gcr.io/kube-apiserver|k8s.gcr.io/kube-scheduler|k8s.gcr.io/kube-controller-manager`)
-		newContent := re.ReplaceAllString(string(fileData), settings[entities.MasterSettings_DockerRegistry])
+		if strings.Contains(p, "etcd") {
+			logrus.Infof("Ignored replacing docker image for ETCD manifest file: %s", p)
+			newContent = string(fileData)
+		} else {
+			re = regexp.MustCompile(`(image: )(.*)`)
+			newContent = re.ReplaceAllString(string(fileData), fmt.Sprintf("${1}%s", imageCollection.Images["k8s"].ImageName))
+		}
 		//replace kube-controller-manager & scheduler settings.
 		re = regexp.MustCompile(`(--address=)(.*)`)
 		newContent = re.ReplaceAllString(newContent, "${1}0.0.0.0")
