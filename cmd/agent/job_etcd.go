@@ -47,10 +47,10 @@ func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, er
 	var sb strings.Builder
 	for i := 0; i < len(servers); i++ {
 		ip := servers[i]
-		if ip == *a.arg.Address {
-			ip = "0.0.0.0"
-		}
 		name := generateETCDName(a, ip)
+		//if ip == *a.arg.Address {
+		//	ip = "0.0.0.0"
+		//}
 		sb.WriteString(fmt.Sprintf("%s=https://%s:2380", name, ip))
 		if i != len(servers)-1 {
 			sb.WriteString(",")
@@ -68,7 +68,7 @@ func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, er
 		"SERVERS": serversConnection,
 		"IMAGE":   a.basicImages.Images["etcd"].ImageName,
 		"DATADIR": "/data/etcd",
-		"ADDR":    "0.0.0.0",
+		"ADDR":    *a.arg.Address, //"0.0.0.0",
 	}
 	buffer := bytes.Buffer{}
 	err = tmpl.Execute(&buffer, args)
@@ -105,9 +105,6 @@ func CheckETCDHealth(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, err
 }
 
 func generateETCDName(a *LightningMonkeyAgent, addr string) string {
-	if addr == *a.arg.Address {
-		addr = "0.0.0.0"
-	}
 	hasher := md5.New()
 	hasher.Write([]byte([]byte(addr)))
 	return hex.EncodeToString(hasher.Sum(nil))
