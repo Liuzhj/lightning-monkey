@@ -54,6 +54,11 @@ type Cluster struct {
 	NetworkStack               *NetworkStackSettings `json:"network_stack" bson:"network_stack"`
 }
 
+type ClusterStatus struct {
+	Status string `json:"status"`
+	Reason string `json:"reason"`
+}
+
 type NetworkStackSettings struct {
 	Type       string            `json:"type"` //flannel, kube-router, calico...
 	Attributes map[string]string `json:"attributes" bson:"attributes"`
@@ -73,6 +78,22 @@ func (c CertificateCollection) GetCertificateContent(name string) string {
 	for i := 0; i < len(c); i++ {
 		if strings.ToLower(c[i].Name) == strings.ToLower(name) {
 			return c[i].Content
+		}
+	}
+	return ""
+}
+
+type CertificateKeyPair struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type LightningMonkeyCertificateCollection []*CertificateKeyPair
+
+func (c LightningMonkeyCertificateCollection) GetCertificateContent(name string) string {
+	for i := 0; i < len(c); i++ {
+		if strings.ToLower(c[i].Name) == strings.ToLower(name) {
+			return c[i].Value
 		}
 	}
 	return ""

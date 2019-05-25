@@ -1,11 +1,14 @@
 package storage
 
 import (
+	"context"
 	"fmt"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage/mongodb"
 	"strings"
+	"time"
 )
 
 type StorageDriver interface {
@@ -22,6 +25,15 @@ type StorageDriver interface {
 	UpdateCluster(cluster *entities.Cluster) error
 	UpdateAgentStatus(agent *entities.Agent) error
 	BatchUpdateAgentStatus(agents []*entities.Agent) error
+}
+
+//go:generate mockgen -package=mock_lm -destination=../../mocks/mock_driver.go -source=driver.go LightningMonkeyStorageDriver
+type LightningMonkeyStorageDriver interface {
+	Initialize(settings map[string]string) error
+	GetRequestTimeoutDuration() time.Duration
+	Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error)
+	Watch(ctx context.Context, key string, opts ...clientv3.OpOption) clientv3.WatchChan
+	Txn(ctx context.Context) clientv3.Txn
 }
 
 type StorageDriverFactory struct {
