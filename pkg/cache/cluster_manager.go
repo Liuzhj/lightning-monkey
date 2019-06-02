@@ -25,7 +25,7 @@ func (cm *ClusterManager) Initialize(storageDriver storage.LightningMonkeyStorag
 	}
 	cm.clusters = make(map[string]ClusterController)
 	cm.storageDriver = storageDriver
-	return nil
+	return cm.watchClusterChanges()
 }
 
 func (cm *ClusterManager) GetClusterCertificateByName(clusterId string, certName string) (string, error) {
@@ -157,7 +157,7 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 				})
 				//detect agents changes.
 				if agentId, changed = isAgentChanged(subKeys); changed {
-					agent, err = cm.getAgentFromETCD(cc.GetClusterId(), agentId)
+					agent, err = cm.GetAgentFromETCD(cc.GetClusterId(), agentId)
 					if err != nil {
 						logrus.Errorf("Failed to retrieve newest version of Lightning Monkey's Agent data from remote ETCD, error: %s", err.Error())
 						continue
@@ -178,7 +178,7 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 						continue
 					}
 					cc.Lock()
-					err = cc.OnCertificateChanged(string(rsp.Events[i].Kv.Key), cert)
+					err = cc.OnCertificateChanged(string(rsp.Events[i].Kv.Key), cert, rsp.Events[i].Type == clientv3.EventTypeDelete)
 					cc.UnLock()
 					if err != nil {
 						logrus.Errorf("Failed to update hot cache with certificate changes, cluster: %s, key: %s error: %s", cc.GetClusterId(), string(rsp.Events[i].Kv.Key), err.Error())
@@ -190,7 +190,7 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 	}
 }
 
-func (cm *ClusterManager) getAgentFromETCD(clusterId, agentId string) (entities.LightningMonkeyAgent, error) {
+func (cm *ClusterManager) GetAgentFromETCD(clusterId, agentId string) (entities.LightningMonkeyAgent, error) {
 	agent := entities.LightningMonkeyAgent{}
 	settingsPath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", clusterId, agentId)
 	ctx, cancel := context.WithTimeout(context.Background(), cm.storageDriver.GetRequestTimeoutDuration())
@@ -236,11 +236,90 @@ func (cm *ClusterManager) createKeyIfNotExists(path string, value string) error 
 	return err
 }
 
+func (cm *ClusterManager) watchClusterChanges() error {
+	wc := cm.storageDriver.Watch(context.Background(), "/lightning-monkey/clusters/", clientv3.WithPrefix())
+	go func() {
+		var isOK bool
+		var wr clientv3.WatchResponse
+		for {
+			wr, isOK = <-wc
+			if !isOK {
+				return
+			}
+			if len(wr.Events) == 0 {
+				continue
+			}
+			for i := 0; i < len(wr.Events); i++ {
+				subKeys := strings.FieldsFunc(string(string(wr.Events[i].Kv.Key)), func(r rune) bool {
+					return r == '/'
+				})
+				var isChange bool
+				var clusterId string
+				if clusterId, isChange = isClusterChanged(subKeys); !isChange {
+					continue
+				}
+				err := cm.doClusterChange(clusterId, wr.Events[i].Kv.Value, wr.Events[i].Type == clientv3.EventTypeDelete)
+				if err != nil {
+					logrus.Errorf("Failed to handle cluster-level changes, key: %s, error: %s", string(wr.Events[i].Kv.Key), err.Error())
+				}
+			}
+		}
+	}()
+	return nil
+}
+
+func (cm *ClusterManager) doClusterChange(clusterId string, value []byte, isDeleted bool) error {
+	var isOK bool
+	var cluster ClusterController
+	cm.lockObj.Lock()
+	defer cm.lockObj.Unlock()
+	cluster, isOK = cm.clusters[clusterId]
+	if isDeleted {
+		if !isOK {
+			return nil
+		}
+		cluster.Dispose()
+		delete(cm.clusters, clusterId)
+		logrus.Debugf("Cluster %s had been disposed by deletion event!", clusterId)
+		return nil
+	}
+	settings := entities.LightningMonkeyClusterSettings{}
+	err := json.Unmarshal(value, &settings)
+	if err != nil {
+		return err
+	}
+	//create new cluster to cache if not exists.
+	if !isOK {
+		cluster = ClusterControllerImple{}.UpdateClusterSettings(settings)
+		cluster.Initialize()
+		err = cm.doRegister(cluster)
+		if err != nil {
+			return err
+		}
+		cm.clusters[clusterId] = cluster
+		logrus.Debugf("Registered new cluster: %s", cluster.GetClusterId())
+		return nil
+	}
+	//update cache.
+	cluster.Lock()
+	cluster.UpdateClusterSettings(settings)
+	cluster.UnLock()
+	logrus.Debugf("Updated cluster %s settings!", cluster.GetClusterId())
+	return nil
+}
+
 func isAgentChanged(subKeys []string) (string /*parsed agent id*/, bool) {
 	if subKeys[0] == "lightning-monkey" && subKeys[1] == "clusters" && subKeys[3] == "agents" {
 		if subKeys[len(subKeys)-1] == "settings" || subKeys[len(subKeys)-1] == "state" {
 			return subKeys[len(subKeys)-2], true
 		}
+	}
+	return "", false
+}
+
+func isClusterChanged(subKeys []string) (string /*parsed cluster id*/, bool) {
+	if subKeys[0] == "lightning-monkey" && subKeys[1] == "clusters" && subKeys[len(subKeys)-1] == "metadata" {
+		return subKeys[len(subKeys)-2], true
 	}
 	return "", false
 }

@@ -42,15 +42,15 @@ type Agent struct {
 }
 
 type LightningMonkeyAgent struct {
-	Id            *bson.ObjectId `json:"id" bson:"_id"`
-	ClusterId     *bson.ObjectId `json:"cluster_id" bson:"cluster_id"`
-	MetadataId    string         `json:"metadata_id" bson:"metadata_id"`
-	Hostname      string         `json:"hostname" bson:"hostname"`
-	IsDelete      bool           `json:"is_delete" bson:"is_delete"`
-	HasETCDRole   bool           `json:"has_etcd_role" bson:"has_etcd_role"`
-	HasMasterRole bool           `json:"has_master_role" bson:"has_master_role"`
-	HasMinionRole bool           `json:"has_minion_role" bson:"has_minion_role"`
-	State         *AgentState    `json:"state,omitempty"`
+	Id            string      `json:"id" bson:"_id"`
+	ClusterId     string      `json:"cluster_id" bson:"cluster_id"`
+	MetadataId    string      `json:"metadata_id" bson:"metadata_id"`
+	Hostname      string      `json:"hostname" bson:"hostname"`
+	IsDelete      bool        `json:"is_delete" bson:"is_delete"`
+	HasETCDRole   bool        `json:"has_etcd_role" bson:"has_etcd_role"`
+	HasMasterRole bool        `json:"has_master_role" bson:"has_master_role"`
+	HasMinionRole bool        `json:"has_minion_role" bson:"has_minion_role"`
+	State         *AgentState `json:"state,omitempty"`
 }
 
 type AgentState struct {

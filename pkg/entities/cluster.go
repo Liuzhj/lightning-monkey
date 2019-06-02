@@ -54,6 +54,19 @@ type Cluster struct {
 	NetworkStack               *NetworkStackSettings `json:"network_stack" bson:"network_stack"`
 }
 
+type LightningMonkeyClusterSettings struct {
+	Id                string                `json:"id"`
+	CreateTime        time.Time             `json:"create_time"`
+	Name              string                `json:"name"`
+	ExpectedETCDCount int                   `json:"expected_etcd_count"`
+	ServiceCIDR       string                `json:"service_cidr"`
+	KubernetesVersion string                `json:"kubernetes_version"`
+	PodNetworkCIDR    string                `json:"pod_network_cidr"`
+	SecurityToken     string                `json:"security_token"`
+	ServiceDNSDomain  string                `json:"service_dns_domain"`
+	NetworkStack      *NetworkStackSettings `json:"network_stack"`
+}
+
 type ClusterStatus struct {
 	Status string `json:"status"`
 	Reason string `json:"reason"`
