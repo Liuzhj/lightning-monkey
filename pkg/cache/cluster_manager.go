@@ -297,6 +297,7 @@ func (cm *ClusterManager) doClusterChange(clusterId string, value []byte, isDele
 		if err != nil {
 			return err
 		}
+		//holding lock, safely update cache.
 		cm.clusters[clusterId] = cluster
 		logrus.Debugf("Registered new cluster: %s", cluster.GetClusterId())
 		return nil
