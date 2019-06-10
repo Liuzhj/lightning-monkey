@@ -290,7 +290,8 @@ func (cm *ClusterManager) doClusterChange(clusterId string, value []byte, isDele
 	}
 	//create new cluster to cache if not exists.
 	if !isOK {
-		cluster = ClusterControllerImple{}.UpdateClusterSettings(settings)
+		cc := &ClusterControllerImple{}
+		cluster = cc.UpdateClusterSettings(settings)
 		cluster.Initialize()
 		err = cm.doRegister(cluster)
 		if err != nil {

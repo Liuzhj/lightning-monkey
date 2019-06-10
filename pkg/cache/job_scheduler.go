@@ -1,6 +1,9 @@
 package cache
 
-import "github.com/g0194776/lightningmonkey/pkg/entities"
+import (
+	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/entities"
+)
 
 type ClusterJobScheduler interface {
 	InitializeStrategies()
@@ -22,6 +25,9 @@ func (js *ClusterJobSchedulerImple) InitializeStrategies() {
 func (js *ClusterJobSchedulerImple) GetNextJob(clusterSettings entities.LightningMonkeyClusterSettings, agent entities.LightningMonkeyAgent, cache *AgentCache) (entities.AgentJob, error) {
 	if js.strategies == nil || len(js.strategies) == 0 {
 		return entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Skipped, No any cluster job strategies being found."}, nil
+	}
+	if agent.State == nil {
+		return entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Occurred internal exceptions!"}, fmt.Errorf("Current agent: %s state is not online yet!", agent.Id)
 	}
 	var deployFlag entities.ConditionCheckedResult
 	var deployArgs map[string]string

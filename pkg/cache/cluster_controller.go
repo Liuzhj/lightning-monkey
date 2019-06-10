@@ -58,6 +58,7 @@ func (cc *ClusterControllerImple) Dispose() {
 	if cc.cancellationFunc != nil {
 		cc.cancellationFunc()
 	}
+	cc.cache = nil
 }
 
 func (cc *ClusterControllerImple) GetSynchronizedRevision() int64 {
