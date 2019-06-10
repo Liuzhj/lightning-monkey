@@ -16,6 +16,8 @@ type ClusterController interface {
 	GetClusterId() string
 	GetCertificates() entities.LightningMonkeyCertificateCollection
 	GetNextJob(agent entities.LightningMonkeyAgent) (entities.AgentJob, error)
+	GetTotalCountByRole(role string) int
+	GetTotalProvisionedCountByRole(role string) int
 	Initialize()
 	SetSynchronizedRevision(id int64)
 	SetCancellationFunc(f func()) //used for disposing in use resource.
@@ -35,6 +37,16 @@ type ClusterControllerImple struct {
 	lockObj              *sync.Mutex
 	settings             entities.LightningMonkeyClusterSettings
 	synchronizedRevision int64
+}
+
+//used for debugging internal state.
+func (cc *ClusterControllerImple) GetTotalCountByRole(role string) int {
+	return cc.cache.GetTotalCountByRole(role)
+}
+
+//used for debugging internal state.
+func (cc *ClusterControllerImple) GetTotalProvisionedCountByRole(role string) int {
+	return cc.cache.GetTotalProvisionedCountByRole(role)
 }
 
 func (cc *ClusterControllerImple) Initialize() {
