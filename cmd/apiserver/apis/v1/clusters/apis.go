@@ -20,7 +20,7 @@ func Register(app *iris.Application) error {
 
 func NewCluster(ctx iris.Context) {
 	var rsp interface{}
-	cluster := entities.Cluster{}
+	cluster := entities.LightningMonkeyClusterSettings{}
 	httpData, err := ioutil.ReadAll(ctx.Request().Body)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}
@@ -37,7 +37,7 @@ func NewCluster(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	err = managers.NewCluster(&cluster)
+	clusterId, err := managers.NewCluster(&cluster)
 	if err != nil {
 		rsp = entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)
@@ -46,8 +46,8 @@ func NewCluster(ctx iris.Context) {
 		return
 	}
 	rsp = entities.CreateClusterResponse{
-		Response: entities.Response{ErrorId: entities.Succeed, Reason: ""},
-		Cluster:  &cluster,
+		Response:  entities.Response{ErrorId: entities.Succeed, Reason: ""},
+		ClusterId: clusterId,
 	}
 	_, _ = ctx.JSON(rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)

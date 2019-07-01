@@ -268,7 +268,6 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 			LastReportIP:       "127.0.0.1",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	ac := AgentCache{
@@ -335,7 +334,6 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 			LastReportIP:       "127.0.0.1",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	ac := AgentCache{
@@ -354,7 +352,6 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 					LastReportIP:       "127.0.0.1",
 					HasProvisionedETCD: true,
 					LastReportTime:     time.Now(),
-					ETCDProvisionTime:  time.Now(),
 				},
 			},
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
@@ -408,7 +405,6 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.1",
 			HasProvisionedETCD: false,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
@@ -424,7 +420,6 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.2",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
@@ -440,7 +435,6 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.3",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	ac := AgentCache{
@@ -495,7 +489,6 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 			LastReportIP:       "127.0.0.1",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
@@ -511,7 +504,6 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 			LastReportIP:       "127.0.0.2",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
@@ -527,7 +519,6 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 			LastReportIP:       "127.0.0.3",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	ac := AgentCache{
@@ -577,7 +568,6 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.1",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
@@ -593,7 +583,6 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.2",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
@@ -609,7 +598,6 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.3",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent4 := entities.LightningMonkeyAgent{
@@ -625,7 +613,6 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 			LastReportIP:                   "192.168.1.1",
 			HasProvisionedMasterComponents: false,
 			LastReportTime:                 time.Now(),
-			ETCDProvisionTime:              time.Now(),
 		},
 	}
 	ac := AgentCache{
@@ -677,7 +664,6 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 			LastReportIP:       "127.0.0.1",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
@@ -693,7 +679,6 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 			LastReportIP:       "127.0.0.2",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
@@ -709,7 +694,6 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 			LastReportIP:       "127.0.0.3",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent4 := entities.LightningMonkeyAgent{
@@ -722,9 +706,8 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 		HasMasterRole: false,
 		HasMinionRole: true,
 		State: &entities.AgentState{
-			LastReportIP:      "192.168.1.1",
-			LastReportTime:    time.Now(),
-			ETCDProvisionTime: time.Now(),
+			LastReportIP:   "192.168.1.1",
+			LastReportTime: time.Now(),
 		},
 	}
 	ac := AgentCache{
@@ -775,7 +758,6 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.1",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
@@ -791,7 +773,6 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.2",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
@@ -807,7 +788,6 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 			LastReportIP:       "127.0.0.3",
 			HasProvisionedETCD: true,
 			LastReportTime:     time.Now(),
-			ETCDProvisionTime:  time.Now(),
 		},
 	}
 	agent4 := entities.LightningMonkeyAgent{
@@ -822,7 +802,6 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 		State: &entities.AgentState{
 			LastReportIP:                   "192.168.1.1",
 			LastReportTime:                 time.Now(),
-			MasterComponentsProvisionTime:  time.Now(),
 			HasProvisionedMasterComponents: true,
 		},
 	}
@@ -836,9 +815,8 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 		HasMasterRole: false,
 		HasMinionRole: true,
 		State: &entities.AgentState{
-			LastReportIP:                  "172.1.0.1",
-			LastReportTime:                time.Now(),
-			MasterComponentsProvisionTime: time.Now(),
+			LastReportIP:   "172.1.0.1",
+			LastReportTime: time.Now(),
 		},
 	}
 	ac := AgentCache{

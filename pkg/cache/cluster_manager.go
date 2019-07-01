@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/clientv3"
 	"strings"
 	"sync"
 )
@@ -38,6 +38,66 @@ func (cm *ClusterManager) GetClusterCertificateByName(clusterId string, certName
 		return "", fmt.Errorf("Cluster %s not found!", clusterId)
 	}
 	return cluster.GetCertificates().GetCertificateContent(certName), nil
+}
+
+func (cm *ClusterManager) GetClusterCertificates(clusterId string) (entities.LightningMonkeyCertificateCollection, error) {
+	var isOK bool
+	var cluster ClusterController
+	cm.lockObj.Lock()
+	cluster, isOK = cm.clusters[clusterId]
+	cm.lockObj.Unlock()
+	if !isOK {
+		return nil, fmt.Errorf("Cluster %s not found!", clusterId)
+	}
+	return cluster.GetCertificates(), nil
+}
+
+func (cm *ClusterManager) GetClusterById(clusterId string) (ClusterController, error) {
+	var isOK bool
+	var cluster ClusterController
+	cm.lockObj.Lock()
+	cluster, isOK = cm.clusters[clusterId]
+	cm.lockObj.Unlock()
+	if !isOK {
+		return nil, fmt.Errorf("Cluster %s not found!", clusterId)
+	}
+	return cluster, nil
+}
+
+func (cm *ClusterManager) GetAgentFromETCD(clusterId, agentId string) (*entities.LightningMonkeyAgent, error) {
+	agent := entities.LightningMonkeyAgent{}
+	settingsPath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", clusterId, agentId)
+	ctx, cancel := context.WithTimeout(context.Background(), cm.storageDriver.GetRequestTimeoutDuration())
+	defer cancel()
+	rsp, err := cm.storageDriver.Get(ctx, settingsPath)
+	if err != nil {
+		return nil, err
+	}
+	if rsp.Count == 0 {
+		return nil, fmt.Errorf("Key: %s not found!", settingsPath)
+	}
+	err = json.Unmarshal(rsp.Kvs[0].Value, &agent)
+	if err != nil {
+		return nil, err
+	}
+	statePath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", clusterId, agentId)
+	ctx2, cancel2 := context.WithTimeout(context.Background(), cm.storageDriver.GetRequestTimeoutDuration())
+	defer cancel2()
+	rsp, err = cm.storageDriver.Get(ctx2, statePath)
+	if err != nil {
+		return nil, err
+	}
+	if rsp.Count == 0 {
+		//ignored missed state object, it's lease-guaranteed.
+		return &agent, nil
+	}
+	state := entities.AgentState{}
+	err = json.Unmarshal(rsp.Kvs[0].Value, &state)
+	if err != nil {
+		return nil, err
+	}
+	agent.State = &state
+	return &agent, nil
 }
 
 func (cm *ClusterManager) Register(cc ClusterController) error {
@@ -134,7 +194,7 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 	var err error
 	var changed bool
 	var agentId string
-	var agent entities.LightningMonkeyAgent
+	var agent *entities.LightningMonkeyAgent
 	for {
 		select {
 		case <-ctx.Done():
@@ -163,7 +223,7 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 						continue
 					}
 					cc.Lock()
-					err = cc.OnAgentChanged(agent, rsp.Events[i].Type == clientv3.EventTypeDelete)
+					err = cc.OnAgentChanged(*agent, rsp.Events[i].Type == clientv3.EventTypeDelete)
 					cc.UnLock()
 					if err != nil {
 						logrus.Errorf("Failed to update hot cache for cluster: %s, error: %s", cc.GetClusterId(), err.Error())
@@ -171,14 +231,14 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 					}
 				}
 				//detect certificates changes.
-				if isCertificatesChanged(subKeys) {
+				if certKey, isChanged := isCertificatesChanged(subKeys); isChanged {
 					cert := string(rsp.Events[i].Kv.Value)
 					if cert == "" {
 						logrus.Errorf("Illegal certificate content being received from remote ETCD event, key: %s", string(rsp.Events[i].Kv.Key))
 						continue
 					}
 					cc.Lock()
-					err = cc.OnCertificateChanged(string(rsp.Events[i].Kv.Key), cert, rsp.Events[i].Type == clientv3.EventTypeDelete)
+					err = cc.OnCertificateChanged(certKey, cert, rsp.Events[i].Type == clientv3.EventTypeDelete)
 					cc.UnLock()
 					if err != nil {
 						logrus.Errorf("Failed to update hot cache with certificate changes, cluster: %s, key: %s error: %s", cc.GetClusterId(), string(rsp.Events[i].Kv.Key), err.Error())
@@ -188,42 +248,6 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 			}
 		}
 	}
-}
-
-func (cm *ClusterManager) GetAgentFromETCD(clusterId, agentId string) (entities.LightningMonkeyAgent, error) {
-	agent := entities.LightningMonkeyAgent{}
-	settingsPath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", clusterId, agentId)
-	ctx, cancel := context.WithTimeout(context.Background(), cm.storageDriver.GetRequestTimeoutDuration())
-	defer cancel()
-	rsp, err := cm.storageDriver.Get(ctx, settingsPath)
-	if err != nil {
-		return agent, err
-	}
-	if rsp.Count == 0 {
-		return agent, fmt.Errorf("Key: %s not found!", settingsPath)
-	}
-	err = json.Unmarshal(rsp.Kvs[0].Value, &agent)
-	if err != nil {
-		return agent, err
-	}
-	statePath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", clusterId, agentId)
-	ctx2, cancel2 := context.WithTimeout(context.Background(), cm.storageDriver.GetRequestTimeoutDuration())
-	defer cancel2()
-	rsp, err = cm.storageDriver.Get(ctx2, statePath)
-	if err != nil {
-		return agent, err
-	}
-	if rsp.Count == 0 {
-		//ignored missed state object, it's lease-guaranteed.
-		return agent, nil
-	}
-	state := entities.AgentState{}
-	err = json.Unmarshal(rsp.Kvs[0].Value, &state)
-	if err != nil {
-		return agent, err
-	}
-	agent.State = &state
-	return agent, nil
 }
 
 func (cm *ClusterManager) createKeyIfNotExists(path string, value string) error {
@@ -326,9 +350,9 @@ func isClusterChanged(subKeys []string) (string /*parsed cluster id*/, bool) {
 	return "", false
 }
 
-func isCertificatesChanged(subKeys []string) bool {
-	if subKeys[0] == "lightning-monkey" && subKeys[1] == "clusters" && subKeys[len(subKeys)-1] == "certificates" {
-		return true
+func isCertificatesChanged(subKeys []string) (string, bool) {
+	if subKeys[0] == "lightning-monkey" && subKeys[1] == "clusters" && subKeys[len(subKeys)-2] == "certificates" {
+		return subKeys[len(subKeys)-1], true
 	}
-	return false
+	return "", false
 }

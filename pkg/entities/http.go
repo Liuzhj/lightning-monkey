@@ -29,13 +29,15 @@ type Response struct {
 
 type RegisterAgentResponse struct {
 	Response
+	AgentId        string                `json:"agent_id"`
 	BasicImages    DockerImageCollection `json:"image_collection"`
 	MasterSettings map[string]string     `json:"master_settings"`
+	LeaseId        int64                 `json:"lease_id"`
 }
 
 type CreateClusterResponse struct {
 	Response
-	Cluster *Cluster `json:"cluster"`
+	ClusterId string `json:"cluster_id"`
 }
 
 type GetCertificateResponse struct {

@@ -20,7 +20,7 @@ func Register(app *iris.Application) error {
 
 func RegisterAgent(ctx iris.Context) {
 	var rsp interface{}
-	agent := entities.Agent{}
+	agent := entities.LightningMonkeyAgent{}
 	httpData, err := ioutil.ReadAll(ctx.Request().Body)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}
@@ -37,11 +37,9 @@ func RegisterAgent(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	if agent.LastReportIP == "" {
-		agent.LastReportIP = ctx.RemoteAddr()
-	}
-	agent.LastReportStatus = entities.AgentStatus_Provisioning
-	cluster, err := managers.RegisterAgent(&agent)
+	agent.State = &entities.AgentState{}
+	agent.State.LastReportIP = ctx.RemoteAddr()
+	settings, agentId, leaseId, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		rsp = entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)
@@ -51,12 +49,14 @@ func RegisterAgent(ctx iris.Context) {
 	}
 	r := entities.RegisterAgentResponse{
 		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
+		AgentId:     agentId,
+		LeaseId:     leaseId,
 		BasicImages: common.BasicImages["1.12.5"], /*test only*/
 		MasterSettings: map[string]string{
-			entities.MasterSettings_PodCIDR:           cluster.PodNetworkCIDR,
-			entities.MasterSettings_ServiceCIDR:       cluster.ServiceCIDR,
-			entities.MasterSettings_ServiceDNSDomain:  cluster.ServiceDNSDomain,
-			entities.MasterSettings_KubernetesVersion: cluster.KubernetesVersion,
+			entities.MasterSettings_PodCIDR:           settings.PodNetworkCIDR,
+			entities.MasterSettings_ServiceCIDR:       settings.ServiceCIDR,
+			entities.MasterSettings_ServiceDNSDomain:  settings.ServiceDNSDomain,
+			entities.MasterSettings_KubernetesVersion: settings.KubernetesVersion,
 			entities.MasterSettings_DockerRegistry:    "mirrorgooglecontainers/hyperkube",
 		},
 	}
@@ -68,15 +68,24 @@ func RegisterAgent(ctx iris.Context) {
 }
 
 func AgentQueryNextWork(ctx iris.Context) {
-	metadataId := ctx.URLParam("metadata-id")
-	if metadataId == "" {
-		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"metadata-id\" parameter is required."}
+	clusterId := ctx.URLParam("cluster-id")
+	if clusterId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"cluster-id\" parameter is required."}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
 		return
 	}
-	job, err := managers.QueryAgentNextWorkItem(metadataId)
+	agentId := ctx.URLParam("agent-id")
+	if agentId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"agent-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+
+	job, err := managers.QueryAgentNextWorkItem(clusterId, agentId)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)
@@ -91,9 +100,9 @@ func AgentQueryNextWork(ctx iris.Context) {
 }
 
 func ReportStatus(ctx iris.Context) {
-	metadataId := ctx.URLParam("metadata-id")
-	if metadataId == "" {
-		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"metadata-id\" parameter is required."}
+	agentId := ctx.URLParam("agent-id")
+	if agentId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"agent-id\" parameter is required."}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
@@ -107,7 +116,7 @@ func ReportStatus(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	status := entities.AgentStatus{}
+	status := entities.LightningMonkeyAgentReportStatus{}
 	httpData, err := ioutil.ReadAll(ctx.Request().Body)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}
@@ -127,12 +136,8 @@ func ReportStatus(ctx iris.Context) {
 	if status.IP == "" {
 		status.IP = ctx.RemoteAddr()
 	}
-	if status.Reason == "" {
-		logrus.Debugf("[Report]: IP: %s, Type: %s, Status: [%s]", status.IP, status.ReportType, status.Status)
-	} else {
-		logrus.Debugf("[Report]: IP: %s, Type: %s, Status: [%s], Reason: %s", status.IP, status.ReportType, status.Status, status.Reason)
-	}
-	err = managers.AgentReportStatus(clusterId, metadataId, status)
+	logrus.Debugf("[Report]: IP: %s, Status: %#v", status.IP, status.Items)
+	err = managers.AgentReportStatus(clusterId, agentId, status)
 	if err != nil {
 		rsp := entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)

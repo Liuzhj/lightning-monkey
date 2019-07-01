@@ -1,15 +1,15 @@
 package common
 
 import (
-	"github.com/g0194776/lightningmonkey/pkg/controllers"
+	"github.com/g0194776/lightningmonkey/pkg/cache"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 )
 
 var (
-	StorageDriver              storage.StorageDriver
-	ClusterStatementController *controllers.ClusterStatementController
-	BasicImages                = map[string]entities.DockerImageCollection{
+	StorageDriver  storage.LightningMonkeyStorageDriver
+	ClusterManager *cache.ClusterManager
+	BasicImages    = map[string]entities.DockerImageCollection{
 		"1.12.5": {
 			DownloadType:      entities.DockerImageDownloadType_HTTP,
 			HTTPDownloadToken: "",

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
+	"go.etcd.io/etcd/clientv3"
 	"strings"
 	"time"
 )
@@ -18,6 +18,8 @@ func (sd *LightningMonkeyETCDStorageDriver) GetRequestTimeoutDuration() time.Dur
 	return sd.requestTimeout
 }
 
+//Required Fields:
+// + ENDPOINTS
 func (sd *LightningMonkeyETCDStorageDriver) Initialize(settings map[string]string) error {
 	//inject default values.
 	if settings["DIAL_TIMEOUT"] == "" {
@@ -59,4 +61,13 @@ func (sd *LightningMonkeyETCDStorageDriver) Watch(ctx context.Context, key strin
 
 func (sd *LightningMonkeyETCDStorageDriver) Txn(ctx context.Context) clientv3.Txn {
 	return sd.client.Txn(ctx)
+}
+
+func (sd *LightningMonkeyETCDStorageDriver) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
+	return sd.client.Put(ctx, key, val, opts...)
+
+}
+
+func (sd *LightningMonkeyETCDStorageDriver) NewLease() clientv3.Lease {
+	return clientv3.NewLease(sd.client)
 }

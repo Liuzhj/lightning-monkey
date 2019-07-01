@@ -12,12 +12,14 @@ import (
 type ClusterController interface {
 	Dispose() //clean all of in use resource including backend watching jobs.
 	GetSynchronizedRevision() int64
-	GetStatus() entities.ClusterStatus
+	GetStatus() string
 	GetClusterId() string
 	GetCertificates() entities.LightningMonkeyCertificateCollection
 	GetNextJob(agent entities.LightningMonkeyAgent) (entities.AgentJob, error)
 	GetTotalCountByRole(role string) int
 	GetTotalProvisionedCountByRole(role string) int
+	GetSettings() entities.LightningMonkeyClusterSettings
+	GetCachedAgent(agentId string) (*entities.LightningMonkeyAgent, error)
 	Initialize()
 	SetSynchronizedRevision(id int64)
 	SetCancellationFunc(f func()) //used for disposing in use resource.
@@ -37,6 +39,10 @@ type ClusterControllerImple struct {
 	lockObj              *sync.Mutex
 	settings             entities.LightningMonkeyClusterSettings
 	synchronizedRevision int64
+}
+
+func (cc *ClusterControllerImple) GetSettings() entities.LightningMonkeyClusterSettings {
+	return cc.settings
 }
 
 //used for debugging internal state.
@@ -77,7 +83,7 @@ func (cc *ClusterControllerImple) GetSynchronizedRevision() int64 {
 	return cc.synchronizedRevision
 }
 
-func (cc *ClusterControllerImple) GetStatus() entities.ClusterStatus {
+func (cc *ClusterControllerImple) GetStatus() string {
 	panic("implement me")
 }
 
@@ -142,4 +148,24 @@ func (cc *ClusterControllerImple) OnCertificateChanged(name string, cert string,
 func (cc *ClusterControllerImple) UpdateClusterSettings(settings entities.LightningMonkeyClusterSettings) ClusterController {
 	cc.settings = settings
 	return cc
+}
+
+func (cc *ClusterControllerImple) GetCachedAgent(agentId string) (*entities.LightningMonkeyAgent, error) {
+	if atomic.LoadUint32(&cc.isDisposed) == 1 {
+		return nil, fmt.Errorf("Cannot update cache to a disposed cluster controller, cluster-id: %s", cc.settings.Id)
+	}
+	cc.cache.Lock()
+	defer cc.cache.Unlock()
+	var isOK bool
+	var agent *entities.LightningMonkeyAgent
+	if agent, isOK = cc.cache.etcd[agentId]; isOK {
+		return agent, nil
+	}
+	if agent, isOK = cc.cache.k8sMaster[agentId]; isOK {
+		return agent, nil
+	}
+	if agent, isOK = cc.cache.k8sMinion[agentId]; isOK {
+		return agent, nil
+	}
+	return nil, fmt.Errorf("Agent: %s not found!", agentId)
 }

@@ -35,7 +35,7 @@ func (gm *GeneratedCertsMap) GetResources() map[string]string {
 	return gm.res
 }
 
-func GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.CertificateCollection) (*GeneratedCertsMap, error) {
+func GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.LightningMonkeyCertificateCollection) (*GeneratedCertsMap, error) {
 	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
 	err := os.MkdirAll(path, 0644)
 	if err != nil {
@@ -49,7 +49,7 @@ func GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.Certifi
 	if basicCertMap != nil {
 		for i := 0; i < len(basicCertMap); i++ {
 			_ = os.MkdirAll(filepath.Dir(filepath.Join(path, basicCertMap[i].Name)), 0644)
-			ioErr := ioutil.WriteFile(filepath.Join(path, basicCertMap[i].Name), []byte(basicCertMap[i].Content), 0644)
+			ioErr := ioutil.WriteFile(filepath.Join(path, basicCertMap[i].Name), []byte(basicCertMap[i].Value), 0644)
 			if ioErr != nil {
 				return nil, fmt.Errorf("Failed to save basic certificate(%s) to path: %s, error: %s", basicCertMap[i].Name, path, ioErr.Error())
 			}

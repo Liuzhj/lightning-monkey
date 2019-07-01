@@ -20,7 +20,6 @@ func main() {
 	arg := AgentArgs{}
 	arg.Server = flag.String("server", "", "api address")
 	arg.Address = flag.String("address", "", "local node address")
-	arg.MetadataId = flag.String("metadata", "", "metadata id")
 	arg.ClusterId = flag.String("cluster", "", "cluster id")
 	arg.IsETCDRole = flag.Bool("etcd", false, "")
 	arg.IsMasterRole = flag.Bool("master", false, "")
@@ -32,9 +31,6 @@ func main() {
 	}
 	if arg.Server == nil || *arg.Server == "" {
 		logrus.Fatalf("\"--server\" argument is required for initializing lightning-monkey agent.")
-	}
-	if arg.MetadataId == nil || *arg.MetadataId == "" {
-		logrus.Fatalf("\"--metadata\" argument is required for initializing lightning-monkey agent.")
 	}
 	if arg.ClusterId == nil || *arg.ClusterId == "" {
 		logrus.Fatalf("\"--cluster\" argument is required for initializing lightning-monkey agent.")
@@ -52,10 +48,11 @@ func main() {
 }
 
 type AgentArgs struct {
+	AgentId      string
 	Server       *string
-	MetadataId   *string
 	ClusterId    *string
 	Address      *string
+	LeaseId      int64
 	IsETCDRole   *bool
 	IsMasterRole *bool
 	IsMinionRole *bool

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/cmd/apiserver/apis"
+	"github.com/g0194776/lightningmonkey/pkg/cache"
 	"github.com/g0194776/lightningmonkey/pkg/common"
-	"github.com/g0194776/lightningmonkey/pkg/controllers"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/kataras/iris"
@@ -29,7 +29,7 @@ func main() {
 	logrus.Infof("Creating backend storage driver...")
 	driverType := os.Getenv("BACKEND_STORAGE_TYPE")
 	if driverType == "" {
-		driverType = "mongo"
+		driverType = "etcd"
 	}
 	logLevel := os.Getenv("LOG_LEVEL")
 	if logLevel != "" {
@@ -64,11 +64,13 @@ func main() {
 		return
 	}
 	common.StorageDriver = driver
-	logrus.Infof("Initializing cluster statement controller...")
-	csc := &controllers.ClusterStatementController{}
-	csc.Initialize(driver)
-	csc.Start()
-	common.ClusterStatementController = csc
+	logrus.Infof("Initializing cluster manager...")
+	common.ClusterManager = &cache.ClusterManager{}
+	err = common.ClusterManager.Initialize(driver)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize cluster manager, error: %s", err.Error())
+		return
+	}
 	//generates readonly token for downloading payloads.
 	if entities.HTTPDockerImageDownloadToken == "" {
 		count := 24

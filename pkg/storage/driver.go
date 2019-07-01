@@ -3,10 +3,9 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
 	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
-	"github.com/g0194776/lightningmonkey/pkg/storage/mongodb"
+	"go.etcd.io/etcd/clientv3"
 	"strings"
 	"time"
 )
@@ -34,16 +33,18 @@ type LightningMonkeyStorageDriver interface {
 	Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error)
 	Watch(ctx context.Context, key string, opts ...clientv3.OpOption) clientv3.WatchChan
 	Txn(ctx context.Context) clientv3.Txn
+	Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error)
+	NewLease() clientv3.Lease
 }
 
 type StorageDriverFactory struct {
 }
 
-func (sdf *StorageDriverFactory) NewStorageDriver(t string) (StorageDriver, error) {
+func (sdf *StorageDriverFactory) NewStorageDriver(t string) (LightningMonkeyStorageDriver, error) {
 	switch strings.ToLower(t) {
-	case "mongo":
-		return &mongodb.MongoDBStorageDriver{}, nil
 	case "etcd":
+		return &LightningMonkeyETCDStorageDriver{}, nil
+	case "mongo":
 	}
 	return nil, fmt.Errorf("Unsupported storage driver: %s", t)
 }
