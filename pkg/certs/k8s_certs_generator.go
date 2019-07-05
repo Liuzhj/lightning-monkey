@@ -2,6 +2,7 @@ package certs
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/satori/go.uuid"
@@ -35,7 +36,22 @@ func (gm *GeneratedCertsMap) GetResources() map[string]string {
 	return gm.res
 }
 
-func GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.LightningMonkeyCertificateCollection) (*GeneratedCertsMap, error) {
+//go:generate mockgen -package=mock_lm -destination=../../mocks/mock_cert_manager.go -source=k8s_certs_generator.go CertificateManager
+type CertificateManager interface {
+	GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.LightningMonkeyCertificateCollection) (*GeneratedCertsMap, error)
+	GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error)
+	GenerateMainCACertificates() (*GeneratedCertsMap, error)
+	GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent string) error
+	GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error
+}
+
+type CertificateManagerImple struct {
+}
+
+func (cm *CertificateManagerImple) GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.LightningMonkeyCertificateCollection) (*GeneratedCertsMap, error) {
+	if basicCertMap == nil || len(basicCertMap) == 0 {
+		return nil, errors.New("Failed to generate kube-admin config without any basic certificates!")
+	}
 	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
 	err := os.MkdirAll(path, 0644)
 	if err != nil {
@@ -80,7 +96,7 @@ func GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.Lightni
 	return getCertificatesContent(path, "", nil)
 }
 
-func GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error) {
+func (cm *CertificateManagerImple) GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error) {
 	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
 	logrus.Infof("Certificates temporary storage path: %s", path)
 	defer func() {
@@ -112,7 +128,7 @@ func GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCe
 	return getCertificatesContent(path, "", nil)
 }
 
-func GenerateMainCACertificates() (*GeneratedCertsMap, error) {
+func (cm *CertificateManagerImple) GenerateMainCACertificates() (*GeneratedCertsMap, error) {
 	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
 	logrus.Infof("Certificates temporary storage path: %s", path)
 	defer func() {
@@ -171,7 +187,7 @@ func GenerateMainCACertificates() (*GeneratedCertsMap, error) {
 	return getCertificatesContent(path, "etcd", certMap)
 }
 
-func GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent string) error {
+func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent string) error {
 	configFilePath := filepath.Join(certPath, "etcd_config.yml")
 	_ = os.RemoveAll(configFilePath)
 	f, err := os.OpenFile(configFilePath, os.O_CREATE|os.O_WRONLY, 0664)
@@ -218,7 +234,7 @@ func GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent strin
 	return nil
 }
 
-func GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error {
+func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error {
 	subCommands := []string{
 		fmt.Sprintf("kubeadm init phase certs apiserver --apiserver-advertise-address=%s --service-dns-domain=%s --service-cidr=%s --cert-dir=%s",
 			address,

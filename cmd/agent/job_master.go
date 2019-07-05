@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/docker/docker/api/types"
-	"github.com/g0194776/lightningmonkey/pkg/certs"
+	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
@@ -11,7 +11,7 @@ import (
 )
 
 func HandleDeployMaster(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
-	err := certs.GenerateMasterCertificatesAndManifest(CERTIFICATE_STORAGE_PATH, *a.arg.Address, a.masterSettings, a.basicImages)
+	err := common.CertManager.GenerateMasterCertificatesAndManifest(CERTIFICATE_STORAGE_PATH, *a.arg.Address, a.masterSettings, a.basicImages)
 	if err != nil {
 		return false, xerrors.Errorf("Failed to generate Kubernetes master certificates and manifests, error: %s %w", err.Error(), crashError)
 	}

@@ -13,7 +13,6 @@ func Test_AgentOnline(t *testing.T) {
 	agent1 := entities.LightningMonkeyAgent{
 		Id:            uuid.NewV4().String(),
 		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -34,7 +33,6 @@ func Test_AgentOnlineWithoutStateObject(t *testing.T) {
 	agent1 := entities.LightningMonkeyAgent{
 		Id:            uuid.NewV4().String(),
 		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -52,7 +50,6 @@ func Test_AgentOffline(t *testing.T) {
 	agent1 := entities.LightningMonkeyAgent{
 		Id:            uuid.NewV4().String(),
 		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -77,7 +74,6 @@ func Test_DisposedCall(t *testing.T) {
 	agent1 := entities.LightningMonkeyAgent{
 		Id:            uuid.NewV4().String(),
 		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,

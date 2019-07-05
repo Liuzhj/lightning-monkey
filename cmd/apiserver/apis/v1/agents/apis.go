@@ -102,7 +102,7 @@ func AgentQueryNextWork(ctx iris.Context) {
 func ReportStatus(ctx iris.Context) {
 	agentId := ctx.URLParam("agent-id")
 	if agentId == "" {
-		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"agent-id\" parameter is required."}
+		rsp := entities.AgentReportStatusResponse{Response: entities.Response{ErrorId: entities.ParameterError, Reason: "\"agent-id\" parameter is required."}}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
@@ -110,7 +110,7 @@ func ReportStatus(ctx iris.Context) {
 	}
 	clusterId := ctx.URLParam("cluster-id")
 	if clusterId == "" {
-		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"cluster-id\" parameter is required."}
+		rsp := entities.AgentReportStatusResponse{Response: entities.Response{ErrorId: entities.ParameterError, Reason: "\"cluster-id\" parameter is required."}}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
@@ -119,7 +119,7 @@ func ReportStatus(ctx iris.Context) {
 	status := entities.LightningMonkeyAgentReportStatus{}
 	httpData, err := ioutil.ReadAll(ctx.Request().Body)
 	if err != nil {
-		rsp := entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}
+		rsp := entities.AgentReportStatusResponse{Response: entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
@@ -127,7 +127,7 @@ func ReportStatus(ctx iris.Context) {
 	}
 	err = json.Unmarshal(httpData, &status)
 	if err != nil {
-		rsp := entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}
+		rsp := entities.AgentReportStatusResponse{Response: entities.Response{ErrorId: entities.DeserializeError, Reason: err.Error()}}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
@@ -137,15 +137,15 @@ func ReportStatus(ctx iris.Context) {
 		status.IP = ctx.RemoteAddr()
 	}
 	logrus.Debugf("[Report]: IP: %s, Status: %#v", status.IP, status.Items)
-	err = managers.AgentReportStatus(clusterId, agentId, status)
+	leaseId, err := managers.AgentReportStatus(clusterId, agentId, status)
 	if err != nil {
-		rsp := entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
+		rsp := entities.AgentReportStatusResponse{Response: entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
 		return
 	}
-	rsp := entities.Response{ErrorId: entities.Succeed}
+	rsp := entities.AgentReportStatusResponse{Response: entities.Response{ErrorId: entities.Succeed}, LeaseId: leaseId}
 	ctx.JSON(&rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()

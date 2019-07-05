@@ -36,7 +36,7 @@ func (ac *AgentCache) Online(agent entities.LightningMonkeyAgent) {
 		ac.k8sMinion[agent.Id] = &agent
 	}
 	ac.Unlock()
-	logrus.Debugf("Agent %s online..., etcd-role: %t, master-role: %t, minion-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole)
+	logrus.Infof("Agent %s online..., etcd-role: %t, master-role: %t, minion-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole)
 }
 
 func (ac *AgentCache) Offline(agent entities.LightningMonkeyAgent) {
@@ -51,7 +51,7 @@ func (ac *AgentCache) Offline(agent entities.LightningMonkeyAgent) {
 		delete(ac.k8sMinion, agent.Id)
 	}
 	ac.Unlock()
-	logrus.Debugf("Agent %s offline..., etcd-role: %t, master-role: %t, minion-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole)
+	logrus.Infof("Agent %s offline..., etcd-role: %t, master-role: %t, minion-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole)
 }
 
 func (ac *AgentCache) GetTotalCountByRole(role string) int {

@@ -61,3 +61,8 @@ type DockerImage struct {
 	DownloadAddr string `json:"download_addr"` //remote download address.
 	ImageName    string `json:"image_name"`    //used for tagging a docker image as expected name on the local machine.
 }
+
+type AgentReportStatusResponse struct {
+	Response
+	LeaseId int64 `json:"lease_id"`
+}

@@ -45,7 +45,6 @@ type LightningMonkeyAgent struct {
 	Id               string      `json:"id" bson:"_id"`
 	ClusterId        string      `json:"cluster_id" bson:"cluster_id"`
 	AdminCertificate string      `json:"admin_certificate"` //not exist if it has not master role.
-	MetadataId       string      `json:"metadata_id" bson:"metadata_id"`
 	Hostname         string      `json:"hostname" bson:"hostname"`
 	IsDelete         bool        `json:"is_delete" bson:"is_delete"`
 	HasETCDRole      bool        `json:"has_etcd_role" bson:"has_etcd_role"`

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/g0194776/lightningmonkey/pkg/certs"
+	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	"net"
@@ -42,6 +44,7 @@ func main() {
 		ip := GetLocalIP()
 		arg.Address = &ip
 	}
+	common.CertManager = &certs.CertificateManagerImple{}
 	agent := LightningMonkeyAgent{}
 	agent.Initialize(arg)
 	agent.Start()

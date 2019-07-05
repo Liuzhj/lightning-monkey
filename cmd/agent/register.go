@@ -329,7 +329,7 @@ func (a *LightningMonkeyAgent) reportStatusInternal() error {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
 	}
 	defer rsp.Body.Close()
-	obj := entities.Response{}
+	obj := entities.AgentReportStatusResponse{}
 	rspData, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
@@ -345,6 +345,8 @@ func (a *LightningMonkeyAgent) reportStatusInternal() error {
 		}
 		return xerrors.Errorf("%s %w", internalErr.Error(), crashError)
 	}
+	//reset lease-id for avoiding lease not working problems. (re-connecting after over allowed maximum heart-beat interval)
+	a.arg.LeaseId = obj.LeaseId
 	return nil
 }
 

@@ -63,9 +63,9 @@ func Test_WithoutAnyExpectedETCDNodes(t *testing.T) {
 		etcd:  map[string]*entities.LightningMonkeyAgent{},
 		k8sMaster: map[string]*entities.LightningMonkeyAgent{
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers",
 				IsDelete:      false,
 				HasETCDRole:   false,
@@ -105,9 +105,9 @@ func Test_LessThanExpectedETCDNodes(t *testing.T) {
 		Mutex: &sync.Mutex{},
 		etcd: map[string]*entities.LightningMonkeyAgent{
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -147,9 +147,9 @@ func Test_LessThanExpectedETCDNodes2(t *testing.T) {
 		Mutex: &sync.Mutex{},
 		etcd: map[string]*entities.LightningMonkeyAgent{
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -157,9 +157,9 @@ func Test_LessThanExpectedETCDNodes2(t *testing.T) {
 				HasMinionRole: false,
 			},
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers-2",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -194,9 +194,9 @@ func Test_CurrentAgentNotOnline(t *testing.T) {
 	}
 
 	currentAgent := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-3",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -207,9 +207,9 @@ func Test_CurrentAgentNotOnline(t *testing.T) {
 		Mutex: &sync.Mutex{},
 		etcd: map[string]*entities.LightningMonkeyAgent{
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -217,9 +217,9 @@ func Test_CurrentAgentNotOnline(t *testing.T) {
 				HasMinionRole: false,
 			},
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers-2",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -256,9 +256,9 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 	}
 
 	currentAgent := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-3",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -274,9 +274,9 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 		Mutex: &sync.Mutex{},
 		etcd: map[string]*entities.LightningMonkeyAgent{
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -284,9 +284,9 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 				HasMinionRole: false,
 			},
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers-2",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -322,9 +322,9 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 	}
 
 	currentAgent := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-3",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -340,9 +340,9 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 		Mutex: &sync.Mutex{},
 		etcd: map[string]*entities.LightningMonkeyAgent{
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -355,9 +355,9 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 				},
 			},
 			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:            uuid.NewV4().String(),
-				ClusterId:     uuid.NewV4().String(),
-				MetadataId:    uuid.NewV4().String(),
+				Id:        uuid.NewV4().String(),
+				ClusterId: uuid.NewV4().String(),
+
 				Hostname:      "keepers-2",
 				IsDelete:      false,
 				HasETCDRole:   true,
@@ -393,9 +393,9 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 	}
 
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -408,9 +408,9 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-2",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -423,9 +423,9 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-3",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -477,9 +477,9 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 	}
 
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -492,9 +492,9 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-2",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -507,9 +507,9 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-3",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -556,9 +556,9 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 	}
 
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -571,9 +571,9 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-2",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -586,9 +586,9 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-3",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -601,9 +601,9 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 		},
 	}
 	agent4 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-4",
 		IsDelete:      false,
 		HasETCDRole:   false,
@@ -654,7 +654,6 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 	agent1 := entities.LightningMonkeyAgent{
 		Id:            uuid.NewV4().String(),
 		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -669,7 +668,6 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 	agent2 := entities.LightningMonkeyAgent{
 		Id:            uuid.NewV4().String(),
 		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keepers-2",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -684,7 +682,6 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 	agent3 := entities.LightningMonkeyAgent{
 		Id:            uuid.NewV4().String(),
 		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keepers-3",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -697,9 +694,9 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 		},
 	}
 	agent4 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-4",
 		IsDelete:      false,
 		HasETCDRole:   false,
@@ -746,9 +743,9 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 	}
 
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -761,9 +758,9 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 		},
 	}
 	agent2 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-2",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -776,9 +773,9 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 		},
 	}
 	agent3 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-3",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -791,9 +788,9 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 		},
 	}
 	agent4 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-4",
 		IsDelete:      false,
 		HasETCDRole:   false,
@@ -806,9 +803,9 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 		},
 	}
 	agent5 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-5",
 		IsDelete:      false,
 		HasETCDRole:   false,
@@ -847,9 +844,9 @@ func Test_CacheOnline(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -870,9 +867,9 @@ func Test_CacheOnlineWithMultipleRoles(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -893,9 +890,9 @@ func Test_CacheOnlineWithMultipleRoles2(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -916,9 +913,9 @@ func Test_CacheOffline(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -943,9 +940,9 @@ func Test_CacheOfflineWithMultipleRoles(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -970,9 +967,9 @@ func Test_CacheOfflineWithMultipleRoles2(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -980,9 +977,9 @@ func Test_CacheOfflineWithMultipleRoles2(t *testing.T) {
 		HasMinionRole: true,
 	}
 	agent2 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-2",
 		IsDelete:      false,
 		HasETCDRole:   false,
@@ -1008,9 +1005,9 @@ func Test_CacheOfflineWithMultipleRoles3(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -1018,9 +1015,9 @@ func Test_CacheOfflineWithMultipleRoles3(t *testing.T) {
 		HasMinionRole: true,
 	}
 	agent2 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-2",
 		IsDelete:      false,
 		HasETCDRole:   false,
@@ -1046,9 +1043,9 @@ func Test_DulplicatedCacheOnline(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -1071,9 +1068,9 @@ func Test_DulplicatedCacheOffline(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -1102,9 +1099,9 @@ func Test_GetTotalCountWithSpecifiedRole(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -1127,9 +1124,9 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -1152,9 +1149,9 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole2(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -1178,9 +1175,9 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole3(t *testing.T) {
 		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
 	}
 	agent1 := entities.LightningMonkeyAgent{
-		Id:            uuid.NewV4().String(),
-		ClusterId:     uuid.NewV4().String(),
-		MetadataId:    uuid.NewV4().String(),
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
 		Hostname:      "keepers-1",
 		IsDelete:      false,
 		HasETCDRole:   true,

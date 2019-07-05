@@ -13,6 +13,16 @@ import (
 	"sync"
 )
 
+//go:generate mockgen -package=mock_lm -destination=../../mocks/mock_cluster_manager.go -source=cluster_manager.go ClusterManagerInterface
+type ClusterManagerInterface interface {
+	Initialize(storageDriver storage.LightningMonkeyStorageDriver) error
+	GetClusterCertificateByName(clusterId string, certName string) (string, error)
+	GetClusterCertificates(clusterId string) (entities.LightningMonkeyCertificateCollection, error)
+	GetClusterById(clusterId string) (ClusterController, error)
+	GetAgentFromETCD(clusterId, agentId string) (*entities.LightningMonkeyAgent, error)
+	Register(cc ClusterController) error
+}
+
 type ClusterManager struct {
 	lockObj       *sync.Mutex
 	clusters      map[string]ClusterController
@@ -25,7 +35,38 @@ func (cm *ClusterManager) Initialize(storageDriver storage.LightningMonkeyStorag
 	}
 	cm.clusters = make(map[string]ClusterController)
 	cm.storageDriver = storageDriver
-	return cm.watchClusterChanges()
+	revision, err := cm.fullSync()
+	if err != nil {
+		return fmt.Errorf("Failed to fully sync data from remote storage driver, error: %s", err.Error())
+	}
+	return cm.watchClusterChanges(revision)
+}
+
+func (cm *ClusterManager) fullSync() (int64, error) {
+	rsp, err := cm.storageDriver.Get(context.Background(), "/lightning-monkey/clusters/", clientv3.WithPrefix())
+	if err != nil {
+		return -1, err
+	}
+	if rsp.Count == 0 {
+		return rsp.Header.Revision, nil
+	}
+	var subKeys []string
+	var clusterId string
+	var isChanged bool
+	for i := 0; i < len(rsp.Kvs); i++ {
+		subKeys = strings.FieldsFunc(string(rsp.Kvs[i].Key), func(c rune) bool {
+			return c == '/'
+		})
+		if clusterId, isChanged = isClusterChanged(subKeys); !isChanged {
+			continue
+		}
+		err := cm.doClusterChange(clusterId, rsp.Kvs[i].Value, false)
+		if err != nil {
+			return -1, fmt.Errorf("[Full-Sync] Failed to handle cluster-level changes, key: %s, error: %s", string(rsp.Kvs[i].Key), err.Error())
+		}
+		logrus.Infof("[Full-Sync] cluster %s successfully synced!", clusterId)
+	}
+	return rsp.Header.Revision, nil
 }
 
 func (cm *ClusterManager) GetClusterCertificateByName(clusterId string, certName string) (string, error) {
@@ -65,6 +106,9 @@ func (cm *ClusterManager) GetClusterById(clusterId string) (ClusterController, e
 }
 
 func (cm *ClusterManager) GetAgentFromETCD(clusterId, agentId string) (*entities.LightningMonkeyAgent, error) {
+	if agentId == "" {
+		return nil, nil
+	}
 	agent := entities.LightningMonkeyAgent{}
 	settingsPath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", clusterId, agentId)
 	ctx, cancel := context.WithTimeout(context.Background(), cm.storageDriver.GetRequestTimeoutDuration())
@@ -190,6 +234,7 @@ func (cm *ClusterManager) doRegister(cc ClusterController) error {
 	return nil
 }
 
+//watch agents or certificates changes for specified cluster.
 func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchChan, cc ClusterController) {
 	var err error
 	var changed bool
@@ -260,8 +305,8 @@ func (cm *ClusterManager) createKeyIfNotExists(path string, value string) error 
 	return err
 }
 
-func (cm *ClusterManager) watchClusterChanges() error {
-	wc := cm.storageDriver.Watch(context.Background(), "/lightning-monkey/clusters/", clientv3.WithPrefix())
+func (cm *ClusterManager) watchClusterChanges(revision int64) error {
+	wc := cm.storageDriver.Watch(context.Background(), "/lightning-monkey/clusters/", clientv3.WithPrefix(), clientv3.WithRev(revision))
 	go func() {
 		var isOK bool
 		var wr clientv3.WatchResponse
@@ -316,7 +361,7 @@ func (cm *ClusterManager) doClusterChange(clusterId string, value []byte, isDele
 	if !isOK {
 		cc := &ClusterControllerImple{}
 		cluster = cc.UpdateClusterSettings(settings)
-		cluster.Initialize()
+		cluster.Initialize(cm.storageDriver)
 		err = cm.doRegister(cluster)
 		if err != nil {
 			return err

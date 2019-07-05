@@ -1,9 +1,14 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/clientv3"
+	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -20,7 +25,7 @@ type ClusterController interface {
 	GetTotalProvisionedCountByRole(role string) int
 	GetSettings() entities.LightningMonkeyClusterSettings
 	GetCachedAgent(agentId string) (*entities.LightningMonkeyAgent, error)
-	Initialize()
+	Initialize(sd storage.LightningMonkeyStorageDriver)
 	SetSynchronizedRevision(id int64)
 	SetCancellationFunc(f func()) //used for disposing in use resource.
 	Lock()
@@ -55,7 +60,7 @@ func (cc *ClusterControllerImple) GetTotalProvisionedCountByRole(role string) in
 	return cc.cache.GetTotalProvisionedCountByRole(role)
 }
 
-func (cc *ClusterControllerImple) Initialize() {
+func (cc *ClusterControllerImple) Initialize(sd storage.LightningMonkeyStorageDriver) {
 	if cc.lockObj == nil {
 		cc.lockObj = &sync.Mutex{}
 	}
@@ -64,6 +69,42 @@ func (cc *ClusterControllerImple) Initialize() {
 	cc.cache.Initialize()
 	cc.jobScheduler = &ClusterJobSchedulerImple{}
 	cc.jobScheduler.InitializeStrategies()
+	err := cc.fullSync(sd)
+	if err != nil {
+		logrus.Fatalf("Failed to full-sync cluster %s data, error: %s", cc.settings.Id, err.Error())
+		os.Exit(1)
+	}
+}
+
+func (cc *ClusterControllerImple) fullSync(sd storage.LightningMonkeyStorageDriver) error {
+	rsp, err := sd.Get(context.Background(), fmt.Sprintf("/lightning-monkey/clusters/%s/", cc.GetClusterId()), clientv3.WithPrefix())
+	if err != nil {
+		return err
+	}
+	if rsp.Count == 0 {
+		return nil
+	}
+	var subKeys []string
+	for i := 0; i < len(rsp.Kvs); i++ {
+		subKeys = strings.FieldsFunc(string(rsp.Kvs[i].Key), func(c rune) bool {
+			return c == '/'
+		})
+		if certKey, isChanged := isCertificatesChanged(subKeys); isChanged {
+			cert := string(rsp.Kvs[i].Value)
+			if cert == "" {
+				logrus.Errorf("Illegal certificate content being received from remote ETCD event, key: %s", string(rsp.Kvs[i].Key))
+				continue
+			}
+			cc.Lock()
+			err = cc.OnCertificateChanged(certKey, cert, false)
+			cc.UnLock()
+			if err != nil {
+				logrus.Errorf("Failed to update hot cache with certificate changes, cluster: %s, key: %s error: %s", cc.GetClusterId(), string(rsp.Kvs[i].Key), err.Error())
+				continue
+			}
+		}
+	}
+	return nil
 }
 
 func (cc *ClusterControllerImple) Dispose() {
@@ -84,7 +125,7 @@ func (cc *ClusterControllerImple) GetSynchronizedRevision() int64 {
 }
 
 func (cc *ClusterControllerImple) GetStatus() string {
-	panic("implement me")
+	return entities.ClusterReady
 }
 
 func (cc *ClusterControllerImple) GetClusterId() string {
@@ -92,10 +133,10 @@ func (cc *ClusterControllerImple) GetClusterId() string {
 }
 
 func (cc *ClusterControllerImple) GetCertificates() entities.LightningMonkeyCertificateCollection {
-	collection := make([]*entities.CertificateKeyPair, 0, len(cc.certs))
+	collection := make([]*entities.CertificateKeyPair, len(cc.certs))
 	i := 0
 	for k, v := range cc.certs {
-		collection[i] = &entities.CertificateKeyPair{Name: k, Value: v}
+		collection[i] = &entities.CertificateKeyPair{Name: strings.Replace(k, "-", "/", -1), Value: v}
 		i++
 	}
 	return collection
@@ -134,6 +175,8 @@ func (cc *ClusterControllerImple) OnAgentChanged(agent entities.LightningMonkeyA
 }
 
 func (cc *ClusterControllerImple) OnCertificateChanged(name string, cert string, isDeleted bool) error {
+	logrus.Debugf("Certificate %s Changed: is-deleted: %t", name, isDeleted)
+	logrus.Debugf("Certificate %s value: %s", name, cert)
 	if atomic.LoadUint32(&cc.isDisposed) == 1 {
 		return fmt.Errorf("Cannot update cache to a disposed cluster controller, cluster-id: %s", cc.settings.Id)
 	}
@@ -167,5 +210,5 @@ func (cc *ClusterControllerImple) GetCachedAgent(agentId string) (*entities.Ligh
 	if agent, isOK = cc.cache.k8sMinion[agentId]; isOK {
 		return agent, nil
 	}
-	return nil, fmt.Errorf("Agent: %s not found!", agentId)
+	return nil, nil
 }

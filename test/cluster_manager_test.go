@@ -135,7 +135,6 @@ func Test_NewClusterAndOneOfflineAgentBeingFound(t *testing.T) {
 	agent := entities.LightningMonkeyAgent{
 		Id:            clusterId,
 		ClusterId:     clusterId,
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keppers",
 		IsDelete:      false,
 		HasETCDRole:   true,
@@ -221,7 +220,6 @@ func Test_NewClusterAndOneOnlineAgentBeingFound(t *testing.T) {
 	agent := entities.LightningMonkeyAgent{
 		Id:            clusterId,
 		ClusterId:     clusterId,
-		MetadataId:    uuid.NewV4().String(),
 		Hostname:      "keppers",
 		IsDelete:      false,
 		HasETCDRole:   true,

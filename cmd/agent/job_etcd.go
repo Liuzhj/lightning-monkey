@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/docker/docker/api/types"
-	"github.com/g0194776/lightningmonkey/pkg/certs"
+	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
@@ -75,7 +75,7 @@ func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, er
 	if err != nil {
 		return false, xerrors.Errorf("Failed to execute ETCD configuration template, error: %s %w", err.Error(), crashError)
 	}
-	err = certs.GenerateETCDClientCertificatesAndManifest(CERTIFICATE_STORAGE_PATH, buffer.String())
+	err = common.CertManager.GenerateETCDClientCertificatesAndManifest(CERTIFICATE_STORAGE_PATH, buffer.String())
 	if err != nil {
 		return false, xerrors.Errorf("Failed to generate ETCD client certificates, error: %s %w", err.Error(), crashError)
 	}

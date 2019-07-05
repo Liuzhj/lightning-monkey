@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/cmd/apiserver/apis"
 	"github.com/g0194776/lightningmonkey/pkg/cache"
+	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
@@ -71,6 +72,7 @@ func main() {
 		logrus.Fatalf("Failed to initialize cluster manager, error: %s", err.Error())
 		return
 	}
+	common.CertManager = &certs.CertificateManagerImple{}
 	//generates readonly token for downloading payloads.
 	if entities.HTTPDockerImageDownloadToken == "" {
 		count := 24
