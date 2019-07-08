@@ -36,7 +36,7 @@ after_success:
 deploy:
 - provider: script
   skip_cleanup: true
-  script: make && curl -sL https://git.io/goreleaser | bash
+  script: make download && curl -sL https://git.io/goreleaser | bash
   on:
     tags: true
     condition: $TRAVIS_OS_NAME = linux
