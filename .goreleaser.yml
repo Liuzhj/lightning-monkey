@@ -1,3 +1,26 @@
+builds:
+  - binary: lm-apiserver
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+    main: ./cmd/apiserver
+  - binary: lm-agent
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+    main: ./cmd/agent
+
+# Archive customization
+archive:
+  format: tar.gz
+
+
 dockers:
   - image: g0194776/lightning-monkey-apiserver
     dockerfile: Dockerfile.apiserver
