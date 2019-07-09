@@ -24,14 +24,17 @@ archive:
 
 
 dockers:
-#  - image: g0194776/lightning-monkey-apiserver
-#    dockerfile: Dockerfile.apiserver
-#    # Path to the Dockerfile (from the project root).
-#    tag_templates:
-#    - "{{ .Tag }}"
-#    - latest
-#    extra_files:
-#    - dist/apiserver_linux_amd64/lm-apiserver
+  - image: g0194776/lightning-monkey-apiserver
+    dockerfile: Dockerfile.apiserver
+    binary: lm-apiserver
+    # Path to the Dockerfile (from the project root).
+    tag_templates:
+    - "{{ .Tag }}"
+    - latest
+    extra_files:
+    - extras/kubernetes.repo
+    - download-frozen-image-v2.sh
+    - prepare.sh
   - image: g0194776/lightning-monkey-agent
     dockerfile: Dockerfile.agent
     binary: lm-agent
