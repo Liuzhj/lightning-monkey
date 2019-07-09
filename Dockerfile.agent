@@ -1,5 +1,5 @@
 FROM centos:7
-COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+COPY extras/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY lm-agent /opt
 
 RUN yum install -y kubeadm-1.13.5-0 net-tools --disableexcludes=kubernetes
