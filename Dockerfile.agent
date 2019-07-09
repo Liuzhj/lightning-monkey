@@ -1,15 +1,6 @@
-FROM golang:1.10.2 as builder
-
-RUN mkdir -p src/github.com/g0194776/lightningmonkey
-COPY . src/github.com/g0194776/lightningmonkey/
-WORKDIR src/github.com/g0194776/lightningmonkey/cmd/agent
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o lm-agent .
-
-
-
 FROM centos:7
-COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/extras/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
-COPY --from=builder /go/src/github.com/g0194776/lightningmonkey/cmd/agent/lm-agent /opt
+COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+COPY lm-agent /opt
 
 RUN yum install -y kubeadm-1.13.5-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-agent && mkdir /tmp/cni && cp -r /opt/cni/bin/* /tmp/cni
