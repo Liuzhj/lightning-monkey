@@ -9,8 +9,21 @@ addons:
     - snapd
 
 env:
-# needed for the snap pipe:
-- PATH=/snap/bin:$PATH
+  global:
+    # needed for the snap pipe:
+    - PATH=/snap/bin:$PATH
+    - REPO=g0194776/lightningmonkey
+    - REPO_PATH=$HOME/gopath/src/github.com/$REPO
+
+
+
+before_install:
+  - mkdir -p $REPO_PATH
+  - rsync -az ${TRAVIS_BUILD_DIR}/ $REPO_PATH
+  - export TRAVIS_BUILD_DIR=$REPO_PATH
+  - echo "current build path -> $REPO_PATH"
+  - cd $REPO_PATH
+
 
 install:
 # needed for the snap pipe:
