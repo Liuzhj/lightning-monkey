@@ -25,14 +25,18 @@ archive:
 
 dockers:
   - image: g0194776/lightning-monkey-apiserver
-    dockerfile: $REPO_PATH/Dockerfile.apiserver
+    dockerfile: Dockerfile.apiserver
     # Path to the Dockerfile (from the project root).
     tag_templates:
     - "{{ .Tag }}"
     - latest
+    extra_files:
+    - .
   - image: g0194776/lightning-monkey-agent
-    dockerfile: $REPO_PATH/Dockerfile.agent
+    dockerfile: Dockerfile.agent
     # Path to the Dockerfile (from the project root).
     tag_templates:
     - "{{ .Tag }}"
     - latest
+    extra_files:
+    - .
