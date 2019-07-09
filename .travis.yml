@@ -7,7 +7,6 @@ addons:
     - rpm
     # needed for the snap pipe:
     - snapd
-    - make
 
 env:
 # needed for the snap pipe:
