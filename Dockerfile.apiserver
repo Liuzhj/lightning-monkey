@@ -3,7 +3,7 @@ FROM golang:1.10.2 as builder
 RUN mkdir -p src/github.com/g0194776/lightningmonkey
 COPY . src/github.com/g0194776/lightningmonkey/
 WORKDIR src/github.com/g0194776/lightningmonkey
-RUN make download
+RUN ./prepare.sh
 WORKDIR src/github.com/g0194776/lightningmonkey/cmd/apiserver
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o lm-apiserver .
 
