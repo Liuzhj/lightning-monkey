@@ -1,5 +1,6 @@
 builds:
   - binary: lm-apiserver
+    id: "apiserver"
     goos:
       - windows
       - darwin
@@ -8,6 +9,7 @@ builds:
       - amd64
     main: ./cmd/apiserver
   - binary: lm-agent
+    id: "agent"
     goos:
       - windows
       - darwin
