@@ -34,10 +34,10 @@ dockers:
 #    - dist/apiserver_linux_amd64/lm-apiserver
   - image: g0194776/lightning-monkey-agent
     dockerfile: Dockerfile.agent
+    binary: lm-agent
     # Path to the Dockerfile (from the project root).
     tag_templates:
     - "{{ .Tag }}"
     - latest
     extra_files:
-    - dist/apiserver_linux_amd64/lm-agent
     - extras/kubernetes.repo
