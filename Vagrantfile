@@ -7,46 +7,36 @@ Vagrant.configure("2") do |config|
 
   # do NOT download the iso file from a webserver
   config.vbguest.no_remote = true
+  # resolved long time waiting problem on CentOS 7.
+  # https://github.com/devopsgroup-io/vagrant-digitalocean/issues/255
+  config.vm.synced_folder '.', '/vagrant', disabled: true
 
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
     v.cpus = 3
   end
 
-  config.vm.define "vm1" do |vm1|
-    vm1.vm.box = "centos/7"
-    vm1.vm.network "private_network", ip: "192.168.33.11"
-    vm1.vm.provision "shell", inline: "setenforce 0 && swapoff -a"
-    vm1.vm.hostname = "192.168.33.11"
+  config.vm.define "apiserver" do |apiserver|
+    apiserver.vm.box = "centos/7"
+    apiserver.vm.network "private_network", ip: "192.168.33.10"
+    apiserver.vm.hostname = "192.168.33.10"
+    apiserver.trigger.after :up do |trigger|
+      trigger.run_remote = {inline: <<-SHELL
+        setenforce 0 && swapoff -a
+        yum update -y && yum install docker -y
+        sudo su && systemctl start docker && systemctl status docker
+        docker run -itd --name etcd-server \
+            --publish 2379:2379 \
+            --publish 2380:2380 \
+            --env ALLOW_NONE_AUTHENTICATION=yes \
+            --env ETCD_ADVERTISE_CLIENT_URLS=http://etcd-server:2379 \
+            bitnami/etcd:latest
+        docker run -itd -p 8080:8080 \
+            --link etcd-server:etcd-server \
+            -e "BACKEND_STORAGE_ARGS=ENDPOINTS=http://etcd-server:2379;LOG_LEVEL=debug" \
+            g0194776/lightning-monkey-apiserver:latest
+        SHELL
+        }
+    end
   end
-
-  config.vm.define "vm2" do |vm2|
-    vm2.vm.box = "centos/7"
-    vm2.vm.network "private_network", ip: "192.168.33.12"
-    vm2.vm.provision "shell", inline: "setenforce 0 && swapoff -a"
-    vm2.vm.hostname = "192.168.33.12"
-  end
-
-  config.vm.define "vm3" do |vm3|
-    vm3.vm.box = "centos/7"
-    vm3.vm.network "private_network", ip: "192.168.33.13"
-    vm3.vm.provision "shell", inline: "setenforce 0 && swapoff -a"
-    vm3.vm.hostname = "192.168.33.13"
-  end
-
-  config.vm.define "vm4" do |vm4|
-    vm4.vm.box = "centos/7"
-    vm4.vm.network "private_network", ip: "192.168.33.14"
-    vm4.vm.provision "shell", inline: "setenforce 0 && swapoff -a"
-    vm4.vm.hostname = "192.168.33.14"
-  end
-
-  config.vm.define "vm5" do |vm5|
-    vm5.vm.box = "centos/7"
-    vm5.vm.network "private_network", ip: "192.168.33.15"
-    vm5.vm.provision "shell", inline: "setenforce 0 && swapoff -a"
-    vm5.vm.hostname = "192.168.33.15"
-  end
-
-
 end
