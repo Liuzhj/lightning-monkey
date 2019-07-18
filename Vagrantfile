@@ -1,3 +1,5 @@
+CLUSTER_ID = "1b8624d9-b3cf-41a3-a95b-748277484ba5"
+
 Vagrant.configure("2") do |config|
   config.vm.box_check_update = false
   config.ssh.insert_key = false
@@ -13,7 +15,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
-    v.cpus = 3
+    #v.cpus = 3
   end
 
   config.vm.define "apiserver" do |apiserver|
@@ -32,9 +34,15 @@ Vagrant.configure("2") do |config|
             --env ETCD_ADVERTISE_CLIENT_URLS=http://etcd-server:2379 \
             bitnami/etcd:latest
         docker run -itd -p 8080:8080 \
+            --name apiserver \
             --link etcd-server:etcd-server \
             -e "BACKEND_STORAGE_ARGS=ENDPOINTS=http://etcd-server:2379;LOG_LEVEL=debug" \
             g0194776/lightning-monkey-apiserver:latest
+        sleep 5s
+        echo "try to retrieving API-Server logs..."
+        docker logs apiserver
+        echo "preparing to create a new cluster..."
+        curl -v http://localhost:8080/apis/v1/cluster/create -X POST -d "{\"id\":\"$CLUSTER_ID\",\"name\":\"cluster1\",\"expected_etcd_count\":1,\"pod_network_cidr\":\"55.55.0.0/12\",\"service_cidr\":\"10.254.1.1/12\",\"kubernetes_version\":\"1.12.5\",\"service_dns_domain\":\"cluster.local\",\"network_stack\":{\"type\":\"kuberouter\"}}"
         SHELL
         }
     end
