@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/g0194776/lightning-monkey.svg?token=vHH8ZAATWuPpZvD2YF3L&branch=feature/init)](https://travis-ci.com/g0194776/lightning-monkey)
+
 # Lightning Monkey
 This project is currently in early development stage. Bug reports and pull requests are welcome.
 
