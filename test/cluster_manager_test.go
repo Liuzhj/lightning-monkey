@@ -50,6 +50,10 @@ func Test_InitWatch(t *testing.T) {
 	defer gc.Finish()
 	sd := mock_lm.NewMockLightningMonkeyStorageDriver(gc)
 	retChan := make(<-chan clientv3.WatchResponse)
+	//full-sync logic
+	sd.EXPECT().Get(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any()).Return(&clientv3.GetResponse{
+		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+	}, nil)
 	sd.EXPECT().Watch(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any()).Return(retChan)
 	cm := cache.ClusterManager{}
 	err := cm.Initialize(sd)
@@ -61,9 +65,17 @@ func Test_NewClusterBeingAdded(t *testing.T) {
 	defer gc.Finish()
 	clusterId := uuid.NewV4().String()
 	sd := mock_lm.NewMockLightningMonkeyStorageDriver(gc)
+	//full-sync logic
+	sd.EXPECT().Get(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any()).Return(&clientv3.GetResponse{
+		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+	}, nil)
+	//full-sync logic
+	sd.EXPECT().Get(gomock.Any(), "/lightning-monkey/clusters/"+clusterId+"/", gomock.Any()).Return(&clientv3.GetResponse{
+		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+	}, nil)
 	retChan := make(chan clientv3.WatchResponse)
 	//used for watching clusters changes.
-	sd.EXPECT().Watch(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any()).Return(retChan)
+	sd.EXPECT().Watch(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any(), gomock.Any()).Return(retChan)
 	//used for watching agents & certifications changes.
 	sd.EXPECT().Watch(gomock.Any(), "/lightning-monkey/clusters/"+clusterId+"/", gomock.Any()).Return(retChan)
 	duration, _ := time.ParseDuration("5s")
@@ -107,7 +119,7 @@ func Test_NewClusterBeingAdded(t *testing.T) {
 					}},
 			},
 		}
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 10)
 		wg.Done()
 	}()
 	fmt.Println("Waiting...")
@@ -125,6 +137,15 @@ func Test_NewClusterAndOneOfflineAgentBeingFound(t *testing.T) {
 	agentId := uuid.NewV4().String()
 	sd := mock_lm.NewMockLightningMonkeyStorageDriver(gc)
 	retChan := make(chan clientv3.WatchResponse)
+	//full-sync logic
+	sd.EXPECT().Get(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any()).Return(&clientv3.GetResponse{
+		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+	}, nil)
+	//full-sync logic
+	sd.EXPECT().Get(gomock.Any(), "/lightning-monkey/clusters/"+clusterId+"/", gomock.Any()).Return(&clientv3.GetResponse{
+		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+	}, nil)
+
 	//used for watching clusters changes.
 	sd.EXPECT().Watch(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any()).Return(retChan)
 	//used for watching agents & certifications changes.
@@ -190,7 +211,7 @@ func Test_NewClusterAndOneOfflineAgentBeingFound(t *testing.T) {
 					}},
 			},
 		}
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 10)
 		wg.Done()
 	}()
 	fmt.Println("Waiting...")
@@ -210,6 +231,14 @@ func Test_NewClusterAndOneOnlineAgentBeingFound(t *testing.T) {
 	agentId := uuid.NewV4().String()
 	sd := mock_lm.NewMockLightningMonkeyStorageDriver(gc)
 	retChan := make(chan clientv3.WatchResponse)
+	//full-sync logic
+	sd.EXPECT().Get(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any()).Return(&clientv3.GetResponse{
+		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+	}, nil)
+	//full-sync logic
+	sd.EXPECT().Get(gomock.Any(), "/lightning-monkey/clusters/"+clusterId+"/", gomock.Any()).Return(&clientv3.GetResponse{
+		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+	}, nil)
 	//used for watching clusters changes.
 	sd.EXPECT().Watch(gomock.Any(), "/lightning-monkey/clusters/", gomock.Any()).Return(retChan)
 	//used for watching agents & certifications changes.
@@ -288,7 +317,7 @@ func Test_NewClusterAndOneOnlineAgentBeingFound(t *testing.T) {
 					}},
 			},
 		}
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 10)
 		wg.Done()
 	}()
 	fmt.Println("Waiting...")

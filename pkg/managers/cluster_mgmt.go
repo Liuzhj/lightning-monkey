@@ -38,8 +38,11 @@ func NewCluster(cluster *entities.LightningMonkeyClusterSettings) (string, error
 	if err != nil {
 		return "", fmt.Errorf("Failed to generate Kubernetes required certificates, error: %s", err.Error())
 	}
-	//reset cluster fields.
-	cluster.Id = uuid.NewV4().String()
+	//considered troubleshooting, set to empty is not an required condition.
+	if cluster.Id == "" {
+		//reset cluster fields.
+		cluster.Id = uuid.NewV4().String()
+	}
 	cluster.SecurityToken = "abc"
 	cluster.CreateTime = time.Now()
 	err = saveCluster(cluster, certsResources)
