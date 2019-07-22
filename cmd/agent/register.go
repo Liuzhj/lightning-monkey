@@ -11,7 +11,6 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
-	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
@@ -60,13 +59,12 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 			atomic.SwapInt32(&a.hasRegistered, 0)
 		}
 	}()
-	clusterId := bson.ObjectIdHex(*a.arg.ClusterId)
 	hostname, _ := os.Hostname()
 	agentObj := entities.Agent{
 		HasETCDRole:   *a.arg.IsETCDRole,
 		HasMasterRole: *a.arg.IsMasterRole,
 		HasMinionRole: *a.arg.IsMinionRole,
-		ClusterId:     &clusterId,
+		ClusterId:     *a.arg.ClusterId,
 		Hostname:      hostname,
 		LastReportIP:  *a.arg.Address,
 	}
