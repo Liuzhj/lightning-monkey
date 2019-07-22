@@ -64,6 +64,7 @@ func (cm *CertificateManagerImple) GenerateAdminKubeConfig(advertiseAddr string,
 	}()
 	if basicCertMap != nil {
 		for i := 0; i < len(basicCertMap); i++ {
+			logrus.Infof("Pareparing write cert: %s", basicCertMap[i].Name)
 			_ = os.MkdirAll(filepath.Dir(filepath.Join(path, basicCertMap[i].Name)), 0644)
 			ioErr := ioutil.WriteFile(filepath.Join(path, basicCertMap[i].Name), []byte(basicCertMap[i].Value), 0644)
 			if ioErr != nil {

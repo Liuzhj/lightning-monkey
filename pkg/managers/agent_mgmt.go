@@ -60,6 +60,7 @@ func RegisterAgent(agent *entities.LightningMonkeyAgent) (*entities.LightningMon
 	//generate admin config for master role agent.
 	if agent.HasMasterRole {
 		certMap := cluster.GetCertificates()
+		logrus.Infof("Cluster: %s certs count: %d", agent.ClusterId, len(certMap))
 		adminKubeCert, err := common.CertManager.GenerateAdminKubeConfig(agent.State.LastReportIP, certMap)
 		if err != nil {
 			return nil, "", -1, fmt.Errorf("Failed to generate kube admin configuration file, error: %s", err.Error())
