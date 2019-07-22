@@ -207,6 +207,9 @@ func (a *LightningMonkeyAgent) Initialize(arg AgentArgs) {
 	if a.c == nil {
 		a.c = make(chan LightningMonkeyAgentReportStatus)
 	}
+	if a.ItemsStatus == nil {
+		a.ItemsStatus = make(map[string]entities.LightningMonkeyAgentReportStatusItem)
+	}
 	go a.startStatusTracing()
 	if a.statusLock == nil {
 		a.statusLock = &sync.RWMutex{}
