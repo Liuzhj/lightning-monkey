@@ -1,10 +1,10 @@
 FROM golang:1.10.2 as builder
 
 COPY extras/kubernetes.repo ./kubernetes.repo
-COPY lm-apiserver ./lm-apiserver
+COPY cmd/apiserver/apiserver ./lm-apiserver
 COPY download-frozen-image-v2.sh ./download-frozen-image-v2.sh
 COPY prepare.sh ./prepare.sh
-RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
+RUN apt-get update -y && apt-get install jq -y && ./prepare.sh
 
 
 FROM centos:7
