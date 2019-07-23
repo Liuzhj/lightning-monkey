@@ -8,6 +8,8 @@ builds:
     goarch:
       - amd64
     main: ./cmd/apiserver
+    gcflags:
+      - -N -l
   - binary: lm-agent
     id: "agent"
     goos:

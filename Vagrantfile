@@ -38,6 +38,7 @@ Vagrant.configure("2") do |config|
             --name apiserver \
             --link etcd-server:etcd-server \
             -e "BACKEND_STORAGE_ARGS=ENDPOINTS=http://etcd-server:2379;LOG_LEVEL=debug" \
+            -e "LOG_LEVEL=debug" \
             g0194776/lightning-monkey-apiserver:latest
         sleep 5s
         echo "try to retrieving API-Server logs..."
