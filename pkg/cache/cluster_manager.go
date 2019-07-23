@@ -256,7 +256,7 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 				continue
 			}
 			for i := 0; i < len(rsp.Events); i++ {
-				logrus.Debugf("Received ETCD event: Event=%d, Key=%s", rsp.Events[i].Type, string(rsp.Events[i].Kv.Key))
+				logrus.Infof("Received ETCD event: Key=%s", string(rsp.Events[i].Kv.Key))
 				subKeys := strings.FieldsFunc(string(rsp.Events[i].Kv.Key), func(r rune) bool {
 					return r == '/'
 				})

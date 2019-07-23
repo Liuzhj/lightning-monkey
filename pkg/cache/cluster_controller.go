@@ -95,6 +95,7 @@ func (cc *ClusterControllerImple) fullSync(sd storage.LightningMonkeyStorageDriv
 				logrus.Errorf("Illegal certificate content being received from remote ETCD event, key: %s", string(rsp.Kvs[i].Key))
 				continue
 			}
+			logrus.Debugf("Collecting generated certificate for cluster: %s, cert-name: %s", cc.GetClusterId(), certKey)
 			cc.Lock()
 			err = cc.OnCertificateChanged(certKey, cert, false)
 			cc.UnLock()

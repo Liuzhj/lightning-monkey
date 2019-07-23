@@ -57,7 +57,15 @@ func GetClusterCertificates(clusterId string) (entities.LightningMonkeyCertifica
 }
 
 func saveCluster(cluster *entities.LightningMonkeyClusterSettings, certsMap *certs.GeneratedCertsMap) error {
-	//STEP 1, create cluster metadata
+	//STEP 1, add generated cluster certificates.
+	err := saveClusterCertificate(cluster, certsMap)
+	if err != nil {
+		return err
+	}
+
+	//STEP 2, create cluster metadata
+	//after writing certificates to add metadata is used for avoiding cache missing.
+	//that's very important to ensure that all newest events can be received successfully from ETCD watcher.
 	path := fmt.Sprintf("/lightning-monkey/clusters/%s/metadata", cluster.Id)
 	data, err := json.Marshal(cluster)
 	if err != nil {
@@ -66,11 +74,7 @@ func saveCluster(cluster *entities.LightningMonkeyClusterSettings, certsMap *cer
 	ctx, cancel := context.WithTimeout(context.Background(), common.StorageDriver.GetRequestTimeoutDuration())
 	defer cancel()
 	_, err = common.StorageDriver.Put(ctx, path, string(data))
-	if err != nil {
-		return err
-	}
-	//STEP 2, add generated cluster certificates.
-	return saveClusterCertificate(cluster, certsMap)
+	return err
 }
 
 func saveClusterCertificate(cluster *entities.LightningMonkeyClusterSettings, certsMap *certs.GeneratedCertsMap) error {
