@@ -130,21 +130,21 @@ func AgentReportStatus(clusterId, agentId string, status entities.LightningMonke
 	state.LastReportIP = status.IP
 	state.LastReportTime = time.Now()
 	//detect ETCD deployment status.
-	if v, isOK := status.Items[entities.AgentRole_ETCD]; isOK {
+	if v, isOK := status.Items[entities.AgentJob_Deploy_ETCD]; isOK {
 		state.HasProvisionedETCD = v.HasProvisioned
 		state.Reason = v.Reason //TODO: different component's reason should explicitly break off.
 	} else {
 		state.HasProvisionedETCD = false
 	}
 	//detect Kubernetes Master deployment status.
-	if v, isOK := status.Items[entities.AgentRole_Master]; isOK {
+	if v, isOK := status.Items[entities.AgentJob_Deploy_Master]; isOK {
 		state.HasProvisionedMasterComponents = v.HasProvisioned
 		state.Reason = v.Reason //TODO: different component's reason should explicitly break off.
 	} else {
 		state.HasProvisionedMasterComponents = false
 	}
 	//detect Kubernetes Minion deployment status.
-	if v, isOK := status.Items[entities.AgentRole_Minion]; isOK {
+	if v, isOK := status.Items[entities.AgentJob_Deploy_Minion]; isOK {
 		state.HasProvisionedMinion = v.HasProvisioned
 		state.Reason = v.Reason //TODO: different component's reason should explicitly break off.
 	} else {
