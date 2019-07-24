@@ -71,7 +71,7 @@ Vagrant.configure("2") do |config|
             --entrypoint=/opt/lm-agent \
             g0194776/lightning-monkey-agent:latest \
                 --server=http://192.168.33.10:8080 \
-                --address=$(ip addr show dev eth0 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
+                --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                 --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
                 --etcd \
                 --master \
