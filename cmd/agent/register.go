@@ -366,7 +366,7 @@ func (a *LightningMonkeyAgent) queryJob() (*entities.AgentJob, error) {
 		Timeout:   time.Second * 5,
 		Transport: http.DefaultTransport,
 	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/apis/v1/agent/query?agent-id=%s", *a.arg.Server, a.arg.AgentId), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/apis/v1/agent/query?agent-id=%s&cluster-id=%s", *a.arg.Server, a.arg.AgentId, *a.arg.ClusterId), nil)
 	if err != nil {
 		return nil, err
 	}
