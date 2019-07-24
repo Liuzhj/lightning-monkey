@@ -84,6 +84,7 @@ Vagrant.configure("2") do |config|
         docker ps -a
         SHELL
         }
+      end
     end
 
 
@@ -120,7 +121,8 @@ Vagrant.configure("2") do |config|
           docker ps -a
           SHELL
           }
-    end
+        end
+      end
 
     config.vm.define "k8s_master3" do |k8s_master3|
       k8s_master3.vm.box = "centos/7"
@@ -155,7 +157,6 @@ Vagrant.configure("2") do |config|
           docker ps -a
           SHELL
           }
-    end
-
-  end
+        end
+      end
 end
