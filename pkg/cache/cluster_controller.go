@@ -144,7 +144,7 @@ func (cc *ClusterControllerImple) GetCertificates() entities.LightningMonkeyCert
 }
 
 func (cc *ClusterControllerImple) GetNextJob(agent entities.LightningMonkeyAgent) (entities.AgentJob, error) {
-	return cc.jobScheduler.GetNextJob(cc.settings, agent, cc.cache)
+	return cc.jobScheduler.GetNextJob(cc, agent, cc.cache)
 }
 
 func (cc *ClusterControllerImple) SetSynchronizedRevision(id int64) {

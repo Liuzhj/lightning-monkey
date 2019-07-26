@@ -5,18 +5,19 @@ import (
 )
 
 const (
-	AgentJob_Deploy_Master        = "MASTER"
-	AgentJob_Deploy_ETCD          = "ETCD"
-	AgentJob_Deploy_Minion        = "Minion"
-	AgentJob_NOP                  = "NOP"
-	AgentStatus_Registered        = "New"
-	AgentStatus_Running           = "Running"
-	AgentStatus_Provisioning      = "Provisioning"
-	AgentStatus_Provision_Succeed = "Provision Succeed"
-	AgentStatus_Provision_Failed  = "Provision Failed"
-	AgentReport_Provision         = "Provision"
-	AgentReport_Heartbeat         = "Heartbeat"
-	MaxAgentReportTimeoutSecs     = 30
+	AgentJob_Deploy_Master                  = "MASTER"
+	AgentJob_Deploy_ETCD                    = "ETCD"
+	AgentJob_Deploy_Minion                  = "Minion"
+	AgentJob_Deploy_NetworkStack_KubeRouter = "Kube-Router"
+	AgentJob_NOP                            = "NOP"
+	AgentStatus_Registered                  = "New"
+	AgentStatus_Running                     = "Running"
+	AgentStatus_Provisioning                = "Provisioning"
+	AgentStatus_Provision_Succeed           = "Provision Succeed"
+	AgentStatus_Provision_Failed            = "Provision Failed"
+	AgentReport_Provision                   = "Provision"
+	AgentReport_Heartbeat                   = "Heartbeat"
+	MaxAgentReportTimeoutSecs               = 30
 )
 
 type Agent struct {

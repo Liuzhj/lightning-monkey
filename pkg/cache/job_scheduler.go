@@ -7,7 +7,7 @@ import (
 
 type ClusterJobScheduler interface {
 	InitializeStrategies()
-	GetNextJob(clusterSettings entities.LightningMonkeyClusterSettings, agent entities.LightningMonkeyAgent, cache *AgentCache) (entities.AgentJob, error)
+	GetNextJob(cc ClusterController, agent entities.LightningMonkeyAgent, cache *AgentCache) (entities.AgentJob, error)
 }
 
 type ClusterJobSchedulerImple struct {
@@ -22,7 +22,7 @@ func (js *ClusterJobSchedulerImple) InitializeStrategies() {
 	}
 }
 
-func (js *ClusterJobSchedulerImple) GetNextJob(clusterSettings entities.LightningMonkeyClusterSettings, agent entities.LightningMonkeyAgent, cache *AgentCache) (entities.AgentJob, error) {
+func (js *ClusterJobSchedulerImple) GetNextJob(cc ClusterController, agent entities.LightningMonkeyAgent, cache *AgentCache) (entities.AgentJob, error) {
 	if js.strategies == nil || len(js.strategies) == 0 {
 		return entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Skipped, No any cluster job strategies being found."}, nil
 	}
@@ -34,7 +34,7 @@ func (js *ClusterJobSchedulerImple) GetNextJob(clusterSettings entities.Lightnin
 	var reason string
 	var err error
 	for i := 0; i < len(js.strategies); i++ {
-		deployFlag, reason, deployArgs, err = js.strategies[i].CanDeploy(clusterSettings, agent, cache)
+		deployFlag, reason, deployArgs, err = js.strategies[i].CanDeploy(cc, agent, cache)
 		if err != nil {
 			return entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Occurred internal error!"}, err
 		}
