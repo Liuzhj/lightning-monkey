@@ -24,6 +24,15 @@ func (ac *AgentCache) Initialize() {
 	ac.k8sMinion = make(map[string]*entities.LightningMonkeyAgent)
 }
 
+func (ac *AgentCache) InitializeWithValues(etcd, k8sMaster, k8sMinion map[string]*entities.LightningMonkeyAgent) {
+	if ac.Mutex == nil {
+		ac.Mutex = &sync.Mutex{}
+	}
+	ac.etcd = etcd
+	ac.k8sMaster = k8sMaster
+	ac.k8sMinion = k8sMinion
+}
+
 func (ac *AgentCache) Online(agent entities.LightningMonkeyAgent) {
 	ac.Lock()
 	if agent.HasETCDRole {
@@ -160,4 +169,22 @@ func (ac *AgentCache) GetAgentsAddress(role string, mustStatusFlag entities.Agen
 	}
 	sort.Strings(ips)
 	return ips
+}
+
+func (ac *AgentCache) GetETCDCount() int {
+	ac.Lock()
+	defer ac.Unlock()
+	return len(ac.etcd)
+}
+
+func (ac *AgentCache) GetKubernetesMasterCount() int {
+	ac.Lock()
+	defer ac.Unlock()
+	return len(ac.k8sMaster)
+}
+
+func (ac *AgentCache) GetKubernetesMinionCount() int {
+	ac.Lock()
+	defer ac.Unlock()
+	return len(ac.k8sMinion)
 }

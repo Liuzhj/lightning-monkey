@@ -1,19 +1,26 @@
-package cache
+package test
 
 import (
 	"fmt"
+	"github.com/g0194776/lightningmonkey/mocks"
+	"github.com/g0194776/lightningmonkey/pkg/cache"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/golang/mock/gomock"
 	"github.com/googleapis/gnostic/compiler"
+	"strings"
+	"time"
+
+	//"github.com/googleapis/gnostic/compiler"
 	uuid "github.com/satori/go.uuid"
 	assert "github.com/stretchr/testify/require"
-	"strings"
+	//"strings"
 	"sync"
 	"testing"
-	"time"
+	//"time"
 )
 
 func Test_WithoutAnyLiveNodes(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -28,11 +35,15 @@ func Test_WithoutAnyLiveNodes(t *testing.T) {
 			Type: entities.NetworkStack_KubeRouter,
 		},
 	}
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
 
 	var currentAgent entities.LightningMonkeyAgent
 	currentAgent.State = &entities.AgentState{}
-	ac := AgentCache{Mutex: &sync.Mutex{}}
-	job, err := js.GetNextJob(cs, currentAgent, &ac)
+	ac := cache.AgentCache{Mutex: &sync.Mutex{}}
+	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	fmt.Printf("%#v\n", job)
@@ -40,7 +51,7 @@ func Test_WithoutAnyLiveNodes(t *testing.T) {
 }
 
 func Test_WithoutAnyExpectedETCDNodes(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -56,26 +67,29 @@ func Test_WithoutAnyExpectedETCDNodes(t *testing.T) {
 		},
 	}
 
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
+
 	var currentAgent entities.LightningMonkeyAgent
 	currentAgent.State = &entities.AgentState{}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd:  map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+	ac := cache.AgentCache{}
 
-				Hostname:      "keepers",
-				IsDelete:      false,
-				HasETCDRole:   false,
-				HasMasterRole: true,
-				HasMinionRole: false,
-			},
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
+
+			Hostname:      "keepers",
+			IsDelete:      false,
+			HasETCDRole:   false,
+			HasMasterRole: true,
+			HasMinionRole: false,
 		},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, currentAgent, &ac)
+	}, map[string]*entities.LightningMonkeyAgent{})
+
+	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	fmt.Printf("%#v\n", job)
@@ -83,7 +97,7 @@ func Test_WithoutAnyExpectedETCDNodes(t *testing.T) {
 }
 
 func Test_LessThanExpectedETCDNodes(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -99,25 +113,27 @@ func Test_LessThanExpectedETCDNodes(t *testing.T) {
 		},
 	}
 
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
+
 	var currentAgent entities.LightningMonkeyAgent
 	currentAgent.State = &entities.AgentState{}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-			}},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, currentAgent, &ac)
+			Hostname:      "keepers",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+		}}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+
+	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	fmt.Printf("%#v\n", job)
@@ -125,7 +141,7 @@ func Test_LessThanExpectedETCDNodes(t *testing.T) {
 }
 
 func Test_LessThanExpectedETCDNodes2(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -141,35 +157,36 @@ func Test_LessThanExpectedETCDNodes2(t *testing.T) {
 		},
 	}
 
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
+
 	var currentAgent entities.LightningMonkeyAgent
 	currentAgent.State = &entities.AgentState{}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-			},
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+			Hostname:      "keepers",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+		},
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers-2",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-			}},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, currentAgent, &ac)
+			Hostname:      "keepers-2",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+		}}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	fmt.Printf("%#v\n", job)
@@ -177,21 +194,12 @@ func Test_LessThanExpectedETCDNodes2(t *testing.T) {
 }
 
 func Test_CurrentAgentNotOnline(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
-	cs := entities.LightningMonkeyClusterSettings{
-		Name:              "demo_cluster",
-		ExpectedETCDCount: 3,
-		ServiceCIDR:       "10.254.0.0/16",
-		KubernetesVersion: "1.12.5",
-		PodNetworkCIDR:    "172.1.0.0/16",
-		SecurityToken:     "",
-		ServiceDNSDomain:  ".cluster.local",
-		NetworkStack: &entities.NetworkStackSettings{
-			Type: entities.NetworkStack_KubeRouter,
-		},
-	}
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
 
 	currentAgent := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
@@ -203,34 +211,30 @@ func Test_CurrentAgentNotOnline(t *testing.T) {
 		HasMasterRole: false,
 		HasMinionRole: false,
 	}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-			},
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+			Hostname:      "keepers",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+		},
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers-2",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-			},
-			uuid.NewV4().String(): &currentAgent},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, currentAgent, &ac)
+			Hostname:      "keepers-2",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+		},
+		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.NotNil(t, job)
 	assert.NotNil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -239,7 +243,7 @@ func Test_CurrentAgentNotOnline(t *testing.T) {
 }
 
 func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -254,6 +258,11 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 			Type: entities.NetworkStack_KubeRouter,
 		},
 	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
 
 	currentAgent := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
@@ -270,34 +279,30 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 			LastReportTime:     time.Now(),
 		},
 	}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-			},
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+			Hostname:      "keepers",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+		},
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers-2",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-			},
-			uuid.NewV4().String(): &currentAgent},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, currentAgent, &ac)
+			Hostname:      "keepers-2",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+		},
+		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -305,7 +310,7 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 }
 
 func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -320,6 +325,11 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 			Type: entities.NetworkStack_KubeRouter,
 		},
 	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
 
 	currentAgent := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
@@ -336,47 +346,43 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 			LastReportTime:     time.Now(),
 		},
 	}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-				State: &entities.AgentState{
-					LastReportIP:       "127.0.0.1",
-					HasProvisionedETCD: true,
-					LastReportTime:     time.Now(),
-				},
+			Hostname:      "keepers",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+			State: &entities.AgentState{
+				LastReportIP:       "127.0.0.1",
+				HasProvisionedETCD: true,
+				LastReportTime:     time.Now(),
 			},
-			uuid.NewV4().String(): &entities.LightningMonkeyAgent{
-				Id:        uuid.NewV4().String(),
-				ClusterId: uuid.NewV4().String(),
+		},
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:        uuid.NewV4().String(),
+			ClusterId: uuid.NewV4().String(),
 
-				Hostname:      "keepers-2",
-				IsDelete:      false,
-				HasETCDRole:   true,
-				HasMasterRole: false,
-				HasMinionRole: false,
-			},
-			uuid.NewV4().String(): &currentAgent},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, currentAgent, &ac)
+			Hostname:      "keepers-2",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+		},
+		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
 	assert.True(t, job.Name == entities.AgentJob_NOP)
 }
 
-func Test_GetETCDDeploymentJob(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+func Test_ProvisionedCountThanLessExpectedETCDNodeCount3(t *testing.T) {
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -391,6 +397,71 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 			Type: entities.NetworkStack_KubeRouter,
 		},
 	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
+
+	currentAgent := entities.LightningMonkeyAgent{
+		Id:            uuid.NewV4().String(),
+		ClusterId:     uuid.NewV4().String(),
+		Hostname:      "keepers-2",
+		IsDelete:      false,
+		HasETCDRole:   true,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:       "192.168.1.11",
+			HasProvisionedETCD: false,
+			LastReportTime:     time.Now(),
+		},
+	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:            uuid.NewV4().String(),
+			ClusterId:     uuid.NewV4().String(),
+			Hostname:      "keepers",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+			State: &entities.AgentState{
+				LastReportIP: "192.168.1.10",
+			},
+		},
+		uuid.NewV4().String(): &currentAgent},
+		map[string]*entities.LightningMonkeyAgent{},
+		map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	assert.NotNil(t, job)
+	assert.Nil(t, err)
+	fmt.Printf("%#v\n", job)
+	assert.True(t, job.Name == entities.AgentJob_NOP)
+}
+
+func Test_GetETCDDeploymentJob(t *testing.T) {
+	js := cache.ClusterJobSchedulerImple{}
+	js.InitializeStrategies()
+
+	cs := entities.LightningMonkeyClusterSettings{
+		Name:              "demo_cluster",
+		ExpectedETCDCount: 3,
+		ServiceCIDR:       "10.254.0.0/16",
+		KubernetesVersion: "1.12.5",
+		PodNetworkCIDR:    "172.1.0.0/16",
+		SecurityToken:     "",
+		ServiceDNSDomain:  ".cluster.local",
+		NetworkStack: &entities.NetworkStackSettings{
+			Type: entities.NetworkStack_KubeRouter,
+		},
+	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
 
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
@@ -437,17 +508,13 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 			LastReportTime:     time.Now(),
 		},
 	}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent1,
-			uuid.NewV4().String(): &agent2,
-			uuid.NewV4().String(): &agent3,
-		},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, agent1, &ac)
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent1,
+		uuid.NewV4().String(): &agent2,
+		uuid.NewV4().String(): &agent3,
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, agent1, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -460,7 +527,7 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 }
 
 func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -475,6 +542,11 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 			Type: entities.NetworkStack_KubeRouter,
 		},
 	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
 
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
@@ -521,17 +593,13 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 			LastReportTime:     time.Now(),
 		},
 	}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent1,
-			uuid.NewV4().String(): &agent2,
-			uuid.NewV4().String(): &agent3,
-		},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, agent1, &ac)
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent1,
+		uuid.NewV4().String(): &agent2,
+		uuid.NewV4().String(): &agent3,
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, agent1, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -539,7 +607,7 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 }
 
 func Test_GetK8sMasterDeploymentJob(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -554,6 +622,11 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 			Type: entities.NetworkStack_KubeRouter,
 		},
 	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
 
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
@@ -615,19 +688,15 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 			LastReportTime:                 time.Now(),
 		},
 	}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent1,
-			uuid.NewV4().String(): &agent2,
-			uuid.NewV4().String(): &agent3,
-		},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent4,
-		},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
-	job, err := js.GetNextJob(cs, agent4, &ac)
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent1,
+		uuid.NewV4().String(): &agent2,
+		uuid.NewV4().String(): &agent3,
+	}, map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent4,
+	}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, agent4, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -635,7 +704,7 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 }
 
 func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -650,6 +719,11 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 			Type: entities.NetworkStack_KubeRouter,
 		},
 	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
 
 	agent1 := entities.LightningMonkeyAgent{
 		Id:            uuid.NewV4().String(),
@@ -707,18 +781,13 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 			LastReportTime: time.Now(),
 		},
 	}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent1,
-			uuid.NewV4().String(): &agent2,
-			uuid.NewV4().String(): &agent3,
-		},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent4},
-	}
-	job, err := js.GetNextJob(cs, agent4, &ac)
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent1,
+		uuid.NewV4().String(): &agent2,
+		uuid.NewV4().String(): &agent3,
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, agent4, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -726,7 +795,7 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 }
 
 func Test_GetK8sMinionDeploymentJob(t *testing.T) {
-	js := ClusterJobSchedulerImple{}
+	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
 
 	cs := entities.LightningMonkeyClusterSettings{
@@ -741,6 +810,11 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 			Type: entities.NetworkStack_KubeRouter,
 		},
 	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
 
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
@@ -816,20 +890,16 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 			LastReportTime: time.Now(),
 		},
 	}
-	ac := AgentCache{
-		Mutex: &sync.Mutex{},
-		etcd: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent1,
-			uuid.NewV4().String(): &agent2,
-			uuid.NewV4().String(): &agent3,
-		},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent4},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{
-			uuid.NewV4().String(): &agent5,
-		},
-	}
-	job, err := js.GetNextJob(cs, agent5, &ac)
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent1,
+		uuid.NewV4().String(): &agent2,
+		uuid.NewV4().String(): &agent3,
+	}, map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent4}, map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent5,
+	})
+	job, err := js.GetNextJob(cc, agent5, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -837,12 +907,8 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 }
 
 func Test_CacheOnline(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -854,18 +920,14 @@ func Test_CacheOnline(t *testing.T) {
 		HasMinionRole: false,
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 }
 
 func Test_CacheOnlineWithMultipleRoles(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -877,18 +939,14 @@ func Test_CacheOnlineWithMultipleRoles(t *testing.T) {
 		HasMinionRole: false,
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 1)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 1)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 }
 
 func Test_CacheOnlineWithMultipleRoles2(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -900,18 +958,14 @@ func Test_CacheOnlineWithMultipleRoles2(t *testing.T) {
 		HasMinionRole: true,
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 1)
-	assert.True(t, len(ac.k8sMinion) == 1)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 1)
+	assert.True(t, ac.GetKubernetesMinionCount() == 1)
 }
 
 func Test_CacheOffline(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -923,22 +977,18 @@ func Test_CacheOffline(t *testing.T) {
 		HasMinionRole: false,
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 	ac.Offline(agent1)
-	assert.True(t, len(ac.etcd) == 0)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 0)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 }
 
 func Test_CacheOfflineWithMultipleRoles(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -950,22 +1000,18 @@ func Test_CacheOfflineWithMultipleRoles(t *testing.T) {
 		HasMinionRole: true,
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 1)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 1)
 	ac.Offline(agent1)
-	assert.True(t, len(ac.etcd) == 0)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 0)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 }
 
 func Test_CacheOfflineWithMultipleRoles2(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -988,22 +1034,18 @@ func Test_CacheOfflineWithMultipleRoles2(t *testing.T) {
 	}
 	ac.Online(agent1)
 	ac.Online(agent2)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 1)
-	assert.True(t, len(ac.k8sMinion) == 1)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 1)
+	assert.True(t, ac.GetKubernetesMinionCount() == 1)
 	ac.Offline(agent1)
-	assert.True(t, len(ac.etcd) == 0)
-	assert.True(t, len(ac.k8sMaster) == 1)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 0)
+	assert.True(t, ac.GetKubernetesMasterCount() == 1)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 }
 
 func Test_CacheOfflineWithMultipleRoles3(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1026,22 +1068,18 @@ func Test_CacheOfflineWithMultipleRoles3(t *testing.T) {
 	}
 	ac.Online(agent1)
 	ac.Online(agent2)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 1)
-	assert.True(t, len(ac.k8sMinion) == 2)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 1)
+	assert.True(t, ac.GetKubernetesMinionCount() == 2)
 	ac.Offline(agent1)
-	assert.True(t, len(ac.etcd) == 0)
-	assert.True(t, len(ac.k8sMaster) == 1)
-	assert.True(t, len(ac.k8sMinion) == 1)
+	assert.True(t, ac.GetETCDCount() == 0)
+	assert.True(t, ac.GetKubernetesMasterCount() == 1)
+	assert.True(t, ac.GetKubernetesMinionCount() == 1)
 }
 
 func Test_DulplicatedCacheOnline(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1055,18 +1093,14 @@ func Test_DulplicatedCacheOnline(t *testing.T) {
 	ac.Online(agent1)
 	ac.Online(agent1)
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 }
 
 func Test_DulplicatedCacheOffline(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1080,24 +1114,20 @@ func Test_DulplicatedCacheOffline(t *testing.T) {
 	ac.Online(agent1)
 	ac.Online(agent1)
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 	ac.Offline(agent1)
 	ac.Offline(agent1)
 	ac.Offline(agent1)
-	assert.True(t, len(ac.etcd) == 0)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 0)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 }
 
 func Test_GetTotalCountWithSpecifiedRole(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1109,20 +1139,16 @@ func Test_GetTotalCountWithSpecifiedRole(t *testing.T) {
 		HasMinionRole: false,
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 	assert.True(t, ac.GetTotalCountByRole(entities.AgentRole_ETCD) == 1)
 	assert.True(t, ac.GetTotalCountByRole(entities.AgentRole_Minion) == 0)
 }
 
 func Test_GetTotalPrivisionedCountWithSpecifiedRole(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1134,20 +1160,16 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole(t *testing.T) {
 		HasMinionRole: false,
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 	assert.True(t, ac.GetTotalProvisionedCountByRole(entities.AgentRole_ETCD) == 0)
 	assert.True(t, ac.GetTotalProvisionedCountByRole(entities.AgentRole_Minion) == 0)
 }
 
 func Test_GetTotalPrivisionedCountWithSpecifiedRole2(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1160,20 +1182,16 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole2(t *testing.T) {
 		State:         &entities.AgentState{},
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 	assert.True(t, ac.GetTotalProvisionedCountByRole(entities.AgentRole_ETCD) == 0)
 	assert.True(t, ac.GetTotalProvisionedCountByRole(entities.AgentRole_Minion) == 0)
 }
 
 func Test_GetTotalPrivisionedCountWithSpecifiedRole3(t *testing.T) {
-	ac := AgentCache{
-		Mutex:     &sync.Mutex{},
-		etcd:      map[string]*entities.LightningMonkeyAgent{},
-		k8sMaster: map[string]*entities.LightningMonkeyAgent{},
-		k8sMinion: map[string]*entities.LightningMonkeyAgent{},
-	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1188,9 +1206,9 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole3(t *testing.T) {
 		},
 	}
 	ac.Online(agent1)
-	assert.True(t, len(ac.etcd) == 1)
-	assert.True(t, len(ac.k8sMaster) == 0)
-	assert.True(t, len(ac.k8sMinion) == 0)
+	assert.True(t, ac.GetETCDCount() == 1)
+	assert.True(t, ac.GetKubernetesMasterCount() == 0)
+	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 	assert.True(t, ac.GetTotalProvisionedCountByRole(entities.AgentRole_ETCD) == 1)
 	assert.True(t, ac.GetTotalProvisionedCountByRole(entities.AgentRole_Minion) == 0)
 }

@@ -2,22 +2,22 @@ package test
 
 import (
 	"archive/tar"
-	"bytes"
+	//"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/g0194776/lightningmonkey/pkg/entities"
+	//"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/googleapis/gnostic/compiler"
-	assert "github.com/stretchr/testify/require"
+	//assert "github.com/stretchr/testify/require"
 	"io"
-	"io/ioutil"
-	"net/http"
+	//"io/ioutil"
+	//"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -256,38 +256,38 @@ func setup(t *testing.T) func(t *testing.T) {
 	}
 }
 
-func Test_NewCluster(t *testing.T) {
-	tm := setup(t)
-	defer tm(t)
-	clusterSettings := entities.LightningMonkeyClusterSettings{}
-	data, err := json.Marshal(&clusterSettings)
-	if err != nil {
-		t.Fatal(err)
-	}
-	reader := bytes.NewReader(data)
-	req, err := http.NewRequest("POST", "http://127.0.0.1:8080", reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client := http.Client{Timeout: time.Second * 30, Transport: http.DefaultTransport}
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-	respData, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(string(respData))
-	assert.True(t, resp.StatusCode == http.StatusOK)
-	respObj := entities.CreateClusterResponse{}
-	err = json.Unmarshal(respData, &respObj)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.True(t, respObj.ClusterId != "")
-	assert.True(t, respObj.ErrorId == 0)
-	assert.True(t, respObj.Reason == "")
-	//check ETCD details.
-}
+//func Test_NewCluster(t *testing.T) {
+//	tm := setup(t)
+//	defer tm(t)
+//	clusterSettings := entities.LightningMonkeyClusterSettings{}
+//	data, err := json.Marshal(&clusterSettings)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	reader := bytes.NewReader(data)
+//	req, err := http.NewRequest("POST", "http://127.0.0.1:8080", reader)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	client := http.Client{Timeout: time.Second * 30, Transport: http.DefaultTransport}
+//	resp, err := client.Do(req)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	defer resp.Body.Close()
+//	respData, err := ioutil.ReadAll(resp.Body)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	fmt.Println(string(respData))
+//	assert.True(t, resp.StatusCode == http.StatusOK)
+//	respObj := entities.CreateClusterResponse{}
+//	err = json.Unmarshal(respData, &respObj)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	assert.True(t, respObj.ClusterId != "")
+//	assert.True(t, respObj.ErrorId == 0)
+//	assert.True(t, respObj.Reason == "")
+//	//check ETCD details.
+//}
