@@ -19,6 +19,7 @@ func (js *ClusterJobSchedulerImple) InitializeStrategies() {
 		&ClusterETCDJobStrategy{},
 		&ClusterKubernetesMasterJobStrategy{},
 		&ClusterKubernetesMinionJobStrategy{},
+		&ClusterKubernetesNetworkStackJobStrategy{},
 	}
 }
 

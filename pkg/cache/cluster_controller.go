@@ -3,11 +3,16 @@ package cache
 import (
 	"context"
 	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/controllers"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/etcd/clientv3"
+	"io/ioutil"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -33,15 +38,20 @@ type ClusterController interface {
 	UpdateClusterSettings(settings entities.LightningMonkeyClusterSettings) ClusterController
 	OnAgentChanged(agent entities.LightningMonkeyAgent, isDeleted bool) error
 	OnCertificateChanged(name string, cert string, isDeleted bool) error
+	InitializeKubernetesClient() error
+	InitializeNetworkController() error
+	GetNetworkController() controllers.NetworkStackController
 }
 
 type ClusterControllerImple struct {
+	client               *kubernetes.Clientset
 	cache                *AgentCache
 	certs                map[string]string
 	cancellationFunc     func()
 	jobScheduler         ClusterJobScheduler
 	isDisposed           uint32
 	lockObj              *sync.Mutex
+	nsc                  controllers.NetworkStackController
 	settings             entities.LightningMonkeyClusterSettings
 	synchronizedRevision int64
 }
@@ -212,4 +222,52 @@ func (cc *ClusterControllerImple) GetCachedAgent(agentId string) (*entities.Ligh
 		return agent, nil
 	}
 	return nil, nil
+}
+
+func (cc *ClusterControllerImple) InitializeKubernetesClient() error {
+	if cc.client != nil {
+		return nil
+	}
+	agent := cc.cache.GetFirstProvisionedKubernetesMasterAgent()
+	if agent == nil {
+		return fmt.Errorf("CANNOT retrieve any agent which provisioned Kubernetes master on cluster: %s", cc.GetClusterId())
+	}
+	if agent.AdminCertificate == "" {
+		return fmt.Errorf("Illegal administrative certificate on agent(%s), It's empty at all. Please consider report a BUG to the community.", agent.Id)
+	}
+	//initialize Kubernetes client by pre-generated administrative certificate.
+	adminCertPath := "/etc/kubernetes/admin"
+	_ = os.MkdirAll(adminCertPath, 0644)
+	filePath := filepath.Join(adminCertPath, fmt.Sprintf("%s.yml", cc.GetClusterId()))
+	//clean old file.
+	_ = os.RemoveAll(filePath)
+	err := ioutil.WriteFile(filePath, []byte(agent.AdminCertificate), 0644) //rw-r-r
+	if err != nil {
+		return fmt.Errorf("Failed to write Kubernetes master client configuration to local disk, error: %s", err.Error())
+	}
+	config, err := clientcmd.BuildConfigFromFlags("", filePath)
+	if err != nil {
+		return fmt.Errorf("Failed to build Kubernetes master client configuration, error: %s", err.Error())
+	}
+	cc.client, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("Failed to initialize Kubernetes master client, error: %s", err.Error())
+	}
+	return nil
+}
+
+func (cc *ClusterControllerImple) InitializeNetworkController() error {
+	if cc.nsc != nil {
+		return nil
+	}
+	var err error
+	cc.nsc, err = controllers.CreateNetworkStackController(cc.client, cc.GetSettings())
+	if err != nil {
+		return fmt.Errorf("Failed to initialize Kubernetes network stack controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
+	}
+	return nil
+}
+
+func (cc *ClusterControllerImple) GetNetworkController() controllers.NetworkStackController {
+	return cc.nsc
 }

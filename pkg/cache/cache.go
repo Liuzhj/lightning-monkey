@@ -188,3 +188,19 @@ func (ac *AgentCache) GetKubernetesMinionCount() int {
 	defer ac.Unlock()
 	return len(ac.k8sMinion)
 }
+
+func (ac *AgentCache) GetFirstProvisionedKubernetesMasterAgent() *entities.LightningMonkeyAgent {
+	ac.Lock()
+	defer ac.Unlock()
+	f := func(a *entities.LightningMonkeyAgent) bool {
+		return a.State != nil && a.State.HasProvisionedMasterComponents
+	}
+	for _, v := range ac.k8sMaster {
+		if f(v) {
+			//make a memory copy.
+			agent := *v
+			return &agent
+		}
+	}
+	return nil
+}

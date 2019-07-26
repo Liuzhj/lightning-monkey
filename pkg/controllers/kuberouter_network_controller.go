@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"strings"
@@ -200,14 +201,14 @@ subjects:
 
 type KubeRouterNetworkController struct {
 	client        *kubernetes.Clientset
-	cluster       *entities.Cluster
+	settings      entities.LightningMonkeyClusterSettings
 	parsedObjects []runtime.Object
 }
 
-func (nc *KubeRouterNetworkController) Initialize(client *kubernetes.Clientset, cluster *entities.Cluster) error {
+func (nc *KubeRouterNetworkController) Initialize(client *kubernetes.Clientset, settings entities.LightningMonkeyClusterSettings) error {
 	nc.client = client
-	nc.cluster = cluster
-	attributes := map[string]string{"CIDR": nc.cluster.PodNetworkCIDR}
+	nc.settings = settings
+	attributes := map[string]string{"CIDR": nc.settings.PodNetworkCIDR}
 	t := template.New("t1")
 	t, err := t.Parse(kuberouter_deployment_payload)
 	if err != nil {
@@ -236,7 +237,7 @@ func (nc *KubeRouterNetworkController) Install() error {
 	if nc.parsedObjects == nil || len(nc.parsedObjects) == 0 {
 		return nil
 	}
-	logrus.Infof("Start provisioning network stack for cluster: %s", nc.cluster.Id.Hex())
+	logrus.Infof("Start provisioning network stack for cluster: %s", nc.settings.Id)
 	var err error
 	var existed bool
 	for i := 0; i < len(nc.parsedObjects); i++ {
@@ -256,4 +257,19 @@ func (nc *KubeRouterNetworkController) Install() error {
 
 func (nc *KubeRouterNetworkController) UnInstall() error {
 	panic("implement me")
+}
+
+func (nc *KubeRouterNetworkController) GetName() string {
+	return entities.AgentJob_Deploy_NetworkStack_KubeRouter
+}
+
+func (nc *KubeRouterNetworkController) HasInstalled() (bool, error) {
+	ds, err := nc.client.ExtensionsV1beta1().DaemonSets("kube-system").Get("kube-router", v1.GetOptions{})
+	if err != nil {
+		if k8sErr.IsNotFound(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("Failed to retrieve DaemonSet(%s/%s) object from given Kubernetes cluster, error: %s", "kube-system", "kube-router", err.Error())
+	}
+	return ds != nil, nil
 }
