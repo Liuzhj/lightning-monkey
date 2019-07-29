@@ -159,4 +159,41 @@ Vagrant.configure("2") do |config|
           }
         end
       end
+
+
+
+      config.vm.define "k8s_minion1" do |k8s_minion1|
+        k8s_minion1.vm.box = "centos/7"
+        k8s_minion1.vm.network "private_network", ip: "192.168.33.14"
+        k8s_minion1.vm.hostname = "192.168.33.14"
+        k8s_minion1.trigger.after :up do |trigger|
+          trigger.run_remote = {inline: <<-SHELL
+            setenforce 0 && swapoff -a
+            systemctl stop firewalld
+            yum update -y && yum install docker -y
+            sudo su && systemctl start docker && systemctl status docker
+            docker run -itd --restart=always --net=host \
+                --name agent \
+                -v /etc:/etc \
+                -v /var/run:/var/run \
+                -v /var/lib:/var/lib \
+                -v /opt/cni/bin:/opt/cni/bin \
+                -e "LOG_LEVEL=debug" \
+                --entrypoint=/opt/lm-agent \
+                g0194776/lightning-monkey-agent:latest \
+                    --server=http://192.168.33.10:8080 \
+                    --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
+                    --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
+                    --minion \
+                    --cert-dir=/etc/kubernetes/pki
+            echo "waiting 10s..."
+            sleep 10s
+            echo "try to retrieving Agent logs..."
+            docker logs agent
+            echo "retrieving all docker containers..."
+            docker ps -a
+            SHELL
+            }
+          end
+        end
 end
