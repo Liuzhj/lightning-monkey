@@ -441,6 +441,50 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount3(t *testing.T) {
 	assert.True(t, job.Name == entities.AgentJob_NOP)
 }
 
+func Test_ProvisionedCountByK8sMaster(t *testing.T) {
+	js := cache.ClusterJobSchedulerImple{}
+	js.InitializeStrategies()
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+
+	currentAgent := entities.LightningMonkeyAgent{
+		Id:            uuid.NewV4().String(),
+		ClusterId:     uuid.NewV4().String(),
+		Hostname:      "keepers-2",
+		IsDelete:      false,
+		HasETCDRole:   true,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:       "192.168.1.11",
+			HasProvisionedETCD: true,
+			LastReportTime:     time.Now(),
+		},
+	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &entities.LightningMonkeyAgent{
+			Id:            uuid.NewV4().String(),
+			ClusterId:     uuid.NewV4().String(),
+			Hostname:      "keepers",
+			IsDelete:      false,
+			HasETCDRole:   true,
+			HasMasterRole: false,
+			HasMinionRole: false,
+			State: &entities.AgentState{
+				LastReportIP:       "192.168.1.10",
+				HasProvisionedETCD: true,
+				LastReportTime:     time.Now(),
+			},
+		},
+		uuid.NewV4().String(): &currentAgent},
+		map[string]*entities.LightningMonkeyAgent{},
+		map[string]*entities.LightningMonkeyAgent{})
+	addr := ac.GetAgentsAddress(entities.AgentRole_ETCD, entities.AgentStatusFlag_Provisioned)
+	assert.Equal(t, 2, len(addr))
+}
+
 func Test_GetETCDDeploymentJob(t *testing.T) {
 	js := cache.ClusterJobSchedulerImple{}
 	js.InitializeStrategies()
