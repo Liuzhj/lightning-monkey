@@ -33,7 +33,7 @@ func CheckMinionHealth(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, e
 		logrus.Infof("container status: %s, names: %#v", containers[i].Status, containers[i].Names)
 		if containers[i].Names[0] == "/kubelet" &&
 			strings.Contains(containers[i].Status, "Up") {
-			return true, nil
+			return *a.arg.IsMinionRole, nil //considered with role assignment, minion provision state will not directly return.
 		}
 	}
 	return false, nil
