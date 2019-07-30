@@ -54,7 +54,6 @@ type LightningMonkeyAgent struct {
 
 type AgentState struct {
 	LastReportIP                   string    `json:"last_report_ip"`
-	LastReportStatus               string    `json:"last_report_status"`
 	LastReportTime                 time.Time `json:"last_report_time"`
 	Reason                         string    `json:"reason"`
 	HasProvisionedMasterComponents bool      `json:"provisioned_master_components"`
@@ -66,12 +65,7 @@ func (a *LightningMonkeyAgent) IsRunning() bool {
 	if a.State == nil {
 		return false
 	}
-	//"provisioning" phase is considered as running status which indicated that it's performing some initiative scripts.
-	if (a.State.LastReportStatus == AgentStatus_Running || a.State.LastReportStatus == AgentStatus_Provisioning) && time.Since(a.State.LastReportTime).Seconds() <= MaxAgentReportTimeoutSecs {
-		return true
-	}
-	//unhealthy or report timed out.
-	return false
+	return time.Since(a.State.LastReportTime).Seconds() <= MaxAgentReportTimeoutSecs
 }
 
 func (a *Agent) IsRunning() bool {
