@@ -62,7 +62,7 @@ spec:
       serviceAccountName: kube-router
       containers:
       - name: kube-router
-        image: repository.gridsum.com:8443/moebius/cloudnativelabs/kube-router:v0.2.3
+        image: cloudnativelabs/kube-router:v0.2.5
         imagePullPolicy: Always
         args:
         - "--run-router=true"
