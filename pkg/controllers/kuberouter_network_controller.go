@@ -41,6 +41,21 @@ data:
     apiVersion: v1
     kind: Config
     clusterCIDR: "{{ .CIDR }}"
+    clusters:
+    - name: cluster
+      cluster:
+        certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        server: {{ .APISERVER }}
+    users:
+    - name: kube-router
+      user:
+        tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    contexts:
+    - context:
+        cluster: cluster
+        user: kube-router
+      name: kube-router-context
+    current-context: kube-router-context
 ---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -97,7 +112,7 @@ spec:
           readOnly: true
       initContainers:
       - name: install-cni
-        image: repository.gridsum.com:8443/library/busybox
+        image: busybox
         imagePullPolicy: Always
         command:
         - /bin/sh
@@ -126,6 +141,9 @@ spec:
         operator: Exists
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
         operator: Exists
       volumes:
       - name: lib-modules
@@ -205,10 +223,11 @@ type KubeRouterNetworkController struct {
 	parsedObjects []runtime.Object
 }
 
-func (nc *KubeRouterNetworkController) Initialize(client *kubernetes.Clientset, settings entities.LightningMonkeyClusterSettings) error {
+func (nc *KubeRouterNetworkController) Initialize(client *kubernetes.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
 	nc.client = client
 	nc.settings = settings
-	attributes := map[string]string{"CIDR": nc.settings.PodNetworkCIDR}
+	//TODO: use VIP.
+	attributes := map[string]string{"CIDR": nc.settings.PodNetworkCIDR, "APISERVER": fmt.Sprintf("https://%s:6443", clientIp)}
 	t := template.New("t1")
 	t, err := t.Parse(kuberouter_deployment_payload)
 	if err != nil {

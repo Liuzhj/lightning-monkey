@@ -45,6 +45,7 @@ type ClusterController interface {
 
 type ClusterControllerImple struct {
 	client               *kubernetes.Clientset
+	k8sClientIP          string
 	cache                *AgentCache
 	certs                map[string]string
 	cancellationFunc     func()
@@ -253,6 +254,7 @@ func (cc *ClusterControllerImple) InitializeKubernetesClient() error {
 	if err != nil {
 		return fmt.Errorf("Failed to initialize Kubernetes master client, error: %s", err.Error())
 	}
+	cc.k8sClientIP = agent.State.LastReportIP
 	return nil
 }
 
@@ -261,7 +263,7 @@ func (cc *ClusterControllerImple) InitializeNetworkController() error {
 		return nil
 	}
 	var err error
-	cc.nsc, err = controllers.CreateNetworkStackController(cc.client, cc.GetSettings())
+	cc.nsc, err = controllers.CreateNetworkStackController(cc.client, cc.k8sClientIP, cc.GetSettings())
 	if err != nil {
 		return fmt.Errorf("Failed to initialize Kubernetes network stack controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
 	}
