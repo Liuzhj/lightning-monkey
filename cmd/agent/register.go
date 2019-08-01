@@ -224,6 +224,8 @@ func (a *LightningMonkeyAgent) Initialize(arg AgentArgs) {
 		logrus.Fatalf("Failed to initialize docker client, error: %s %w", err.Error(), crashError)
 		return
 	}
+	//downgrade client-side docker API version to satisfy lower docker server version.
+	c.UpdateClientVersion("1.24")
 	a.dockerClient = c
 }
 
