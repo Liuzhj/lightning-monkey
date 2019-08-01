@@ -450,7 +450,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 					//kubelet has been started successfully, skip other actions.
 					return nil
 				} else {
-					return xerrors.Errorf("\"kubelet\" has been started but with unhealthy container status, error: %s %w", err.Error(), crashError)
+					return xerrors.Errorf("\"kubelet\" has been started but with unhealthy container status %w", crashError)
 				}
 			}
 		}
@@ -477,7 +477,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 			fmt.Sprintf("--pod-infra-container-image=%s", infraContainer),
 			fmt.Sprintf("--register-node=%t", *a.arg.IsMinionRole),
 			fmt.Sprintf("--hostname-override=%s", *a.arg.Address),
-			"--cgroup-driver=systemd",
+			"--cgroup-driver=cgroupfs",
 			"--cgroups-per-qos=false",
 			"--enforce-node-allocatable=",
 			"--allow-privileged=true",
