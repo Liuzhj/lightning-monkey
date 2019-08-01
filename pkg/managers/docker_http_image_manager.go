@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -25,7 +26,7 @@ func (im *HTTPDockerImageManager) Ready() error {
 	}
 	var err error
 	var closer io.ReadCloser
-	//var rsp types.ImageLoadResponse
+	var rsp types.ImageLoadResponse
 	for name, v := range im.imageCollectionSettings.Images {
 		downloadUrl := fmt.Sprintf(v.DownloadAddr, im.serverAddr, im.imageCollectionSettings.HTTPDownloadToken)
 		logrus.Infof("Downloading docker image: %s", downloadUrl)
@@ -33,12 +34,15 @@ func (im *HTTPDockerImageManager) Ready() error {
 		if err != nil {
 			return fmt.Errorf("Failed to download remote Docker image tarball file, error: %s", err.Error())
 		}
-		_, err = im.dockerClient.ImageLoad(context.Background(), closer, false)
-		//close the file stream anyway.
-		closer.Close()
+		rsp, err = im.dockerClient.ImageLoad(context.Background(), closer, false)
 		if err != nil {
+			closer.Close()
 			return fmt.Errorf("Failed to load local tarball docker image file to the Docker daemon, error: %s", err.Error())
 		}
+		_, _ = io.Copy(os.Stdout, rsp.Body)
+		//clean resource.
+		rsp.Body.Close()
+		closer.Close()
 		logrus.Infof("Docker image %s had completely loaded into Docker daemon!", v.ImageName)
 	}
 	return nil
