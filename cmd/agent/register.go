@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
+	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/container"
+	"github.com/docker/engine-api/types/network"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
@@ -224,8 +224,6 @@ func (a *LightningMonkeyAgent) Initialize(arg AgentArgs) {
 		logrus.Fatalf("Failed to initialize docker client, error: %s %w", err.Error(), crashError)
 		return
 	}
-	//downgrade client-side docker API version to satisfy lower docker server version.
-	c.UpdateClientVersion("1.24")
 	a.dockerClient = c
 }
 

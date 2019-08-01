@@ -2,8 +2,8 @@ package managers
 
 import (
 	"context"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
+	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"

@@ -3,7 +3,7 @@ package managers
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/client"
+	"github.com/docker/engine-api/client"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/sirupsen/logrus"
 	"io"

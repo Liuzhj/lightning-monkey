@@ -3,7 +3,7 @@ package managers
 import (
 	"errors"
 	"fmt"
-	"github.com/docker/docker/client"
+	"github.com/docker/engine-api/client"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 )
 
