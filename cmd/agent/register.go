@@ -465,6 +465,10 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	}
 	img := a.basicImages.Images["k8s"].ImageName
 	infraContainer := a.basicImages.Images["infra"].ImageName
+
+	//--volume=/var/lib/docker/:/var/lib/docker:rw
+	//--volume=/var/lib/kubelet/:/var/lib/kubelet:shared
+	//--volume=/var/run:/var/run:rw
 	resp, err := a.dockerClient.ContainerCreate(context.Background(), &container.Config{
 		Hostname: *a.arg.Address,
 		Image:    img,
@@ -489,8 +493,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	}, &container.HostConfig{
 		Binds: []string{
 			"/etc:/etc",
-			"/var/run:/var/run",
-			"/var/lib:/var/lib",
+			"/var/run:/var/run:rw",
+			"/var/lib/docker:/var/lib/docker:rw",
+			"/var/lib/kubelet:/var/lib/kubelet:rshared",
 			"/opt/cni/bin:/opt/cni/bin",
 		},
 		Privileged:    true,
