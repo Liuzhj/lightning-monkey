@@ -318,9 +318,11 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 			re = regexp.MustCompile(`(image: )(.*)`)
 			newContent = re.ReplaceAllString(string(fileData), fmt.Sprintf("${1}%s", imageCollection.Images["k8s"].ImageName))
 		}
-		//replace kube-controller-manager & scheduler settings.
+		//replace kube-apiserver & kube-controller-manager & scheduler settings.
 		re = regexp.MustCompile(`(--address=)(.*)`)
 		newContent = re.ReplaceAllString(newContent, "${1}0.0.0.0")
+		re = regexp.MustCompile(`(--enable-admission-plugins=)(.*)`)
+		newContent = re.ReplaceAllString(newContent, "${1}NodeRestriction,ServiceAccount,ResourceQuota,LimitRanger")
 		//replace ETCD settings.
 		re = regexp.MustCompile(`(etcd-servers=)(.*)`)
 		newContent = re.ReplaceAllString(newContent, fmt.Sprintf("${1}https://%s:2379", address))
