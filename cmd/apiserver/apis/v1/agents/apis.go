@@ -2,12 +2,13 @@ package agents
 
 import (
 	"encoding/json"
+	"io/ioutil"
+
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
 )
 
 func Register(app *iris.Application) error {
@@ -51,7 +52,7 @@ func RegisterAgent(ctx iris.Context) {
 		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
 		AgentId:     agentId,
 		LeaseId:     leaseId,
-		BasicImages: common.BasicImages["1.12.5"], /*test only*/
+		BasicImages: common.BasicImages["1.13.8"], /*test only*/
 		MasterSettings: map[string]string{
 			entities.MasterSettings_PodCIDR:           settings.PodNetworkCIDR,
 			entities.MasterSettings_ServiceCIDR:       settings.ServiceCIDR,

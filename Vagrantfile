@@ -44,7 +44,7 @@ Vagrant.configure("2") do |config|
         echo "try to retrieving API-Server logs..."
         docker logs apiserver
         echo "preparing to create a new cluster..."
-        curl -v -s -H "Content-Type: application/json" http://localhost:8080/apis/v1/cluster/create -X POST -d '{\"id\":\"1b8624d9-b3cf-41a3-a95b-748277484ba5\",\"name\":\"cluster1\",\"expected_etcd_count\":3,\"pod_network_cidr\":\"55.55.0.0/12\",\"service_cidr\":\"10.254.1.1/12\",\"kubernetes_version\":\"1.12.5\",\"service_dns_domain\":\"cluster.local\",\"network_stack\":{\"type\":\"kuberouter\"}}'
+        curl -v -s -H "Content-Type: application/json" http://localhost:8080/apis/v1/cluster/create -X POST -d '{\"id\":\"1b8624d9-b3cf-41a3-a95b-748277484ba5\",\"name\":\"cluster1\",\"expected_etcd_count\":3,\"pod_network_cidr\":\"55.55.0.0/12\",\"service_cidr\":\"10.254.1.1/12\",\"kubernetes_version\":\"1.13.8\",\"service_dns_domain\":\"cluster.local\",\"network_stack\":{\"type\":\"kuberouter\"}}'
         SHELL
         }
     end

@@ -1,4 +1,4 @@
-FROM mirrorgooglecontainers/hyperkube:v1.12.5
+FROM mirrorgooglecontainers/hyperkube:v1.13.8-beta.0
 
 COPY init.sh /tmp
 RUN chmod +x /tmp/init.sh

@@ -1,17 +1,19 @@
 package registry
 
 import (
-	"github.com/g0194776/lightningmonkey/pkg/entities"
-	"github.com/kataras/iris"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path"
+
+	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/kataras/iris"
+	"github.com/sirupsen/logrus"
 )
 
 func Register(app *iris.Application) error {
 	logrus.Infof("    Registering Agents Mgmt APIs...")
 	app.Get("/apis/v1/registry/1.12.5/*", downloadFile)
+	app.Get("/apis/v1/registry/1.13.8/*", downloadFile)
 	return nil
 }
 
