@@ -476,7 +476,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 		Cmd: []string{
 			"kubelet",
 			fmt.Sprintf("--config=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet_settings.yml")),
-			fmt.Sprintf("--bootstrap-kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "bootstrap-kubelet.conf")),
+			//fmt.Sprintf("--bootstrap-kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "bootstrap-kubelet.conf")),
 			fmt.Sprintf("--kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet.conf")),
 			fmt.Sprintf("--pod-infra-container-image=%s", infraContainer),
 			fmt.Sprintf("--register-node=%t", *a.arg.IsMinionRole),
