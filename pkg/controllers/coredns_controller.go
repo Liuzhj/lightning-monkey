@@ -1,7 +1,7 @@
 package controllers
 
 const (
-	kuberouter_deployment_payload = `apiVersion: v1
+	coredns_deployment_payload = `apiVersion: v1
 	kind: ServiceAccount
 	metadata:
 	  name: coredns
