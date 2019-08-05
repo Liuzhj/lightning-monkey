@@ -4,6 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
@@ -14,16 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
-	"io"
-	"io/ioutil"
 	"k8s.io/apimachinery/pkg/util/json"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 type LightningMonkeyAgent struct {
@@ -466,6 +467,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	img := a.basicImages.Images["k8s"].ImageName
 	infraContainer := a.basicImages.Images["infra"].ImageName
 
+	//--volume=/:/rootfs:ro
+	//--volume=/sys:/sys:ro
+	//--volume=/dev:/dev
 	//--volume=/var/lib/docker/:/var/lib/docker:rw
 	//--volume=/var/lib/kubelet/:/var/lib/kubelet:shared
 	//--volume=/var/run:/var/run:rw
@@ -492,6 +496,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 		Volumes: map[string]struct{}{},
 	}, &container.HostConfig{
 		Binds: []string{
+			"/:/rootfs:ro",
+			"/sys:/sys:ro",
+			"/dev:/dev",
 			"/etc:/etc",
 			"/var/run:/var/run:rw",
 			"/var/lib/docker:/var/lib/docker:rw",
@@ -500,6 +507,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 		},
 		Privileged:    true,
 		NetworkMode:   "host",
+		PidMode:       "host",
 		RestartPolicy: container.RestartPolicy{Name: "unless-stopped"},
 	}, &network.NetworkingConfig{}, "kubelet")
 	if err != nil {
