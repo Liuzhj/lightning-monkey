@@ -19,12 +19,9 @@ builds:
     goarch:
       - amd64
     main: ./cmd/agent
-
 # Archive customization
 archive:
   format: tar.gz
-
-
 dockers:
   - image: g0194776/lightning-monkey-apiserver
     dockerfile: Dockerfile.apiserver
