@@ -505,9 +505,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 			"/var/lib/kubelet:/var/lib/kubelet:rshared",
 			"/opt/cni/bin:/opt/cni/bin",
 		},
-		Privileged:    true,
-		NetworkMode:   "host",
-		PidMode:       "host",
+		Privileged:  true,
+	NetworkMode: "host",
+		//PidMode:       "host",
 		RestartPolicy: container.RestartPolicy{Name: "unless-stopped"},
 	}, &network.NetworkingConfig{}, "kubelet")
 	if err != nil {
