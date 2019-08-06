@@ -1,7 +1,7 @@
 FROM golang:1.10.2 as builder
 
 COPY extras/kubernetes.repo ./kubernetes.repo
-COPY cmd/apiserver/apiserver ./lm-apiserver
+COPY cmd/apiserver/lm-apiserver ./lm-apiserver
 COPY download-frozen-image-v2.sh ./download-frozen-image-v2.sh
 COPY prepare.sh ./prepare.sh
 RUN apt-get update -y && apt-get install jq -y && ./prepare.sh
@@ -9,15 +9,15 @@ RUN apt-get update -y && apt-get install jq -y && ./prepare.sh
 
 FROM centos:7
 
-RUN mkdir -p /opt/registry/1.12.5
+RUN mkdir -p /opt/registry/1.13.8
 COPY --from=builder /go/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY --from=builder /go/lm-apiserver /opt
 
-COPY --from=builder /go/etcd.tar /opt/registry/1.12.5/etcd.tar
-COPY --from=builder /go/k8s.tar /opt/registry/1.12.5/k8s.tar
-COPY --from=builder /go/infra.tar /opt/registry/1.12.5/infra.tar
+COPY --from=builder /go/etcd.tar /opt/registry/1.13.8/etcd.tar
+COPY --from=builder /go/k8s.tar /opt/registry/1.13.8/k8s.tar
+COPY --from=builder /go/infra.tar /opt/registry/1.13.8/infra.tar
 
-RUN yum install -y kubeadm-1.13.5-0 net-tools --disableexcludes=kubernetes
+RUN yum install -y kubeadm-1.13.8-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-apiserver
 
 EXPOSE 8080
