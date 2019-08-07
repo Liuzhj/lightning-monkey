@@ -497,7 +497,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	}, &container.HostConfig{
 		Binds: []string{
 			//"/:/rootfs:ro",
-			//"/sys:/sys:ro",
+			"/sys:/sys:rw",
 			//"/dev:/dev",
 			"/etc:/etc",
 			"/var/run:/var/run:rw",
@@ -505,9 +505,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 			"/var/lib/kubelet:/var/lib/kubelet:rshared",
 			"/opt/cni/bin:/opt/cni/bin",
 		},
-		Privileged:  true,
-	NetworkMode: "host",
-		//PidMode:       "host",
+		Privileged:    true,
+		NetworkMode:   "host",
+		PidMode:       "host",
 		RestartPolicy: container.RestartPolicy{Name: "unless-stopped"},
 	}, &network.NetworkingConfig{}, "kubelet")
 	if err != nil {

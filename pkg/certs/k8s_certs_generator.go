@@ -322,7 +322,7 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 		re = regexp.MustCompile(`(--address=)(.*)`)
 		newContent = re.ReplaceAllString(newContent, "${1}0.0.0.0")
 		re = regexp.MustCompile(`(--enable-admission-plugins=)(.*)`)
-		newContent = re.ReplaceAllString(newContent, "${1}NodeRestriction,ServiceAccount,ResourceQuota,LimitRanger")
+		newContent = re.ReplaceAllString(newContent, "${1}NamespaceLifecycle,NamespaceExists,LimitRanger,ResourceQuota,ServiceAccount")
 		//replace ETCD settings.
 		re = regexp.MustCompile(`(etcd-servers=)(.*)`)
 		newContent = re.ReplaceAllString(newContent, fmt.Sprintf("${1}https://%s:2379", address))
