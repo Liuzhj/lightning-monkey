@@ -497,7 +497,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	}, &container.HostConfig{
 		Binds: []string{
 			//"/:/rootfs:ro",
-			"/sys:/sys:rw",
+			//"/sys:/sys:rw",
 			//"/dev:/dev",
 			"/etc:/etc",
 			"/var/run:/var/run:rw",
