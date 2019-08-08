@@ -22,8 +22,8 @@ func NewCluster(cluster *entities.LightningMonkeyClusterSettings) (string, error
 	if cluster.KubernetesVersion == "" {
 		return "", errors.New("You must specify expected Kubernetes version!")
 	}
-	if cluster.ServiceDNSDomain == "" /* default: "cluster.local" */ {
-		return "", errors.New("You must specify cluster DNS domain!")
+	if cluster.ServiceDNSClusterIP == "" {
+		return "", errors.New("Field: \"service_dns_cluster_ip\" is required to configure in-cluster DNS communication!")
 	}
 	_, _, err := net.ParseCIDR(cluster.PodNetworkCIDR)
 	if err != nil {
@@ -42,6 +42,12 @@ func NewCluster(cluster *entities.LightningMonkeyClusterSettings) (string, error
 	if cluster.Id == "" {
 		//reset cluster fields.
 		cluster.Id = uuid.NewV4().String()
+	}
+	if cluster.MaximumAllowedPodCountPerNode <= 0 {
+		cluster.MaximumAllowedPodCountPerNode = 110
+	}
+	if cluster.ServiceDNSDomain == "" {
+		cluster.ServiceDNSDomain = "cluster.local"
 	}
 	cluster.SecurityToken = "abc"
 	cluster.CreateTime = time.Now()

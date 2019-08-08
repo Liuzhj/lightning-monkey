@@ -23,15 +23,17 @@ const (
 	ConditionConfirmed
 	ConditionNotConfirmed
 	ConditionInapplicable
-	MasterSettings_PodCIDR                           = "pod_ip_cidr"
-	MasterSettings_ServiceCIDR                       = "service_ip_cidr"
-	MasterSettings_ServiceDNSDomain                  = "service_dns_domain"
-	MasterSettings_KubernetesVersion                 = "k8s_version"
-	MasterSettings_DockerRegistry                    = "docker_registry"
-	NetworkStack_Flannel                             = "flannel"
-	NetworkStack_Calico                              = "calico"
-	NetworkStack_KubeRouter                          = "kuberouter"
-	_                                AgentStatusFlag = iota
+	MasterSettings_PodCIDR                             = "pod_ip_cidr"
+	MasterSettings_ServiceCIDR                         = "service_ip_cidr"
+	MasterSettings_ServiceDNSDomain                    = "service_dns_domain"
+	MasterSettings_KubernetesVersion                   = "k8s_version"
+	MasterSettings_DockerRegistry                      = "docker_registry"
+	MasterSettings_MaxPodCountPerNode                  = "max_pod_count"
+	MasterSettings_ServiceDNSClusterIP                 = "service_dns_cluster_ip"
+	NetworkStack_Flannel                               = "flannel"
+	NetworkStack_Calico                                = "calico"
+	NetworkStack_KubeRouter                            = "kuberouter"
+	_                                  AgentStatusFlag = iota
 	AgentStatusFlag_Whatever
 	AgentStatusFlag_Running
 	AgentStatusFlag_Provisioned
@@ -55,16 +57,18 @@ type Cluster struct {
 }
 
 type LightningMonkeyClusterSettings struct {
-	Id                string                `json:"id"`
-	CreateTime        time.Time             `json:"create_time"`
-	Name              string                `json:"name"`
-	ExpectedETCDCount int                   `json:"expected_etcd_count"`
-	ServiceCIDR       string                `json:"service_cidr"`
-	KubernetesVersion string                `json:"kubernetes_version"`
-	PodNetworkCIDR    string                `json:"pod_network_cidr"`
-	SecurityToken     string                `json:"security_token"`
-	ServiceDNSDomain  string                `json:"service_dns_domain"`
-	NetworkStack      *NetworkStackSettings `json:"network_stack"`
+	Id                            string                `json:"id"`
+	CreateTime                    time.Time             `json:"create_time"`
+	Name                          string                `json:"name"`
+	ExpectedETCDCount             int                   `json:"expected_etcd_count"`
+	ServiceCIDR                   string                `json:"service_cidr"`
+	KubernetesVersion             string                `json:"kubernetes_version"`
+	PodNetworkCIDR                string                `json:"pod_network_cidr"`
+	SecurityToken                 string                `json:"security_token"`
+	ServiceDNSDomain              string                `json:"service_dns_domain"`
+	ServiceDNSClusterIP           string                `json:"service_dns_cluster_ip"`
+	MaximumAllowedPodCountPerNode int                   `json:"maximum_allowed_pod_count_per_node"`
+	NetworkStack                  *NetworkStackSettings `json:"network_stack"`
 }
 
 type ClusterStatus struct {

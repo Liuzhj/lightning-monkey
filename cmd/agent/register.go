@@ -136,7 +136,8 @@ func (a *LightningMonkeyAgent) downloadCertificates() error {
 	if err != nil {
 		return xerrors.Errorf("Failed to create certificate storage path: %s %w", err.Error(), crashError)
 	}
-	neededCerts := []string{"ca.crt", "ca.key", "etcd/ca.crt", "etcd/ca.key"}
+	//TODO: does not all of base certificates are needed during minion node initialization.
+	neededCerts := []string{"ca.crt", "ca.key", "sa.pub", "sa.key", "etcd/ca.crt", "etcd/ca.key"}
 	for i := 0; i < len(neededCerts); i++ {
 		logrus.Infof("Downloading certificate: \"%s\"...", neededCerts[i])
 		err = a.saveRemoteCertificate(neededCerts[i], CERTIFICATE_STORAGE_PATH)

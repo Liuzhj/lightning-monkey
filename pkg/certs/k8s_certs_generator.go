@@ -185,7 +185,34 @@ func (cm *CertificateManagerImple) GenerateMainCACertificates() (*GeneratedCerts
 	if err = cmd.Wait(); err != nil {
 		return nil, err
 	}
-	return getCertificatesContent(path, "etcd", certMap)
+	certMap, err = getCertificatesContent(path, "etcd", certMap)
+	if err != nil {
+		return nil, err
+	}
+	//SA
+	cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase certs sa --cert-dir=%s", path))
+	stdout, err = cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err = cmd.Start(); err != nil {
+		return nil, err
+	}
+	reader = bufio.NewReader(stdout)
+	for {
+		traceData, _, err := reader.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				return nil, err
+			}
+			break
+		}
+		logrus.Infof(string(traceData))
+	}
+	if err = cmd.Wait(); err != nil {
+		return nil, err
+	}
+	return getCertificatesContent(path, "", certMap)
 }
 
 func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent string) error {
@@ -245,7 +272,6 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 		),
 		fmt.Sprintf("kubeadm init phase certs apiserver-etcd-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs apiserver-kubelet-client --cert-dir=%s", certPath),
-		fmt.Sprintf("kubeadm init phase certs sa --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs front-proxy-ca --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs front-proxy-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase kubeconfig controller-manager --apiserver-advertise-address=%s --cert-dir=%s", address, certPath),

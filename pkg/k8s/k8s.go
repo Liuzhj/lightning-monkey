@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -38,8 +40,8 @@ authorization:
     cacheUnauthorizedTTL: 30s
 cgroupDriver: cgroupfs
 clusterDNS:
-- 10.96.0.10
-clusterDomain: cluster.local
+- {{.DNSIP}}
+clusterDomain: {{.DOMAIN}}
 configMapAndSecretChangeDetectionStrategy: Watch
 containerLogMaxFiles: 5
 containerLogMaxSize: 10Mi
@@ -54,14 +56,14 @@ eventBurst: 10
 eventRecordQPS: 5
 evictionHard:
   imagefs.available: 15%
-  memory.available: 100Mi
+  memory.available: 200Mi
   nodefs.available: 10%
-  nodefs.inodesFree: 5%
+  nodefs.inodesFree: 10%
 evictionPressureTransitionPeriod: 5m0s
 failSwapOn: true
 fileCheckFrequency: 20s
 hairpinMode: promiscuous-bridge
-healthzBindAddress: 127.0.0.1
+healthzBindAddress: 0.0.0.0
 healthzPort: 10248
 httpCheckFrequency: 20s
 imageGCHighThresholdPercent: 85
@@ -74,7 +76,7 @@ kubeAPIBurst: 10
 kubeAPIQPS: 5
 makeIPTablesUtilChains: true
 maxOpenFiles: 1000000
-maxPods: 110
+maxPods: {{.MAXPODS}}
 nodeLeaseDurationSeconds: 40
 nodeStatusReportFrequency: 1m0s
 nodeStatusUpdateFrequency: 10s
@@ -93,7 +95,7 @@ syncFrequency: 1m0s
 volumeStatsAggPeriod: 1m0s`
 )
 
-func GenerateKubeletConfig(certPath, masterAPIAddr string) error {
+func GenerateKubeletConfig(certPath, masterAPIAddr string, replacementSlots map[string]string) error {
 	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig kubelet --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s", certPath, certPath, masterAPIAddr))
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -116,7 +118,15 @@ func GenerateKubeletConfig(certPath, masterAPIAddr string) error {
 	if err = cmd.Wait(); err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(filepath.Join(certPath, "kubelet_settings.yml"), []byte(kubeletSettings), 0644)
+	tpl, err := utils.TemplateReplace(kubeletSettings, map[string]string{
+		"MAXPODS": replacementSlots[entities.MasterSettings_MaxPodCountPerNode],
+		"DOMAIN":  replacementSlots[entities.MasterSettings_ServiceDNSDomain],
+		"DNSIP":   replacementSlots[entities.MasterSettings_ServiceDNSClusterIP],
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to replace Kubelet configuration template content, error: %s", err.Error())
+	}
+	err = ioutil.WriteFile(filepath.Join(certPath, "kubelet_settings.yml"), []byte(tpl), 0644)
 	if err != nil {
 		return fmt.Errorf("Failed to write kubelet settings file, error: %s", err.Error())
 	}
