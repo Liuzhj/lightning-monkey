@@ -373,19 +373,27 @@ func getCertificatesContent(path, title string, m *GeneratedCertsMap) (*Generate
 		if info.IsDir() {
 			return nil
 		}
+		var key string
+		if title != "" {
+			key = filepath.Join(title, info.Name())
+		} else {
+			key = info.Name()
+		}
+		if _, isOK := m.res[key]; isOK {
+			return nil
+		}
 		f, err := os.OpenFile(p, os.O_RDONLY, 0644)
 		if err != nil {
 			return err
 		}
+		//fixed FD leak.
+		defer f.Close()
 		fileData, err := ioutil.ReadAll(f)
 		if err != nil {
 			return err
 		}
-		if title != "" {
-			m.res[filepath.Join(title, info.Name())] = string(fileData)
-		} else {
-			m.res[info.Name()] = string(fileData)
-		}
+		//append file content only if it not exists.
+		m.res[key] = string(fileData)
 		return nil
 	})
 	return m, err
