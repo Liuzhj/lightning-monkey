@@ -33,6 +33,8 @@ const (
 	NetworkStack_Flannel                               = "flannel"
 	NetworkStack_Calico                                = "calico"
 	NetworkStack_KubeRouter                            = "kuberouter"
+	DNS_KubeDNS                                        = "kubedns"
+	DNS_CoreDNS                                        = "coredns"
 	_                                  AgentStatusFlag = iota
 	AgentStatusFlag_Whatever
 	AgentStatusFlag_Running
@@ -57,18 +59,19 @@ type Cluster struct {
 }
 
 type LightningMonkeyClusterSettings struct {
-	Id                            string                `json:"id"`
-	CreateTime                    time.Time             `json:"create_time"`
-	Name                          string                `json:"name"`
-	ExpectedETCDCount             int                   `json:"expected_etcd_count"`
-	ServiceCIDR                   string                `json:"service_cidr"`
-	KubernetesVersion             string                `json:"kubernetes_version"`
-	PodNetworkCIDR                string                `json:"pod_network_cidr"`
-	SecurityToken                 string                `json:"security_token"`
-	ServiceDNSDomain              string                `json:"service_dns_domain"`
-	ServiceDNSClusterIP           string                `json:"service_dns_cluster_ip"`
-	MaximumAllowedPodCountPerNode int                   `json:"maximum_allowed_pod_count_per_node"`
-	NetworkStack                  *NetworkStackSettings `json:"network_stack"`
+	Id                            string                 `json:"id"`
+	CreateTime                    time.Time              `json:"create_time"`
+	Name                          string                 `json:"name"`
+	ExpectedETCDCount             int                    `json:"expected_etcd_count"`
+	ServiceCIDR                   string                 `json:"service_cidr"`
+	KubernetesVersion             string                 `json:"kubernetes_version"`
+	PodNetworkCIDR                string                 `json:"pod_network_cidr"`
+	SecurityToken                 string                 `json:"security_token"`
+	ServiceDNSDomain              string                 `json:"service_dns_domain"`
+	ServiceDNSClusterIP           string                 `json:"service_dns_cluster_ip"`
+	MaximumAllowedPodCountPerNode int                    `json:"maximum_allowed_pod_count_per_node"`
+	NetworkStack                  *NetworkStackSettings  `json:"network_stack"`
+	DNSSettings                   *DNSDeploymentSettings `json:"dns_deployment_settings"`
 }
 
 type ClusterStatus struct {
@@ -78,6 +81,11 @@ type ClusterStatus struct {
 
 type NetworkStackSettings struct {
 	Type       string            `json:"type"` //flannel, kube-router, calico...
+	Attributes map[string]string `json:"attributes" bson:"attributes"`
+}
+
+type DNSDeploymentSettings struct {
+	Type       string            `json:"type"` //kubedns,coredns...
 	Attributes map[string]string `json:"attributes" bson:"attributes"`
 }
 

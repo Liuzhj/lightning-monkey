@@ -458,9 +458,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 		}
 	}
 	if masterIP == "" {
-		err = k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, *a.arg.Address)
+		err = k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, *a.arg.Address, a.masterSettings)
 	} else {
-		err = k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, masterIP)
+		err = k8s.GenerateKubeletConfig(CERTIFICATE_STORAGE_PATH, masterIP, a.masterSettings)
 	}
 	if err != nil {
 		return xerrors.Errorf("Failed to generate kube-config, master-ip: %s, error: %s %w", masterIP, err.Error(), crashError)

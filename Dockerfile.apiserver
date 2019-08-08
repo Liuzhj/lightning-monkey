@@ -16,6 +16,7 @@ COPY --from=builder /go/lm-apiserver /opt
 COPY --from=builder /go/etcd.tar /opt/registry/1.13.8/etcd.tar
 COPY --from=builder /go/k8s.tar /opt/registry/1.13.8/k8s.tar
 COPY --from=builder /go/infra.tar /opt/registry/1.13.8/infra.tar
+COPY --from=builder /go/coredns.tar /opt/registry/1.13.8/coredns.tar
 
 RUN yum install -y kubeadm-1.13.8-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-apiserver

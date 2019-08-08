@@ -40,7 +40,9 @@ type ClusterController interface {
 	OnCertificateChanged(name string, cert string, isDeleted bool) error
 	InitializeKubernetesClient() error
 	InitializeNetworkController() error
+	InitializeDNSController() error
 	GetNetworkController() controllers.NetworkStackController
+	GetDNSController() controllers.DNSDeploymentController
 }
 
 type ClusterControllerImple struct {
@@ -53,6 +55,7 @@ type ClusterControllerImple struct {
 	isDisposed           uint32
 	lockObj              *sync.Mutex
 	nsc                  controllers.NetworkStackController
+	ddc                  controllers.DNSDeploymentController
 	settings             entities.LightningMonkeyClusterSettings
 	synchronizedRevision int64
 }
@@ -272,4 +275,20 @@ func (cc *ClusterControllerImple) InitializeNetworkController() error {
 
 func (cc *ClusterControllerImple) GetNetworkController() controllers.NetworkStackController {
 	return cc.nsc
+}
+
+func (cc *ClusterControllerImple) InitializeDNSController() error {
+	if cc.ddc != nil {
+		return nil
+	}
+	var err error
+	cc.ddc, err = controllers.CreateDNSDeploymentController(cc.client, cc.k8sClientIP, cc.GetSettings())
+	if err != nil {
+		return fmt.Errorf("Failed to initialize Kubernetes DNS deployment controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
+	}
+	return nil
+}
+
+func (cc *ClusterControllerImple) GetDNSController() controllers.DNSDeploymentController {
+	return cc.ddc
 }

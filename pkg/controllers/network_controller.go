@@ -23,6 +23,6 @@ func CreateNetworkStackController(client *k8s.Clientset, clientIp string, settin
 		c := &KubeRouterNetworkController{}
 		return c, c.Initialize(client, clientIp, settings)
 	default:
-		return nil, fmt.Errorf("No any types of supported network stack were matched current cluster settings: %s", settings.NetworkStack.Type)
+		return nil, fmt.Errorf("No any types of supported network stack were matched with current cluster settings: %s", settings.NetworkStack.Type)
 	}
 }
