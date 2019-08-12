@@ -39,7 +39,7 @@ Vagrant.configure("2") do |config|
             --link etcd-server:etcd-server \
             -e "BACKEND_STORAGE_ARGS=ENDPOINTS=http://etcd-server:2379;LOG_LEVEL=debug" \
             -e "LOG_LEVEL=debug" \
-            g0194776/lightning-monkey-apiserver:latest
+            registry.cn-beijing.aliyuncs.com/lightning-monkey/apiserver:latest
         sleep 5s
         echo "try to retrieving API-Server logs..."
         docker logs apiserver
@@ -72,7 +72,7 @@ Vagrant.configure("2") do |config|
             -v /opt/cni/bin:/opt/cni/bin \
             -e "LOG_LEVEL=debug" \
             --entrypoint=/opt/lm-agent \
-            g0194776/lightning-monkey-agent:latest \
+            registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
                 --server=http://192.168.33.10:8080 \
                 --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                 --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
@@ -112,7 +112,7 @@ Vagrant.configure("2") do |config|
               -v /opt/cni/bin:/opt/cni/bin \
               -e "LOG_LEVEL=debug" \
               --entrypoint=/opt/lm-agent \
-              g0194776/lightning-monkey-agent:latest \
+              registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
                   --server=http://192.168.33.10:8080 \
                   --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                   --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
@@ -151,7 +151,7 @@ Vagrant.configure("2") do |config|
               -v /opt/cni/bin:/opt/cni/bin \
               -e "LOG_LEVEL=debug" \
               --entrypoint=/opt/lm-agent \
-              g0194776/lightning-monkey-agent:latest \
+              registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
                   --server=http://192.168.33.10:8080 \
                   --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                   --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
@@ -192,7 +192,7 @@ Vagrant.configure("2") do |config|
                 -v /opt/cni/bin:/opt/cni/bin \
                 -e "LOG_LEVEL=debug" \
                 --entrypoint=/opt/lm-agent \
-                g0194776/lightning-monkey-agent:latest \
+                registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
                     --server=http://192.168.33.10:8080 \
                     --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                     --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
