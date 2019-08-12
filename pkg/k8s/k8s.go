@@ -9,15 +9,15 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
+	ko_v1beta "k8s.io/api/apps/v1beta1"
+	ko_v2alpha1 "k8s.io/api/batch/v2alpha1"
+	ko "k8s.io/api/core/v1"
+	ko_ext_v1beta "k8s.io/api/extensions/v1beta1"
+	rbacv1 "k8s.io/api/rbac/v1beta1"
+	v1 "k8s.io/api/storage/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8s "k8s.io/client-go/kubernetes"
-	ko "k8s.io/client-go/pkg/api/v1"
-	ko_v1beta "k8s.io/client-go/pkg/apis/apps/v1beta1"
-	ko_v2alpha1 "k8s.io/client-go/pkg/apis/batch/v2alpha1"
-	ko_ext_v1beta "k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	rbacv1 "k8s.io/client-go/pkg/apis/rbac/v1beta1"
-	v1 "k8s.io/client-go/pkg/apis/storage/v1"
 	"os/exec"
 	"path/filepath"
 )
@@ -136,30 +136,30 @@ func GenerateKubeletConfig(certPath, masterAPIAddr string, replacementSlots map[
 func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Object, error) {
 	var o runtime.Object
 	var err error
-	metadata, _ := meta_v1.ObjectMetaFor(obj)
+	metadata, _ := utils.ObjectMetaFor(obj)
 	switch obj.(type) {
 	case *ko.ReplicationController:
-		o, err = client.ReplicationControllers(metadata.Namespace).Create(obj.(*ko.ReplicationController))
+		o, err = client.CoreV1().ReplicationControllers(metadata.Namespace).Create(obj.(*ko.ReplicationController))
 	case *ko.Service:
-		o, err = client.Services(metadata.Namespace).Create(obj.(*ko.Service))
+		o, err = client.CoreV1().Services(metadata.Namespace).Create(obj.(*ko.Service))
 	case *ko.Pod:
-		o, err = client.Pods(metadata.Namespace).Create(obj.(*ko.Pod))
+		o, err = client.CoreV1().Pods(metadata.Namespace).Create(obj.(*ko.Pod))
 	case *ko_v1beta.Deployment:
 		o, err = client.AppsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ko_v1beta.Deployment))
 	case *ko_v2alpha1.CronJob:
-		o, err = client.CronJobs(metadata.Namespace).Create(obj.(*ko_v2alpha1.CronJob))
+		o, err = client.BatchV2alpha1().CronJobs(metadata.Namespace).Create(obj.(*ko_v2alpha1.CronJob))
 	case *ko_ext_v1beta.DaemonSet:
-		o, err = client.DaemonSets(metadata.Namespace).Create(obj.(*ko_ext_v1beta.DaemonSet))
+		o, err = client.ExtensionsV1beta1().DaemonSets(metadata.Namespace).Create(obj.(*ko_ext_v1beta.DaemonSet))
 	case *ko.ConfigMap:
-		o, err = client.ConfigMaps(metadata.Namespace).Create(obj.(*ko.ConfigMap))
+		o, err = client.CoreV1().ConfigMaps(metadata.Namespace).Create(obj.(*ko.ConfigMap))
 	case *ko.ServiceAccount:
-		o, err = client.ServiceAccounts(metadata.Namespace).Create(obj.(*ko.ServiceAccount))
+		o, err = client.CoreV1().ServiceAccounts(metadata.Namespace).Create(obj.(*ko.ServiceAccount))
 	case *ko_ext_v1beta.Ingress:
-		o, err = client.Ingresses(metadata.Namespace).Create(obj.(*ko_ext_v1beta.Ingress))
+		o, err = client.ExtensionsV1beta1().Ingresses(metadata.Namespace).Create(obj.(*ko_ext_v1beta.Ingress))
 	case *ko.PersistentVolumeClaim:
-		o, err = client.PersistentVolumeClaims(metadata.Namespace).Create(obj.(*ko.PersistentVolumeClaim))
+		o, err = client.CoreV1().PersistentVolumeClaims(metadata.Namespace).Create(obj.(*ko.PersistentVolumeClaim))
 	case *ko.PersistentVolume:
-		o, err = client.PersistentVolumes().Create(obj.(*ko.PersistentVolume))
+		o, err = client.CoreV1().PersistentVolumes().Create(obj.(*ko.PersistentVolume))
 	case *rbacv1.ClusterRole:
 		o, err = client.RbacV1beta1().ClusterRoles().Create(obj.(*rbacv1.ClusterRole))
 	case *rbacv1.ClusterRoleBinding:
@@ -175,22 +175,22 @@ func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Objec
 }
 
 func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool, error) {
-	metadata, _ := meta_v1.ObjectMetaFor(obj)
+	metadata, _ := utils.ObjectMetaFor(obj)
 	switch obj.(type) {
 	case *ko.ReplicationController:
-		realObj, err := client.ReplicationControllers(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.CoreV1().ReplicationControllers(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	case *ko.Service:
-		realObj, err := client.Services(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.CoreV1().Services(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	case *ko.Pod:
-		realObj, err := client.Pods(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.CoreV1().Pods(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
@@ -202,43 +202,43 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 		}
 		return realObj != nil, nil
 	case *ko_v2alpha1.CronJob:
-		realObj, err := client.CronJobs(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.BatchV2alpha1().CronJobs(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	case *ko_ext_v1beta.DaemonSet:
-		realObj, err := client.DaemonSets(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.ExtensionsV1beta1().DaemonSets(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	case *ko.ConfigMap:
-		realObj, err := client.ConfigMaps(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.CoreV1().ConfigMaps(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	case *ko.ServiceAccount:
-		realObj, err := client.ServiceAccounts(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.CoreV1().ServiceAccounts(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	case *ko_ext_v1beta.Ingress:
-		realObj, err := client.Ingresses(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.ExtensionsV1beta1().Ingresses(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	case *ko.PersistentVolumeClaim:
-		realObj, err := client.PersistentVolumeClaims(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.CoreV1().PersistentVolumeClaims(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	case *ko.PersistentVolume:
-		realObj, err := client.PersistentVolumes().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.CoreV1().PersistentVolumes().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
@@ -258,7 +258,7 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 	default:
 	}
 	if sc, ok := obj.(*v1.StorageClass); ok {
-		realObj, err := client.StorageV1Client.StorageClasses().Get(sc.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		realObj, err := client.StorageV1().StorageClasses().Get(sc.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}

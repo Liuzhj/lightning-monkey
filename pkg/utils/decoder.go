@@ -4,18 +4,30 @@ import (
 	"bytes"
 	uuid "github.com/satori/go.uuid"
 	"html/template"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
+func ObjectMetaFor(obj runtime.Object) (*v1.ObjectMeta, error) {
+	v, err := conversion.EnforcePtr(obj)
+	if err != nil {
+		return nil, err
+	}
+	var meta *v1.ObjectMeta
+	err = runtime.FieldPtr(v, "ObjectMeta", &meta)
+	return meta, err
+}
+
 func DecodeYamlOrJson(content string) (runtime.Object, error) {
-	decode := api.Codecs.UniversalDeserializer().Decode
+	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode([]byte(content), nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	meta, err := metav1.ObjectMetaFor(obj)
+
+	meta, err := ObjectMetaFor(obj)
 	if err != nil {
 		return nil, err
 	}

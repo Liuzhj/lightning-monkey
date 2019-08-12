@@ -8,7 +8,6 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/utils"
 	"github.com/sirupsen/logrus"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -245,7 +244,7 @@ func (dc *CoreDNSController) Install() error {
 	var err error
 	var existed bool
 	for i := 0; i < len(dc.parsedObjects); i++ {
-		metadata, _ := meta_v1.ObjectMetaFor(dc.parsedObjects[i])
+		metadata, _ := utils.ObjectMetaFor(dc.parsedObjects[i])
 		if existed, err = k8s.IsKubernetesResourceExists(dc.client, dc.parsedObjects[i]); err != nil && !k8sErr.IsNotFound(err) {
 			return fmt.Errorf("Failed to check Kubernetes resource existence, error: %s", err.Error())
 		} else if !existed {
