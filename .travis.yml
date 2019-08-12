@@ -40,7 +40,7 @@ after_success:
 - test -n "$TRAVIS_TAG" && docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 # docker login is required if you want to push docker images.
 # QINIU_DOCKER_PASSWORD should be a secret in your .travis.yml configuration.
-- test -n "$TRAVIS_TAG" && docker login reg.qiniu.com -u="$QINIU_DOCKER_USERNAME" -p="$QINIU_DOCKER_PASSWORD"
+- test -n "$TRAVIS_TAG" && docker login registry.cn-beijing.aliyuncs.com -u="$ALICLOUD_DOCKER_USERNAME" -p="$ALICLOUD_DOCKER_PASSWORD"
 # snapcraft login is required if you want to push snapcraft packages to the
 # store.
 # You'll need to run `snapcraft export-login snap.login` and
