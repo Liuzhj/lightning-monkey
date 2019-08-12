@@ -23,23 +23,25 @@ builds:
 archive:
   format: tar.gz
 dockers:
-  - image: g0194776/lightning-monkey-apiserver
-    dockerfile: Dockerfile.apiserver
+  - dockerfile: Dockerfile.apiserver
     binary: lm-apiserver
     # Path to the Dockerfile (from the project root).
-    tag_templates:
-    - "{{ .Tag }}"
-    - latest
+    image_templates:
+    - "g0194776/lightning-monkey-apiserver:{{ .Tag }}"
+    - "g0194776/lightning-monkey-apiserver:latest"
+    - "reg.qiniu.com/lightning-monkey/lightning-monkey-apiserver:{{ .Tag }}"
+    - "reg.qiniu.com/lightning-monkey/lightning-monkey-apiserver:latest"
     extra_files:
     - extras/kubernetes.repo
     - download-frozen-image-v2.sh
     - prepare.sh
-  - image: g0194776/lightning-monkey-agent
-    dockerfile: Dockerfile.agent
+  - dockerfile: Dockerfile.agent
     binary: lm-agent
     # Path to the Dockerfile (from the project root).
-    tag_templates:
-    - "{{ .Tag }}"
-    - latest
+    image_templates:
+    - "g0194776/lightning-monkey-agent:{{ .Tag }}"
+    - "g0194776/lightning-monkey-agent:latest"
+    - "reg.qiniu.com/lightning-monkey/lightning-monkey-agent:{{ .Tag }}"
+    - "reg.qiniu.com/lightning-monkey/lightning-monkey-agent:latest"
     extra_files:
     - extras/kubernetes.repo
