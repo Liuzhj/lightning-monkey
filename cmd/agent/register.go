@@ -481,27 +481,31 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	//--volume=/var/lib/docker/:/var/lib/docker:rw
 	//--volume=/var/lib/kubelet/:/var/lib/kubelet:shared
 	//--volume=/var/run:/var/run:rw
+	cmd := []string{
+		"kubelet",
+		fmt.Sprintf("--config=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet_settings.yml")),
+		//fmt.Sprintf("--bootstrap-kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "bootstrap-kubelet.conf")),
+		fmt.Sprintf("--kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet.conf")),
+		fmt.Sprintf("--pod-infra-container-image=%s", infraContainer),
+		fmt.Sprintf("--register-node=%t", *a.arg.IsMinionRole),
+		fmt.Sprintf("--hostname-override=%s", *a.arg.Address),
+		"--cgroup-driver=cgroupfs",
+		"--cgroups-per-qos=false",
+		"--enforce-node-allocatable=",
+		"--allow-privileged=true",
+		"--network-plugin=cni",
+		"--serialize-image-pulls=false",
+		//"--address=0.0.0.0",
+	}
+	if a.arg.NodeLabels != nil && *a.arg.NodeLabels != "" {
+		cmd = append(cmd, fmt.Sprintf("--node-labels=%s", *a.arg.NodeLabels))
+	}
 	resp, err := a.dockerClient.ContainerCreate(context.Background(), &container.Config{
 		Hostname: *a.arg.Address,
 		Image:    img,
 		Tty:      false,
-		Cmd: []string{
-			"kubelet",
-			fmt.Sprintf("--config=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet_settings.yml")),
-			//fmt.Sprintf("--bootstrap-kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "bootstrap-kubelet.conf")),
-			fmt.Sprintf("--kubeconfig=%s", filepath.Join(CERTIFICATE_STORAGE_PATH, "kubelet.conf")),
-			fmt.Sprintf("--pod-infra-container-image=%s", infraContainer),
-			fmt.Sprintf("--register-node=%t", *a.arg.IsMinionRole),
-			fmt.Sprintf("--hostname-override=%s", *a.arg.Address),
-			"--cgroup-driver=cgroupfs",
-			"--cgroups-per-qos=false",
-			"--enforce-node-allocatable=",
-			"--allow-privileged=true",
-			"--network-plugin=cni",
-			"--serialize-image-pulls=false",
-			//"--address=0.0.0.0",
-		},
-		Volumes: map[string]struct{}{},
+		Cmd:      cmd,
+		Volumes:  map[string]struct{}{},
 	}, &container.HostConfig{
 		Binds: []string{
 			//"/:/rootfs:ro",

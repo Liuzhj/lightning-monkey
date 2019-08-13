@@ -23,6 +23,7 @@ func main() {
 	arg.Server = flag.String("server", "", "api address")
 	arg.Address = flag.String("address", "", "local node address")
 	arg.ClusterId = flag.String("cluster", "", "cluster id")
+	arg.NodeLabels = flag.String("labels", "", "Labels to add when registering the node in the cluster. Labels must be key=value pairs separated by ','. Labels in the 'kubernetes.io' namespace must begin with an allowed prefix (kubelet.kubernetes.io, node.kubernetes.io) or be in the specifically allowed set (beta.kubernetes.io/arch, beta.kubernetes.io/instance-type, beta.kubernetes.io/os, failure-domain.beta.kubernetes.io/region, failure-domain.beta.kubernetes.io/zone, failure-domain.kubernetes.io/region, failure-domain.kubernetes.io/zone, kubernetes.io/arch, kubernetes.io/hostname, kubernetes.io/instance-type, kubernetes.io/os)")
 	arg.IsETCDRole = flag.Bool("etcd", false, "")
 	arg.IsMasterRole = flag.Bool("master", false, "")
 	arg.IsMinionRole = flag.Bool("minion", false, "")
@@ -55,6 +56,7 @@ type AgentArgs struct {
 	Server       *string
 	ClusterId    *string
 	Address      *string
+	NodeLabels   *string
 	LeaseId      int64
 	IsETCDRole   *bool
 	IsMasterRole *bool
