@@ -234,28 +234,9 @@ func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(cer
 		"kubeadm init phase certs apiserver-etcd-client",
 		"kubeadm init phase etcd local",
 	}
-	var cmd *exec.Cmd
 	for i := 0; i < len(subCommands); i++ {
-		cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("%s --config=%s", subCommands[i], configFilePath))
-		stdout, err := cmd.StdoutPipe()
+		err = executeCommand(subCommands[i], configFilePath)
 		if err != nil {
-			return err
-		}
-		if err = cmd.Start(); err != nil {
-			return err
-		}
-		reader := bufio.NewReader(stdout)
-		for {
-			traceData, _, err := reader.ReadLine()
-			if err != nil {
-				if err != io.EOF {
-					return err
-				}
-				break
-			}
-			logrus.Infof(string(traceData))
-		}
-		if err = cmd.Wait(); err != nil {
 			return err
 		}
 	}
@@ -284,35 +265,17 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 			certPath,
 		),
 	}
-	var cmd *exec.Cmd
+	var err error
 	for i := 0; i < len(subCommands); i++ {
-		cmd = exec.Command("/bin/bash", "-c", subCommands[i])
-		stdout, err := cmd.StdoutPipe()
+		err = executeCommand(subCommands[i], "")
 		if err != nil {
-			return err
-		}
-		if err = cmd.Start(); err != nil {
-			return err
-		}
-		reader := bufio.NewReader(stdout)
-		for {
-			traceData, _, err := reader.ReadLine()
-			if err != nil {
-				if err != io.EOF {
-					return err
-				}
-				break
-			}
-			logrus.Infof(string(traceData))
-		}
-		if err = cmd.Wait(); err != nil {
 			return err
 		}
 	}
 	//replace used docker registry.
 	manifestPath := filepath.Join(certPath, "../", "manifests")
 	logrus.Infof("Calculated manifest file path: %s", manifestPath)
-	err := filepath.Walk(manifestPath, func(p string, info os.FileInfo, err error) error {
+	err = filepath.Walk(manifestPath, func(p string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
@@ -397,4 +360,37 @@ func getCertificatesContent(path, title string, m *GeneratedCertsMap) (*Generate
 		return nil
 	})
 	return m, err
+}
+
+func executeCommand(command string, configFilePath string) error {
+	var cmd *exec.Cmd
+	if configFilePath != "" {
+		cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("%s --config=%s", command, configFilePath))
+	} else {
+		cmd = exec.Command("/bin/bash", "-c", command)
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	//fixed FD leak.
+	defer stdout.Close()
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+	reader := bufio.NewReader(stdout)
+	for {
+		traceData, _, err := reader.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			break
+		}
+		logrus.Infof(string(traceData))
+	}
+	if err = cmd.Wait(); err != nil {
+		return err
+	}
+	return nil
 }
