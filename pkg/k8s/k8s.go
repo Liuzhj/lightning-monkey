@@ -13,7 +13,8 @@ import (
 	ko_v2alpha1 "k8s.io/api/batch/v2alpha1"
 	ko "k8s.io/api/core/v1"
 	ko_ext_v1beta "k8s.io/api/extensions/v1beta1"
-	rbacv1 "k8s.io/api/rbac/v1beta1"
+	rbac_v1 "k8s.io/api/rbac/v1"
+	rbac_v1beta "k8s.io/api/rbac/v1beta1"
 	v1 "k8s.io/api/storage/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -160,10 +161,14 @@ func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Objec
 		o, err = client.CoreV1().PersistentVolumeClaims(metadata.Namespace).Create(obj.(*ko.PersistentVolumeClaim))
 	case *ko.PersistentVolume:
 		o, err = client.CoreV1().PersistentVolumes().Create(obj.(*ko.PersistentVolume))
-	case *rbacv1.ClusterRole:
-		o, err = client.RbacV1beta1().ClusterRoles().Create(obj.(*rbacv1.ClusterRole))
-	case *rbacv1.ClusterRoleBinding:
-		o, err = client.RbacV1beta1().ClusterRoleBindings().Create(obj.(*rbacv1.ClusterRoleBinding))
+	case *rbac_v1beta.ClusterRole:
+		o, err = client.RbacV1beta1().ClusterRoles().Create(obj.(*rbac_v1beta.ClusterRole))
+	case *rbac_v1beta.ClusterRoleBinding:
+		o, err = client.RbacV1beta1().ClusterRoleBindings().Create(obj.(*rbac_v1beta.ClusterRoleBinding))
+	case *rbac_v1.ClusterRole:
+		o, err = client.RbacV1().ClusterRoles().Create(obj.(*rbac_v1.ClusterRole))
+	case *rbac_v1.ClusterRoleBinding:
+		o, err = client.RbacV1().ClusterRoleBindings().Create(obj.(*rbac_v1.ClusterRoleBinding))
 	default:
 		return nil, fmt.Errorf("Unsupported obj kind %s", obj.GetObjectKind().GroupVersionKind().Kind)
 	}
@@ -243,14 +248,26 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 			return false, err
 		}
 		return realObj != nil, nil
-	case *rbacv1.ClusterRole:
+	case *rbac_v1beta.ClusterRole:
 		realObj, err := client.RbacV1beta1().ClusterRoles().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
-	case *rbacv1.ClusterRoleBinding:
+	case *rbac_v1beta.ClusterRoleBinding:
 		realObj, err := client.RbacV1beta1().ClusterRoleBindings().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbac_v1.ClusterRole:
+		realObj, err := client.RbacV1().ClusterRoles().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbac_v1.ClusterRoleBinding:
+		realObj, err := client.RbacV1().ClusterRoleBindings().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
