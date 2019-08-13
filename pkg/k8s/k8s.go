@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
+	apps_v1 "k8s.io/api/apps/v1"
 	ko_v1beta "k8s.io/api/apps/v1beta1"
 	ko_v2alpha1 "k8s.io/api/batch/v2alpha1"
 	ko "k8s.io/api/core/v1"
@@ -147,6 +148,8 @@ func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Objec
 		o, err = client.CoreV1().Pods(metadata.Namespace).Create(obj.(*ko.Pod))
 	case *ko_v1beta.Deployment:
 		o, err = client.AppsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ko_v1beta.Deployment))
+	case *apps_v1.Deployment:
+		o, err = client.AppsV1().Deployments(metadata.Namespace).Create(obj.(*apps_v1.Deployment))
 	case *ko_v2alpha1.CronJob:
 		o, err = client.BatchV2alpha1().CronJobs(metadata.Namespace).Create(obj.(*ko_v2alpha1.CronJob))
 	case *ko_ext_v1beta.DaemonSet:
@@ -202,6 +205,12 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 		return realObj != nil, nil
 	case *ko_v1beta.Deployment:
 		realObj, err := client.AppsV1beta1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *apps_v1.Deployment:
+		realObj, err := client.AppsV1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
