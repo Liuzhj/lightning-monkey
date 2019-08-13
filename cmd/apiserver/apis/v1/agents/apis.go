@@ -55,13 +55,14 @@ func RegisterAgent(ctx iris.Context) {
 		LeaseId:     leaseId,
 		BasicImages: common.BasicImages["1.13.8"], /*test only*/
 		MasterSettings: map[string]string{
-			entities.MasterSettings_PodCIDR:             settings.PodNetworkCIDR,
-			entities.MasterSettings_ServiceCIDR:         settings.ServiceCIDR,
-			entities.MasterSettings_ServiceDNSDomain:    settings.ServiceDNSDomain,
-			entities.MasterSettings_ServiceDNSClusterIP: settings.ServiceDNSClusterIP,
-			entities.MasterSettings_KubernetesVersion:   settings.KubernetesVersion,
-			entities.MasterSettings_MaxPodCountPerNode:  strconv.Itoa(settings.MaximumAllowedPodCountPerNode),
-			entities.MasterSettings_DockerRegistry:      "mirrorgooglecontainers/hyperkube",
+			entities.MasterSettings_PodCIDR:               settings.PodNetworkCIDR,
+			entities.MasterSettings_ServiceCIDR:           settings.ServiceCIDR,
+			entities.MasterSettings_ServiceDNSDomain:      settings.ServiceDNSDomain,
+			entities.MasterSettings_ServiceDNSClusterIP:   settings.ServiceDNSClusterIP,
+			entities.MasterSettings_KubernetesVersion:     settings.KubernetesVersion,
+			entities.MasterSettings_MaxPodCountPerNode:    strconv.Itoa(settings.MaximumAllowedPodCountPerNode),
+			entities.MasterSettings_ExpectedETCDNodeCount: strconv.Itoa(settings.ExpectedETCDCount),
+			entities.MasterSettings_DockerRegistry:        "mirrorgooglecontainers/hyperkube",
 		},
 	}
 	r.BasicImages.HTTPDownloadToken = entities.HTTPDockerImageDownloadToken

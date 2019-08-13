@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -28,19 +29,20 @@ import (
 )
 
 type LightningMonkeyAgent struct {
-	c                  chan LightningMonkeyAgentReportStatus
-	statusLock         *sync.RWMutex
-	arg                *AgentArgs
-	dockerClient       *client.Client
-	dockerImageManager managers.DockerImageManager
-	lastRegisteredTime time.Time
-	lastReportTime     time.Time
-	hasRegistered      int32
-	basicImages        *entities.DockerImageCollection
-	masterSettings     map[string]string
-	workQueue          chan *entities.AgentJob
-	handlerFactory     *AgentJobHandlerFactory
-	ItemsStatus        map[string]entities.LightningMonkeyAgentReportStatusItem
+	c                     chan LightningMonkeyAgentReportStatus
+	statusLock            *sync.RWMutex
+	arg                   *AgentArgs
+	dockerClient          *client.Client
+	dockerImageManager    managers.DockerImageManager
+	lastRegisteredTime    time.Time
+	lastReportTime        time.Time
+	hasRegistered         int32
+	basicImages           *entities.DockerImageCollection
+	masterSettings        map[string]string
+	workQueue             chan *entities.AgentJob
+	handlerFactory        *AgentJobHandlerFactory
+	ItemsStatus           map[string]entities.LightningMonkeyAgentReportStatusItem
+	expectedETCDNodeCount int
 }
 
 var (
@@ -109,6 +111,11 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	a.dockerImageManager, err = managers.NewDockerImageManager(*a.arg.Server, a.dockerClient, &rspObj.BasicImages)
 	a.arg.AgentId = rspObj.AgentId
 	a.arg.LeaseId = rspObj.LeaseId
+	a.expectedETCDNodeCount, err = strconv.Atoi(rspObj.MasterSettings[entities.MasterSettings_ExpectedETCDNodeCount])
+	if err != nil {
+		logrus.Fatal("Illegal number of expected ETCD count: %s", rspObj.MasterSettings[entities.MasterSettings_ExpectedETCDNodeCount])
+		return
+	}
 	logrus.Debugf("API file server readonly token: %s", rspObj.BasicImages.HTTPDownloadToken)
 	entities.HTTPDockerImageDownloadToken = rspObj.BasicImages.HTTPDownloadToken
 	if err != nil {

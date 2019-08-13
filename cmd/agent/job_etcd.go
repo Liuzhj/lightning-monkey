@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"html/template"
+	"os/exec"
 	"strings"
 )
 
@@ -93,13 +94,31 @@ func CheckETCDHealth(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, err
 	if containers == nil || len(containers) == 0 {
 		return false, nil
 	}
+	var destContainerId string
 	for i := 0; i < len(containers); i++ {
 		logrus.Infof("container status: %s, names: %#v", containers[i].Status, containers[i].Names)
 		if strings.Contains(containers[i].Names[0], "k8s_etcd") &&
 			strings.Contains(containers[i].Names[0], "kube-system") &&
 			strings.Contains(containers[i].Status, "Up") {
-			return true, nil
+			destContainerId = containers[i].ID
+			break
 		}
+	}
+	//unhealthy or not expected status.
+	if destContainerId == "" {
+		return false, nil
+	}
+	//docker exec 01f sh -c  "export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[192.168.33.11]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list"
+	cmdStr := fmt.Sprintf("docker exec %s sh -c \"export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[%s]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list\"", destContainerId, *a.arg.Address)
+	result, err := exec.Command("/bin/sh", "-c", cmdStr).Output()
+	if err != nil {
+		logrus.Errorf("Failed to perform ETCD health check, error: %s", err.Error())
+		return false, nil
+	}
+	logrus.Debugf("ETCD health check result: \n%s", result)
+	//return healthy status util expected count of ETCD nodes are ready.
+	if strings.Count(string(result), "started") >= a.expectedETCDNodeCount {
+		return true, nil
 	}
 	return false, nil
 }

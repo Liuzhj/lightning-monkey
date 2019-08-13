@@ -23,19 +23,20 @@ const (
 	ConditionConfirmed
 	ConditionNotConfirmed
 	ConditionInapplicable
-	MasterSettings_PodCIDR                             = "pod_ip_cidr"
-	MasterSettings_ServiceCIDR                         = "service_ip_cidr"
-	MasterSettings_ServiceDNSDomain                    = "service_dns_domain"
-	MasterSettings_KubernetesVersion                   = "k8s_version"
-	MasterSettings_DockerRegistry                      = "docker_registry"
-	MasterSettings_MaxPodCountPerNode                  = "max_pod_count"
-	MasterSettings_ServiceDNSClusterIP                 = "service_dns_cluster_ip"
-	NetworkStack_Flannel                               = "flannel"
-	NetworkStack_Calico                                = "calico"
-	NetworkStack_KubeRouter                            = "kuberouter"
-	DNS_KubeDNS                                        = "kubedns"
-	DNS_CoreDNS                                        = "coredns"
-	_                                  AgentStatusFlag = iota
+	MasterSettings_PodCIDR                               = "pod_ip_cidr"
+	MasterSettings_ServiceCIDR                           = "service_ip_cidr"
+	MasterSettings_ServiceDNSDomain                      = "service_dns_domain"
+	MasterSettings_KubernetesVersion                     = "k8s_version"
+	MasterSettings_DockerRegistry                        = "docker_registry"
+	MasterSettings_MaxPodCountPerNode                    = "max_pod_count"
+	MasterSettings_ServiceDNSClusterIP                   = "service_dns_cluster_ip"
+	MasterSettings_ExpectedETCDNodeCount                 = "expected_etcd_node_count"
+	NetworkStack_Flannel                                 = "flannel"
+	NetworkStack_Calico                                  = "calico"
+	NetworkStack_KubeRouter                              = "kuberouter"
+	DNS_KubeDNS                                          = "kubedns"
+	DNS_CoreDNS                                          = "coredns"
+	_                                    AgentStatusFlag = iota
 	AgentStatusFlag_Whatever
 	AgentStatusFlag_Running
 	AgentStatusFlag_Provisioned
