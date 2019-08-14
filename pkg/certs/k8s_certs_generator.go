@@ -136,83 +136,29 @@ func (cm *CertificateManagerImple) GenerateMainCACertificates() (*GeneratedCerts
 		//remove certs path.
 		_ = os.RemoveAll(path)
 	}()
-	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase certs ca --cert-dir=%s", path))
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
+	subCommands := []string{
+		fmt.Sprintf("kubeadm init phase certs ca --cert-dir=%s", path),
+		fmt.Sprintf("kubeadm init phase certs etcd-ca --cert-dir=%s", path),
+		fmt.Sprintf("kubeadm init phase certs front-proxy-ca --cert-dir=%s", path),
+		fmt.Sprintf("kubeadm init phase certs sa --cert-dir=%s", path),
 	}
-	if err = cmd.Start(); err != nil {
-		return nil, err
-	}
-	reader := bufio.NewReader(stdout)
-	for {
-		traceData, _, err := reader.ReadLine()
+	var err error
+	certMap := &GeneratedCertsMap{res: make(map[string]string), path: path}
+	for i := 0; i < len(subCommands); i++ {
+		err = executeCommand(subCommands[i], "")
 		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
-			break
+			return nil, err
 		}
-		logrus.Infof(string(traceData))
-	}
-	if err = cmd.Wait(); err != nil {
-		return nil, err
-	}
-	certMap, err := getCertificatesContent(path, "", nil)
-	if err != nil {
-		return nil, err
-	}
-	//ETCD ca.
-	cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase certs etcd-ca --cert-dir=%s", path))
-	stdout, err = cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-	if err = cmd.Start(); err != nil {
-		return nil, err
-	}
-	reader = bufio.NewReader(stdout)
-	for {
-		traceData, _, err := reader.ReadLine()
+		if strings.Contains(subCommands[i], "etcd") {
+			certMap, err = getCertificatesContent(path, "etcd", certMap)
+		} else {
+			certMap, err = getCertificatesContent(path, "", certMap)
+		}
 		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
-			break
+			return nil, err
 		}
-		logrus.Infof(string(traceData))
 	}
-	if err = cmd.Wait(); err != nil {
-		return nil, err
-	}
-	certMap, err = getCertificatesContent(path, "etcd", certMap)
-	if err != nil {
-		return nil, err
-	}
-	//SA
-	cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase certs sa --cert-dir=%s", path))
-	stdout, err = cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-	if err = cmd.Start(); err != nil {
-		return nil, err
-	}
-	reader = bufio.NewReader(stdout)
-	for {
-		traceData, _, err := reader.ReadLine()
-		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
-			break
-		}
-		logrus.Infof(string(traceData))
-	}
-	if err = cmd.Wait(); err != nil {
-		return nil, err
-	}
-	return getCertificatesContent(path, "", certMap)
+	return certMap, nil
 }
 
 func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent string) error {
@@ -253,7 +199,6 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 		),
 		fmt.Sprintf("kubeadm init phase certs apiserver-etcd-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs apiserver-kubelet-client --cert-dir=%s", certPath),
-		fmt.Sprintf("kubeadm init phase certs front-proxy-ca --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs front-proxy-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase kubeconfig controller-manager --apiserver-advertise-address=%s --cert-dir=%s", address, certPath),
 		fmt.Sprintf("kubeadm init phase kubeconfig scheduler --apiserver-advertise-address=%s --cert-dir=%s", address, certPath),
