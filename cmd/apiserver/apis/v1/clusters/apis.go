@@ -2,6 +2,7 @@ package clusters
 
 import (
 	"encoding/json"
+	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
 	"github.com/kataras/iris"
@@ -14,7 +15,7 @@ func Register(app *iris.Application) error {
 	app.Get("/apis/v1/cluster/list", GetClusterList)
 	app.Post("/apis/v1/cluster/create", NewCluster)
 	app.Put("/apis/v1/cluster/update", UpdateCluster)
-	app.Get("/apis/v1/cluster/status", GetClusterStatus)
+	app.Get("/apis/v1/cluster/status", GetClusterComponentStatus)
 	return nil
 }
 
@@ -54,6 +55,32 @@ func NewCluster(ctx iris.Context) {
 	ctx.Next()
 }
 
-func UpdateCluster(ctx iris.Context)    {}
-func GetClusterList(ctx iris.Context)   {}
-func GetClusterStatus(ctx iris.Context) {}
+func GetClusterComponentStatus(ctx iris.Context) {
+	clusterId := ctx.URLParam("cluster-id")
+	if clusterId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"cluster-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	c, err := common.ClusterManager.GetClusterById(clusterId)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: err.Error()}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	wps := c.GetWachPoints()
+	rsp := entities.GetClusterComponentStatusResponse{
+		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
+		WatchPoints: wps,
+	}
+	_, _ = ctx.JSON(rsp)
+	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+	ctx.Next()
+}
+
+func UpdateCluster(ctx iris.Context)  {}
+func GetClusterList(ctx iris.Context) {}

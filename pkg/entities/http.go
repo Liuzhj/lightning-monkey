@@ -1,5 +1,7 @@
 package entities
 
+import "github.com/g0194776/lightningmonkey/pkg/monitors"
+
 const (
 	Succeed                          int = 0
 	BizError                         int = 40000
@@ -65,4 +67,9 @@ type DockerImage struct {
 type AgentReportStatusResponse struct {
 	Response
 	LeaseId int64 `json:"lease_id"`
+}
+
+type GetClusterComponentStatusResponse struct {
+	Response
+	WatchPoints []monitors.WatchPoint `json:"status"`
 }

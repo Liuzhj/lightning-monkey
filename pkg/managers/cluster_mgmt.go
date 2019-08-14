@@ -91,7 +91,7 @@ func saveClusterCertificate(cluster *entities.LightningMonkeyClusterSettings, ce
 	}
 	cm := certsMap.GetResources()
 	for k, v := range cm {
-		path = fmt.Sprintf("/lightning-monkey/clusters/%s/certificates/%s", cluster.Id, strings.Replace(k, "/", "-", -1))
+		path = fmt.Sprintf("/lightning-monkey/clusters/%s/certificates/%s", cluster.Id, strings.Replace(k, "/", "_", -1))
 		_, err = common.StorageDriver.Put(context.Background(), path, v)
 		if err != nil {
 			return err

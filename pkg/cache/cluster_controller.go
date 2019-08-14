@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/controllers"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/monitors"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/etcd/clientv3"
@@ -43,6 +44,7 @@ type ClusterController interface {
 	InitializeDNSController() error
 	GetNetworkController() controllers.NetworkStackController
 	GetDNSController() controllers.DNSDeploymentController
+	GetWachPoints() []monitors.WatchPoint
 }
 
 type ClusterControllerImple struct {
@@ -51,6 +53,7 @@ type ClusterControllerImple struct {
 	cache                *AgentCache
 	certs                map[string]string
 	cancellationFunc     func()
+	monitors             []monitors.KubernetesResourceMonitor
 	jobScheduler         ClusterJobScheduler
 	isDisposed           uint32
 	lockObj              *sync.Mutex
@@ -151,7 +154,7 @@ func (cc *ClusterControllerImple) GetCertificates() entities.LightningMonkeyCert
 	collection := make([]*entities.CertificateKeyPair, len(cc.certs))
 	i := 0
 	for k, v := range cc.certs {
-		collection[i] = &entities.CertificateKeyPair{Name: strings.Replace(k, "-", "/", -1), Value: v}
+		collection[i] = &entities.CertificateKeyPair{Name: strings.Replace(k, "_", "/", -1), Value: v}
 		i++
 	}
 	return collection
@@ -291,4 +294,19 @@ func (cc *ClusterControllerImple) InitializeDNSController() error {
 
 func (cc *ClusterControllerImple) GetDNSController() controllers.DNSDeploymentController {
 	return cc.ddc
+}
+
+func (cc *ClusterControllerImple) GetWachPoints() []monitors.WatchPoint {
+	if cc.monitors == nil || len(cc.monitors) == 0 {
+		return nil
+	}
+	wps := []monitors.WatchPoint{}
+	for i := 0; i < len(cc.monitors); i++ {
+		wpl := cc.monitors[i].GetWatchPoints()
+		if wpl == nil || len(wpl) == 0 {
+			continue
+		}
+		wps = append(wps, wpl...)
+	}
+	return wps
 }
