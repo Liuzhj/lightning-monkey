@@ -108,8 +108,9 @@ func CheckETCDHealth(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, err
 	if destContainerId == "" {
 		return false, nil
 	}
+	logrus.Debugf("Try performing ETCD health check with container-id: %s", destContainerId)
 	//docker exec 01f sh -c  "export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[192.168.33.11]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list"
-	cmdStr := fmt.Sprintf("docker exec %s sh -c \"export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[%s]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list\"", destContainerId, *a.arg.Address)
+	cmdStr := fmt.Sprintf("sudo docker exec %s sh -c \"export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[%s]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list\"", destContainerId, *a.arg.Address)
 	result, err := exec.Command("/bin/sh", "-c", cmdStr).Output()
 	if err != nil {
 		logrus.Errorf("Failed to perform ETCD health check, error: %s", err.Error())
