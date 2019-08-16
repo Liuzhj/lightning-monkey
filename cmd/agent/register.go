@@ -22,31 +22,9 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"k8s.io/apimachinery/pkg/util/json"
-)
-
-type LightningMonkeyAgent struct {
-	c                     chan LightningMonkeyAgentReportStatus
-	statusLock            *sync.RWMutex
-	arg                   *AgentArgs
-	dockerClient          *client.Client
-	dockerImageManager    managers.DockerImageManager
-	lastRegisteredTime    time.Time
-	lastReportTime        time.Time
-	hasRegistered         int32
-	basicImages           *entities.DockerImageCollection
-	masterSettings        map[string]string
-	workQueue             chan *entities.AgentJob
-	handlerFactory        *AgentJobHandlerFactory
-	ItemsStatus           map[string]entities.LightningMonkeyAgentReportStatusItem
-	expectedETCDNodeCount int
-}
-
-var (
-	crashError = errors.New("CRASH ERROR")
 )
 
 func (a *LightningMonkeyAgent) Register() (err error) {
@@ -272,6 +250,11 @@ func (a *LightningMonkeyAgent) startStatusTracing() {
 
 func (a *LightningMonkeyAgent) Start() {
 	var err error
+	//try to recover system before fully start it up.
+	if err = a.recover(); err != nil {
+		logrus.Fatalf("Occurred serious problem during recovery procedure, error: %s", err.Error())
+		return
+	}
 	//start new go-routine for periodic reporting its status.
 	go a.reportStatus()
 	//start new go-routine for performing jobs.
