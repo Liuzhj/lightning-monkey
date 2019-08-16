@@ -45,6 +45,7 @@ type ClusterController interface {
 	GetNetworkController() controllers.NetworkStackController
 	GetDNSController() controllers.DNSDeploymentController
 	GetWachPoints() []monitors.WatchPoint
+	EnableMonitors()
 }
 
 type ClusterControllerImple struct {
@@ -57,6 +58,7 @@ type ClusterControllerImple struct {
 	jobScheduler         ClusterJobScheduler
 	isDisposed           uint32
 	lockObj              *sync.Mutex
+	monitorLockObj       *sync.Mutex
 	nsc                  controllers.NetworkStackController
 	ddc                  controllers.DNSDeploymentController
 	settings             entities.LightningMonkeyClusterSettings
@@ -80,6 +82,9 @@ func (cc *ClusterControllerImple) GetTotalProvisionedCountByRole(role string) in
 func (cc *ClusterControllerImple) Initialize(sd storage.LightningMonkeyStorageDriver) {
 	if cc.lockObj == nil {
 		cc.lockObj = &sync.Mutex{}
+	}
+	if cc.monitorLockObj == nil {
+		cc.monitorLockObj = &sync.Mutex{}
 	}
 	cc.certs = make(map[string]string)
 	cc.cache = &AgentCache{}
@@ -309,4 +314,21 @@ func (cc *ClusterControllerImple) GetWachPoints() []monitors.WatchPoint {
 		wps = append(wps, wpl...)
 	}
 	return wps
+}
+
+func (cc *ClusterControllerImple) EnableMonitors() {
+	cc.monitorLockObj.Lock()
+	defer cc.monitorLockObj.Unlock()
+	if cc.monitors != nil && len(cc.monitors) > 0 {
+		return
+	}
+	logrus.Debugf("Enabling monitors to cluster: %s...", cc.GetClusterId())
+	cc.monitors = []monitors.KubernetesResourceMonitor{}
+	sysMonitor := monitors.NewMonitor("sys", cc.client, cc.GetClusterId())
+	err := sysMonitor.Start()
+	if err != nil {
+		logrus.Errorf("Failed to start Kubernetes system component monitor, error: %s", err.Error())
+		return
+	}
+	cc.monitors = append(cc.monitors, sysMonitor)
 }

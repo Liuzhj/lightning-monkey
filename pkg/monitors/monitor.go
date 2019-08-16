@@ -1,6 +1,10 @@
 package monitors
 
-import "time"
+import (
+	"k8s.io/client-go/kubernetes"
+	"strings"
+	"time"
+)
 
 const (
 	Healthy   string = "healthy"
@@ -20,4 +24,16 @@ type WatchPoint struct {
 	Name              string    `json:"name"`
 	Status            string    `json:"status"`
 	LastCheckTime     time.Time `json:"last_check_time"`
+}
+
+func NewMonitor(t string, c *kubernetes.Clientset, clusterId string) KubernetesResourceMonitor {
+	switch strings.ToLower(t) {
+	case "sys":
+		return &KubernetesSystemComponentMonitor{
+			clusterId: clusterId,
+			client:    c,
+		}
+	default:
+		return nil
+	}
 }
