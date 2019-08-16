@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"html/template"
-	"os/exec"
+	"io"
 	"strings"
 )
 
@@ -109,9 +109,7 @@ func CheckETCDHealth(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, err
 		return false, nil
 	}
 	logrus.Debugf("Try performing ETCD health check with container-id: %s", destContainerId)
-	//docker exec 01f sh -c  "export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[192.168.33.11]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list"
-	cmdStr := fmt.Sprintf("sudo docker exec %s sh -c \"export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[%s]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list\"", destContainerId, *a.arg.Address)
-	result, err := exec.Command("/bin/sh", "-c", cmdStr).Output()
+	result, err := getETCDClusterInfo(a, destContainerId)
 	if err != nil {
 		logrus.Errorf("Failed to perform ETCD health check, error: %s", err.Error())
 		return false, nil
@@ -128,4 +126,38 @@ func generateETCDName(a *LightningMonkeyAgent, addr string) string {
 	hasher := md5.New()
 	hasher.Write([]byte([]byte(addr)))
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func getETCDClusterInfo(a *LightningMonkeyAgent, containerId string) (string, error) {
+	//docker exec 01f sh -c  "export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[192.168.33.11]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list"
+	cmdStr := fmt.Sprintf("export ETCDCTL_API=3 && /usr/local/bin/etcdctl --endpoints=https://[%s]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key member list", *a.arg.Address)
+	config := types.ExecConfig{
+		AttachStdout: true,
+		AttachStderr: true,
+		Cmd:          []string{"/bin/sh", "-c", cmdStr},
+	}
+	execID, err := a.dockerClient.ContainerExecCreate(context.TODO(), containerId, config)
+	if err != nil {
+		return "", err
+	}
+	res, err := a.dockerClient.ContainerExecAttach(context.TODO(), execID.ID, types.ExecConfig{})
+	if err != nil {
+		return "", err
+	}
+	err = a.dockerClient.ContainerExecStart(context.TODO(), execID.ID, types.ExecStartCheck{})
+	if err != nil {
+		return "", err
+	}
+	sb := strings.Builder{}
+	for {
+		content, _, err := res.Reader.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				return "", err
+			}
+			break
+		}
+		sb.WriteString(string(content) + "\n")
+	}
+	return sb.String(), nil
 }
