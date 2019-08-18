@@ -1,19 +1,20 @@
 package monitors
 
 import (
+	"sync/atomic"
+	"time"
+	"unsafe"
+
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sync/atomic"
-	"time"
-	"unsafe"
 )
 
 type KubernetesSystemComponentMonitor struct {
 	clusterId string
 	client    *kubernetes.Clientset
-	cache     []WatchPoint
+	cache     *[]WatchPoint
 	stopChan  chan int
 }
 
@@ -22,7 +23,7 @@ func (m *KubernetesSystemComponentMonitor) GetName() string {
 }
 
 func (m *KubernetesSystemComponentMonitor) GetWatchPoints() []WatchPoint {
-	return m.cache
+	return *m.cache
 }
 
 func (m *KubernetesSystemComponentMonitor) Start() error {
