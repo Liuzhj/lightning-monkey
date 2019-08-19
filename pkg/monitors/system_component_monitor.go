@@ -72,6 +72,7 @@ func (m *KubernetesSystemComponentMonitor) doMonitor() {
 		item = csl.Items[i]
 		wp := WatchPoint{}
 		wp.Name = item.Name
+		wp.Namespace = "-"
 		wp.Status = getHealthStatus(item.Conditions)
 		wp.LastCheckTime = time.Now()
 		wp.IsSystemComponent = true

@@ -324,6 +324,7 @@ func (cc *ClusterControllerImple) EnableMonitors() {
 	}
 	logrus.Debugf("Enabling monitors to cluster: %s...", cc.GetClusterId())
 	cc.monitors = []monitors.KubernetesResourceMonitor{}
+	//System Component.
 	sysMonitor := monitors.NewMonitor("sys", cc.client, cc.GetClusterId())
 	err := sysMonitor.Start()
 	if err != nil {
@@ -331,4 +332,12 @@ func (cc *ClusterControllerImple) EnableMonitors() {
 		return
 	}
 	cc.monitors = append(cc.monitors, sysMonitor)
+	//Kubernetes Deployment.
+	deployMonitor := monitors.NewMonitor("deployment", cc.client, cc.GetClusterId())
+	err = deployMonitor.Start()
+	if err != nil {
+		logrus.Errorf("Failed to start Kubernetes deployment monitor, error: %s", err.Error())
+		return
+	}
+	cc.monitors = append(cc.monitors, deployMonitor)
 }

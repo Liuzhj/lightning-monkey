@@ -22,6 +22,7 @@ type KubernetesResourceMonitor interface {
 type WatchPoint struct {
 	IsSystemComponent bool      `json:"is_system_component"`
 	Name              string    `json:"name"`
+	Namespace         string    `json:"namespace"`
 	Status            string    `json:"status"`
 	LastCheckTime     time.Time `json:"last_check_time"`
 }
@@ -30,6 +31,11 @@ func NewMonitor(t string, c *kubernetes.Clientset, clusterId string) KubernetesR
 	switch strings.ToLower(t) {
 	case "sys":
 		return &KubernetesSystemComponentMonitor{
+			clusterId: clusterId,
+			client:    c,
+		}
+	case "deployment":
+		return &KubernetesDeploymentMonitor{
 			clusterId: clusterId,
 			client:    c,
 		}
