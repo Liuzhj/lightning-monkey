@@ -208,6 +208,9 @@ func (a *LightningMonkeyAgent) Initialize(arg AgentArgs) {
 	if a.statusLock == nil {
 		a.statusLock = &sync.RWMutex{}
 	}
+	if a.recoveryLock == nil {
+		a.recoveryLock = &sync.Mutex{}
+	}
 	if a.handlerFactory == nil {
 		a.handlerFactory = &AgentJobHandlerFactory{}
 		a.handlerFactory.Initialize(a.c, a)
@@ -233,6 +236,7 @@ func (a *LightningMonkeyAgent) startStatusTracing() {
 			a.statusLock.Lock()
 			a.ItemsStatus[rs.Key] = rs.Item
 			a.statusLock.Unlock()
+			a.updateRecoveryFile(rs)
 		default:
 			//NOP
 			time.Sleep(time.Second * 3)
@@ -248,12 +252,58 @@ func (a *LightningMonkeyAgent) startStatusTracing() {
 	}
 }
 
+func (a *LightningMonkeyAgent) updateRecoveryFile(rs LightningMonkeyAgentReportStatus) {
+	//not fully initialized, waiting...
+	if a.rr == nil {
+		return
+	}
+	var err error
+	switch rs.Key {
+	case entities.AgentJob_Deploy_ETCD:
+		if !a.rr.HasInstalledETCD && rs.Item.HasProvisioned {
+			a.rr.HasInstalledETCD = true
+			a.rr.ETCDDeploymentType = COMPONENT_DEPLOYMENT_INTEGRATION
+			a.rr.InstallETCDTime = rs.Item.LastSeenTime
+			logrus.Debugf("Try writing recovery file with ETCD deployment status...")
+			if err = a.saveRecoveryFile(); err != nil {
+				logrus.Error(err.Error())
+			}
+		}
+	case entities.AgentJob_Deploy_Master:
+		if !a.rr.HasInstalledMaster && rs.Item.HasProvisioned {
+			a.rr.HasInstalledMaster = true
+			a.rr.MasterDeploymentType = COMPONENT_DEPLOYMENT_INTEGRATION
+			a.rr.InstallMasterTime = rs.Item.LastSeenTime
+			logrus.Debugf("Try writing recovery file with Kubernetes master deployment status...")
+			if err = a.saveRecoveryFile(); err != nil {
+				logrus.Error(err.Error())
+			}
+		}
+	case entities.AgentJob_Deploy_Minion:
+		if !a.rr.HasInstalledMinion && rs.Item.HasProvisioned {
+			a.rr.HasInstalledMinion = true
+			a.rr.MinionDeploymentType = COMPONENT_DEPLOYMENT_INTEGRATION
+			a.rr.InstallMinionTime = rs.Item.LastSeenTime
+			logrus.Debugf("Try writing recovery file with Kubernetes minion deployment status...")
+			if err = a.saveRecoveryFile(); err != nil {
+				logrus.Error(err.Error())
+			}
+		}
+	default:
+		//NOP
+	}
+}
+
 func (a *LightningMonkeyAgent) Start() {
 	var err error
 	//try to recover system before fully start it up.
 	if err = a.recover(); err != nil {
 		logrus.Fatalf("Occurred serious problem during recovery procedure, error: %s", err.Error())
 		return
+	}
+	//create new recovery record when it's the first time to boot up.
+	if a.rr == nil {
+		a.rr = &RecoveryRecord{}
 	}
 	//start new go-routine for periodic reporting its status.
 	go a.reportStatus()

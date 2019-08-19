@@ -67,5 +67,16 @@ func (a *LightningMonkeyAgent) checkHealthy() bool {
 }
 
 func (a *LightningMonkeyAgent) saveRecoveryFile() error {
+	a.recoveryLock.Lock()
+	defer a.recoveryLock.Unlock()
+	_ = os.Remove(RECOVERY_FILE_PATH)
+	data, err := json.Marshal(a.rr)
+	if err != nil {
+		return fmt.Errorf("Failed to marshal recovery object structure to JSON data, error: %s", err.Error())
+	}
+	err = ioutil.WriteFile(RECOVERY_FILE_PATH, data, 0644) //rw-r--r--
+	if err != nil {
+		return fmt.Errorf("Failed to save recovery file, error: %s", err.Error())
+	}
 	return nil
 }

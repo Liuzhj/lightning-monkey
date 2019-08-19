@@ -28,6 +28,7 @@ type LightningMonkeyAgentReportStatus struct {
 type LightningMonkeyAgent struct {
 	c                     chan LightningMonkeyAgentReportStatus
 	statusLock            *sync.RWMutex
+	recoveryLock          *sync.Mutex
 	arg                   *AgentArgs
 	dockerClient          *client.Client
 	dockerImageManager    managers.DockerImageManager
