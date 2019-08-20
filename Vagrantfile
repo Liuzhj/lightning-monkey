@@ -70,6 +70,7 @@ Vagrant.configure("2") do |config|
             -v /var/run:/var/run \
             -v /var/lib:/var/lib \
             -v /opt/cni/bin:/opt/cni/bin \
+            -v /opt/lightning-monkey:/opt/lightning-monkey \
             -e "LOG_LEVEL=debug" \
             --entrypoint=/opt/lm-agent \
             registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
@@ -110,6 +111,7 @@ Vagrant.configure("2") do |config|
               -v /var/run:/var/run \
               -v /var/lib:/var/lib \
               -v /opt/cni/bin:/opt/cni/bin \
+              -v /opt/lightning-monkey:/opt/lightning-monkey \
               -e "LOG_LEVEL=debug" \
               --entrypoint=/opt/lm-agent \
               registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
@@ -149,6 +151,7 @@ Vagrant.configure("2") do |config|
               -v /var/run:/var/run \
               -v /var/lib:/var/lib \
               -v /opt/cni/bin:/opt/cni/bin \
+              -v /opt/lightning-monkey:/opt/lightning-monkey \
               -e "LOG_LEVEL=debug" \
               --entrypoint=/opt/lm-agent \
               registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
@@ -190,6 +193,7 @@ Vagrant.configure("2") do |config|
                 -v /var/run:/var/run \
                 -v /var/lib:/var/lib \
                 -v /opt/cni/bin:/opt/cni/bin \
+                -v /opt/lightning-monkey:/opt/lightning-monkey \
                 -e "LOG_LEVEL=debug" \
                 --entrypoint=/opt/lm-agent \
                 registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
