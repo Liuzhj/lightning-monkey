@@ -3,8 +3,8 @@
 echo "Cleaning diry data..."
 rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra
 echo "Downloading RPM packages..."
-wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm -o ./docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm -o ./docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
+wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
 echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_etcd mirrorgooglecontainers/etcd:3.2.24
 ./download-frozen-image-v2.sh img_hyperkube g0194776/lightning-monkey-hyperkube:v1.13.8
