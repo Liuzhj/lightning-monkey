@@ -6,15 +6,7 @@ import (
 	k8s "k8s.io/client-go/kubernetes"
 )
 
-type NetworkStackController interface {
-	Initialize(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error
-	Install() error
-	UnInstall() error
-	GetName() string
-	HasInstalled() (bool, error)
-}
-
-func CreateNetworkStackController(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) (NetworkStackController, error) {
+func CreateNetworkStackController(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) (DeploymentController, error) {
 	if settings.NetworkStack == nil {
 		return nil, fmt.Errorf("Kubernetes cluster network settings is empty, cluster: %s", settings.Id)
 	}

@@ -6,7 +6,7 @@ import (
 	k8s "k8s.io/client-go/kubernetes"
 )
 
-type DNSDeploymentController interface {
+type DeploymentController interface {
 	Initialize(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error
 	Install() error
 	UnInstall() error
@@ -14,7 +14,7 @@ type DNSDeploymentController interface {
 	HasInstalled() (bool, error)
 }
 
-func CreateDNSDeploymentController(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) (DNSDeploymentController, error) {
+func CreateDNSDeploymentController(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) (DeploymentController, error) {
 	if settings.DNSSettings == nil {
 		return nil, fmt.Errorf("Kubernetes cluster DNS deployment settings is empty, cluster: %s", settings.Id)
 	}

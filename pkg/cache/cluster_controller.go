@@ -42,8 +42,8 @@ type ClusterController interface {
 	InitializeKubernetesClient() error
 	InitializeNetworkController() error
 	InitializeDNSController() error
-	GetNetworkController() controllers.NetworkStackController
-	GetDNSController() controllers.DNSDeploymentController
+	GetNetworkController() controllers.DeploymentController
+	GetDNSController() controllers.DeploymentController
 	GetWachPoints() []monitors.WatchPoint
 	EnableMonitors()
 }
@@ -59,8 +59,8 @@ type ClusterControllerImple struct {
 	isDisposed           uint32
 	lockObj              *sync.Mutex
 	monitorLockObj       *sync.Mutex
-	nsc                  controllers.NetworkStackController
-	ddc                  controllers.DNSDeploymentController
+	nsc                  controllers.DeploymentController
+	ddc                  controllers.DeploymentController
 	settings             entities.LightningMonkeyClusterSettings
 	synchronizedRevision int64
 }
@@ -281,7 +281,7 @@ func (cc *ClusterControllerImple) InitializeNetworkController() error {
 	return nil
 }
 
-func (cc *ClusterControllerImple) GetNetworkController() controllers.NetworkStackController {
+func (cc *ClusterControllerImple) GetNetworkController() controllers.DeploymentController {
 	return cc.nsc
 }
 
@@ -297,7 +297,7 @@ func (cc *ClusterControllerImple) InitializeDNSController() error {
 	return nil
 }
 
-func (cc *ClusterControllerImple) GetDNSController() controllers.DNSDeploymentController {
+func (cc *ClusterControllerImple) GetDNSController() controllers.DeploymentController {
 	return cc.ddc
 }
 
