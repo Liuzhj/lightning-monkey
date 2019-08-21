@@ -42,8 +42,10 @@ type ClusterController interface {
 	InitializeKubernetesClient() error
 	InitializeNetworkController() error
 	InitializeDNSController() error
+	InitializeExtensionDeploymentController() error
 	GetNetworkController() controllers.DeploymentController
 	GetDNSController() controllers.DeploymentController
+	GetExtensionDeploymentController() controllers.DeploymentController
 	GetWachPoints() []monitors.WatchPoint
 	EnableMonitors()
 }
@@ -61,6 +63,7 @@ type ClusterControllerImple struct {
 	monitorLockObj       *sync.Mutex
 	nsc                  controllers.DeploymentController
 	ddc                  controllers.DeploymentController
+	edc                  controllers.DeploymentController
 	settings             entities.LightningMonkeyClusterSettings
 	synchronizedRevision int64
 }
@@ -340,4 +343,20 @@ func (cc *ClusterControllerImple) EnableMonitors() {
 		return
 	}
 	cc.monitors = append(cc.monitors, deployMonitor)
+}
+
+func (cc *ClusterControllerImple) GetExtensionDeploymentController() controllers.DeploymentController {
+	return cc.edc
+}
+
+func (cc *ClusterControllerImple) InitializeExtensionDeploymentController() error {
+	if cc.edc != nil {
+		return nil
+	}
+	var err error
+	cc.edc, err = controllers.CreateExtensionDeploymentController(cc.client, cc.k8sClientIP, cc.GetSettings())
+	if err != nil {
+		return fmt.Errorf("Failed to initialize extension deployment controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
+	}
+	return nil
 }
