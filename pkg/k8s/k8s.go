@@ -13,6 +13,7 @@ import (
 	ko_v1beta "k8s.io/api/apps/v1beta1"
 	ko_v2alpha1 "k8s.io/api/batch/v2alpha1"
 	ko "k8s.io/api/core/v1"
+	ext_v1beta "k8s.io/api/extensions/v1beta1"
 	ko_ext_v1beta "k8s.io/api/extensions/v1beta1"
 	rbac_v1 "k8s.io/api/rbac/v1"
 	rbac_v1beta "k8s.io/api/rbac/v1beta1"
@@ -146,6 +147,8 @@ func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Objec
 		o, err = client.CoreV1().Services(metadata.Namespace).Create(obj.(*ko.Service))
 	case *ko.Pod:
 		o, err = client.CoreV1().Pods(metadata.Namespace).Create(obj.(*ko.Pod))
+	case *ext_v1beta.Deployment:
+		o, err = client.ExtensionsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ext_v1beta.Deployment))
 	case *ko_v1beta.Deployment:
 		o, err = client.AppsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ko_v1beta.Deployment))
 	case *apps_v1.Deployment:
@@ -199,6 +202,12 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 		return realObj != nil, nil
 	case *ko.Pod:
 		realObj, err := client.CoreV1().Pods(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ext_v1beta.Deployment:
+		realObj, err := client.ExtensionsV1beta1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
