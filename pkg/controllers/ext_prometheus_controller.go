@@ -313,6 +313,14 @@ func (dc *PrometheusDeploymentController) GetName() string {
 }
 
 func (dc *PrometheusDeploymentController) HasInstalled() (bool, error) {
+	if dc.settings.ExtensionalDeployments == nil || len(dc.settings.ExtensionalDeployments) == 0 {
+		//skipping installation procedure.
+		return true, nil
+	}
+	if _, isOK := dc.settings.ExtensionalDeployments[entities.EXT_DEPLOYMENT_PROMETHEUS]; !isOK {
+		//skipping installation procedure.
+		return true, nil
+	}
 	ds, err := dc.client.AppsV1beta1().Deployments("kube-system").Get("prometheus-deployment", v1.GetOptions{})
 	if err != nil {
 		if k8sErr.IsNotFound(err) {
