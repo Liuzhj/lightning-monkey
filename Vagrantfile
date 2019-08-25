@@ -211,5 +211,44 @@ Vagrant.configure("2") do |config|
             SHELL
             }
           end
-        end
+       end
+
+
+       config.vm.define "k8s_lb1" do |k8s_lb1|
+        k8s_lb1.vm.box = "centos/7"
+        k8s_lb1.vm.network "private_network", ip: "192.168.33.15"
+        k8s_lb1.vm.hostname = "192.168.33.15"
+        k8s_lb1.trigger.after :up do |trigger|
+          trigger.run_remote = {inline: <<-SHELL
+            setenforce 0 && swapoff -a
+            systemctl stop firewalld
+            yum update -y && yum install -y wget
+            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
+            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+            yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+            sudo su && systemctl start docker && systemctl status docker
+            SHELL
+            }
+          end
+       end
+
+
+       config.vm.define "k8s_lb2" do |k8s_lb2|
+        k8s_lb2.vm.box = "centos/7"
+        k8s_lb2.vm.network "private_network", ip: "192.168.33.16"
+        k8s_lb2.vm.hostname = "192.168.33.16"
+        k8s_lb2.trigger.after :up do |trigger|
+          trigger.run_remote = {inline: <<-SHELL
+            setenforce 0 && swapoff -a
+            systemctl stop firewalld
+            yum update -y && yum install -y wget
+            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
+            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+            yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+            sudo su && systemctl start docker && systemctl status docker
+            SHELL
+            }
+          end
+       end
+
 end
