@@ -27,6 +27,7 @@ func main() {
 	arg.IsETCDRole = flag.Bool("etcd", false, "")
 	arg.IsMasterRole = flag.Bool("master", false, "")
 	arg.IsMinionRole = flag.Bool("minion", false, "")
+	arg.IsHARole = flag.Bool("ha", false, "")
 	certdir := flag.String("cert-dir", "", "")
 	flag.Parse()
 	if certdir != nil && *certdir != "" {
@@ -61,6 +62,7 @@ type AgentArgs struct {
 	IsETCDRole   *bool
 	IsMasterRole *bool
 	IsMinionRole *bool
+	IsHARole     *bool
 }
 
 // GetLocalIP returns the non loopback local IP of the host

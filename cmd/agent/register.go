@@ -45,6 +45,7 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 		HasETCDRole:   *a.arg.IsETCDRole,
 		HasMasterRole: *a.arg.IsMasterRole,
 		HasMinionRole: *a.arg.IsMinionRole,
+		HasHARole:     *a.arg.IsHARole,
 		ClusterId:     *a.arg.ClusterId,
 		Hostname:      hostname,
 		LastReportIP:  *a.arg.Address,
@@ -107,6 +108,10 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	err = a.dockerImageManager.Ready()
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
+	}
+	if !a.hasInitializedRoles() {
+		logrus.Warn("Currently, agent has no any initialized roles, it's waiting for the remote call...")
+		return nil
 	}
 	//directly start kubelet up when it has not Minion role.
 	if !*a.arg.IsMinionRole {
@@ -576,4 +581,9 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	}
 	_, _ = io.Copy(os.Stdout, out)
 	return nil
+}
+
+//hasInitializedRoles returns false when it is waiting for the remote call.
+func (a *LightningMonkeyAgent) hasInitializedRoles() bool {
+	return *a.arg.IsETCDRole || *a.arg.IsMasterRole || *a.arg.IsMinionRole || *a.arg.IsHARole
 }

@@ -38,6 +38,7 @@ type Agent struct {
 	HasETCDRole                    bool      `json:"has_etcd_role"`
 	HasMasterRole                  bool      `json:"has_master_role"`
 	HasMinionRole                  bool      `json:"has_minion_role"`
+	HasHARole                      bool      `json:"has_ha_role"`
 }
 
 type LightningMonkeyAgent struct {
@@ -49,6 +50,7 @@ type LightningMonkeyAgent struct {
 	HasETCDRole      bool        `json:"has_etcd_role" bson:"has_etcd_role"`
 	HasMasterRole    bool        `json:"has_master_role" bson:"has_master_role"`
 	HasMinionRole    bool        `json:"has_minion_role" bson:"has_minion_role"`
+	HasHARole        bool        `json:"has_ha_role"`
 	State            *AgentState `json:"-"`
 }
 
@@ -59,6 +61,10 @@ type AgentState struct {
 	HasProvisionedMasterComponents bool      `json:"provisioned_master_components"`
 	HasProvisionedETCD             bool      `json:"provisioned_etcd"`
 	HasProvisionedMinion           bool      `json:"provisioned_minion"`
+}
+
+func (a *LightningMonkeyAgent) HasInitializedRoles() bool {
+	return a.HasETCDRole || a.HasMasterRole || a.HasMinionRole || a.HasHARole
 }
 
 func (a *LightningMonkeyAgent) IsRunning() bool {
