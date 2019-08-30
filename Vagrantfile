@@ -75,6 +75,7 @@ Vagrant.configure("2") do |config|
             --entrypoint=/opt/lm-agent \
             registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
                 --server=http://192.168.33.10:8080 \
+                --nc=eth1 \
                 --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                 --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
                 --etcd \
@@ -116,6 +117,7 @@ Vagrant.configure("2") do |config|
               --entrypoint=/opt/lm-agent \
               registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
                   --server=http://192.168.33.10:8080 \
+                  --nc=eth1 \
                   --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                   --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
                   --etcd \
@@ -156,6 +158,7 @@ Vagrant.configure("2") do |config|
               --entrypoint=/opt/lm-agent \
               registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
                   --server=http://192.168.33.10:8080 \
+                  --nc=eth1 \
                   --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                   --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
                   --etcd \
@@ -198,6 +201,7 @@ Vagrant.configure("2") do |config|
                 --entrypoint=/opt/lm-agent \
                 registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
                     --server=http://192.168.33.10:8080 \
+                    --nc=eth1 \
                     --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
                     --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
                     --minion \
@@ -227,6 +231,28 @@ Vagrant.configure("2") do |config|
             wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
             yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
             sudo su && systemctl start docker && systemctl status docker
+            docker run -itd --restart=always --net=host \
+                --name agent \
+                -v /etc:/etc \
+                -v /var/run:/var/run \
+                -v /var/lib:/var/lib \
+                -v /opt/cni/bin:/opt/cni/bin \
+                -v /opt/lightning-monkey:/opt/lightning-monkey \
+                -e "LOG_LEVEL=debug" \
+                --entrypoint=/opt/lm-agent \
+                registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
+                    --server=http://192.168.33.10:8080 \
+                    --nc=eth1 \
+                    --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
+                    --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
+                    --ha \
+                    --cert-dir=/etc/kubernetes/pki
+            echo "waiting 10s..."
+            sleep 10s
+            echo "try to retrieving Agent logs..."
+            docker logs agent
+            echo "retrieving all docker containers..."
+            docker ps -a
             SHELL
             }
           end
@@ -246,6 +272,28 @@ Vagrant.configure("2") do |config|
             wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
             yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
             sudo su && systemctl start docker && systemctl status docker
+            docker run -itd --restart=always --net=host \
+                --name agent \
+                -v /etc:/etc \
+                -v /var/run:/var/run \
+                -v /var/lib:/var/lib \
+                -v /opt/cni/bin:/opt/cni/bin \
+                -v /opt/lightning-monkey:/opt/lightning-monkey \
+                -e "LOG_LEVEL=debug" \
+                --entrypoint=/opt/lm-agent \
+                registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
+                    --server=http://192.168.33.10:8080 \
+                    --nc=eth1 \
+                    --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
+                    --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
+                    --ha \
+                    --cert-dir=/etc/kubernetes/pki
+            echo "waiting 10s..."
+            sleep 10s
+            echo "try to retrieving Agent logs..."
+            docker logs agent
+            echo "retrieving all docker containers..."
+            docker ps -a
             SHELL
             }
           end

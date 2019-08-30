@@ -8,6 +8,7 @@ const (
 	AgentJob_Deploy_Master                  = "MASTER"
 	AgentJob_Deploy_ETCD                    = "ETCD"
 	AgentJob_Deploy_Minion                  = "Minion"
+	AgentJob_Deploy_HA                      = "HA"
 	AgentJob_Deploy_NetworkStack_KubeRouter = "Kube-Router"
 	AgentJob_NOP                            = "NOP"
 	AgentStatus_Registered                  = "New"

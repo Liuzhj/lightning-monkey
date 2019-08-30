@@ -21,6 +21,7 @@ func (hf *AgentJobHandlerFactory) Initialize(c chan<- LightningMonkeyAgentReport
 	hf.handlers[entities.AgentJob_Deploy_ETCD] = []AgentJobHandler{HandleDeployETCD, CheckETCDHealth}
 	hf.handlers[entities.AgentJob_Deploy_Master] = []AgentJobHandler{HandleDeployMaster, CheckMasterHealth}
 	hf.handlers[entities.AgentJob_Deploy_Minion] = []AgentJobHandler{HandleDeployMinion, CheckMinionHealth}
+	hf.handlers[entities.AgentJob_Deploy_HA] = []AgentJobHandler{HandleDeployHA, CheckHAHealth}
 	//initialize health check go-routines.
 	for k, v := range hf.handlers {
 		go hf.healthCheck(c, ma, k, v[1])
