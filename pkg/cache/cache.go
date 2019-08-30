@@ -13,6 +13,7 @@ type AgentCache struct {
 	etcd      map[string]*entities.LightningMonkeyAgent
 	k8sMaster map[string]*entities.LightningMonkeyAgent
 	k8sMinion map[string]*entities.LightningMonkeyAgent
+	ha        map[string]*entities.LightningMonkeyAgent
 }
 
 func (ac *AgentCache) Initialize() {
@@ -22,15 +23,17 @@ func (ac *AgentCache) Initialize() {
 	ac.etcd = make(map[string]*entities.LightningMonkeyAgent)
 	ac.k8sMaster = make(map[string]*entities.LightningMonkeyAgent)
 	ac.k8sMinion = make(map[string]*entities.LightningMonkeyAgent)
+	ac.ha = make(map[string]*entities.LightningMonkeyAgent)
 }
 
-func (ac *AgentCache) InitializeWithValues(etcd, k8sMaster, k8sMinion map[string]*entities.LightningMonkeyAgent) {
+func (ac *AgentCache) InitializeWithValues(etcd, k8sMaster, k8sMinion, ha map[string]*entities.LightningMonkeyAgent) {
 	if ac.Mutex == nil {
 		ac.Mutex = &sync.Mutex{}
 	}
 	ac.etcd = etcd
 	ac.k8sMaster = k8sMaster
 	ac.k8sMinion = k8sMinion
+	ac.ha = ha
 }
 
 func (ac *AgentCache) Online(agent entities.LightningMonkeyAgent) {
@@ -44,8 +47,11 @@ func (ac *AgentCache) Online(agent entities.LightningMonkeyAgent) {
 	if agent.HasMinionRole {
 		ac.k8sMinion[agent.Id] = &agent
 	}
+	if agent.HasHARole {
+		ac.ha[agent.Id] = &agent
+	}
 	ac.Unlock()
-	logrus.Infof("Agent %s online..., etcd-role: %t, master-role: %t, minion-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole)
+	logrus.Infof("Agent %s online..., etcd-role: %t, master-role: %t, minion-role: %t, ha-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole, agent.HasHARole)
 }
 
 func (ac *AgentCache) Offline(agent entities.LightningMonkeyAgent) {
@@ -59,8 +65,11 @@ func (ac *AgentCache) Offline(agent entities.LightningMonkeyAgent) {
 	if agent.HasMinionRole {
 		delete(ac.k8sMinion, agent.Id)
 	}
+	if agent.HasHARole {
+		delete(ac.ha, agent.Id)
+	}
 	ac.Unlock()
-	logrus.Infof("Agent %s offline..., etcd-role: %t, master-role: %t, minion-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole)
+	logrus.Infof("Agent %s offline..., etcd-role: %t, master-role: %t, minion-role: %t, ha-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole, agent.HasHARole)
 }
 
 func (ac *AgentCache) GetTotalCountByRole(role string) int {
@@ -73,6 +82,8 @@ func (ac *AgentCache) GetTotalCountByRole(role string) int {
 		return len(ac.k8sMaster)
 	case entities.AgentRole_Minion:
 		return len(ac.k8sMinion)
+	case entities.AgentRole_HA:
+		return len(ac.ha)
 	default:
 		return -1
 	}
@@ -98,6 +109,11 @@ func (ac *AgentCache) GetTotalProvisionedCountByRole(role string) int {
 		m = ac.k8sMinion
 		f = func(a *entities.LightningMonkeyAgent) bool {
 			return a.State != nil && a.State.HasProvisionedMinion
+		}
+	case entities.AgentRole_HA:
+		m = ac.ha
+		f = func(a *entities.LightningMonkeyAgent) bool {
+			return a.State != nil && a.State.HasProvisionedHA
 		}
 	default:
 		return -1
@@ -156,6 +172,20 @@ func (ac *AgentCache) GetAgentsAddress(role string, mustStatusFlag entities.Agen
 			}
 			return true
 		}
+	case entities.AgentRole_HA:
+		targetCollection = ac.ha
+		expFunc = func(a *entities.LightningMonkeyAgent) bool {
+			if !a.HasHARole {
+				return false
+			}
+			if mustStatusFlag == entities.AgentStatusFlag_Running /*running*/ && !a.IsRunning() {
+				return false
+			}
+			if mustStatusFlag == entities.AgentStatusFlag_Provisioned /*provisioned*/ && (!a.IsRunning() || !a.State.HasProvisionedHA) {
+				return false
+			}
+			return true
+		}
 	default:
 		//fast fail when occurs internal serious BUG.
 		logrus.Fatalf("Illegal type of role name: %s", role)
@@ -187,6 +217,12 @@ func (ac *AgentCache) GetKubernetesMinionCount() int {
 	ac.Lock()
 	defer ac.Unlock()
 	return len(ac.k8sMinion)
+}
+
+func (ac *AgentCache) GetHACount() int {
+	ac.Lock()
+	defer ac.Unlock()
+	return len(ac.ha)
 }
 
 func (ac *AgentCache) GetFirstProvisionedKubernetesMasterAgent() *entities.LightningMonkeyAgent {

@@ -87,7 +87,7 @@ func Test_WithoutAnyExpectedETCDNodes(t *testing.T) {
 			HasMasterRole: true,
 			HasMinionRole: false,
 		},
-	}, map[string]*entities.LightningMonkeyAgent{})
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 
 	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.Nil(t, err)
@@ -131,7 +131,7 @@ func Test_LessThanExpectedETCDNodes(t *testing.T) {
 			HasETCDRole:   true,
 			HasMasterRole: false,
 			HasMinionRole: false,
-		}}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+		}}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 
 	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.Nil(t, err)
@@ -185,7 +185,7 @@ func Test_LessThanExpectedETCDNodes2(t *testing.T) {
 			HasETCDRole:   true,
 			HasMasterRole: false,
 			HasMinionRole: false,
-		}}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+		}}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
@@ -233,7 +233,7 @@ func Test_CurrentAgentNotOnline(t *testing.T) {
 			HasMasterRole: false,
 			HasMinionRole: false,
 		},
-		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.NotNil(t, job)
 	assert.NotNil(t, err)
@@ -301,7 +301,7 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 			HasMasterRole: false,
 			HasMinionRole: false,
 		},
-		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
@@ -373,7 +373,7 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 			HasMasterRole: false,
 			HasMinionRole: false,
 		},
-		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
@@ -433,7 +433,7 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount3(t *testing.T) {
 		},
 		uuid.NewV4().String(): &currentAgent},
 		map[string]*entities.LightningMonkeyAgent{},
-		map[string]*entities.LightningMonkeyAgent{})
+		map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, currentAgent, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
@@ -480,7 +480,7 @@ func Test_ProvisionedCountByK8sMaster(t *testing.T) {
 		},
 		uuid.NewV4().String(): &currentAgent},
 		map[string]*entities.LightningMonkeyAgent{},
-		map[string]*entities.LightningMonkeyAgent{})
+		map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	addr := ac.GetAgentsAddress(entities.AgentRole_ETCD, entities.AgentStatusFlag_Provisioned)
 	assert.Equal(t, 2, len(addr))
 }
@@ -557,7 +557,7 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 		uuid.NewV4().String(): &agent1,
 		uuid.NewV4().String(): &agent2,
 		uuid.NewV4().String(): &agent3,
-	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, agent1, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
@@ -642,7 +642,7 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 		uuid.NewV4().String(): &agent1,
 		uuid.NewV4().String(): &agent2,
 		uuid.NewV4().String(): &agent3,
-	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, agent1, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
@@ -739,7 +739,7 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 		uuid.NewV4().String(): &agent3,
 	}, map[string]*entities.LightningMonkeyAgent{
 		uuid.NewV4().String(): &agent4,
-	}, map[string]*entities.LightningMonkeyAgent{})
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, agent4, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
@@ -830,7 +830,7 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 		uuid.NewV4().String(): &agent1,
 		uuid.NewV4().String(): &agent2,
 		uuid.NewV4().String(): &agent3,
-	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, agent4, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
@@ -942,7 +942,7 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 	}, map[string]*entities.LightningMonkeyAgent{
 		uuid.NewV4().String(): &agent4}, map[string]*entities.LightningMonkeyAgent{
 		uuid.NewV4().String(): &agent5,
-	})
+	}, map[string]*entities.LightningMonkeyAgent{})
 	job, err := js.GetNextJob(cc, agent5, &ac)
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
@@ -952,7 +952,7 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 
 func Test_CacheOnline(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -971,7 +971,7 @@ func Test_CacheOnline(t *testing.T) {
 
 func Test_CacheOnlineWithMultipleRoles(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -990,7 +990,7 @@ func Test_CacheOnlineWithMultipleRoles(t *testing.T) {
 
 func Test_CacheOnlineWithMultipleRoles2(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1009,7 +1009,7 @@ func Test_CacheOnlineWithMultipleRoles2(t *testing.T) {
 
 func Test_CacheOffline(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1032,7 +1032,7 @@ func Test_CacheOffline(t *testing.T) {
 
 func Test_CacheOfflineWithMultipleRoles(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1055,7 +1055,7 @@ func Test_CacheOfflineWithMultipleRoles(t *testing.T) {
 
 func Test_CacheOfflineWithMultipleRoles2(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1089,7 +1089,7 @@ func Test_CacheOfflineWithMultipleRoles2(t *testing.T) {
 
 func Test_CacheOfflineWithMultipleRoles3(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1123,7 +1123,7 @@ func Test_CacheOfflineWithMultipleRoles3(t *testing.T) {
 
 func Test_DulplicatedCacheOnline(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1144,7 +1144,7 @@ func Test_DulplicatedCacheOnline(t *testing.T) {
 
 func Test_DulplicatedCacheOffline(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1171,7 +1171,7 @@ func Test_DulplicatedCacheOffline(t *testing.T) {
 
 func Test_GetTotalCountWithSpecifiedRole(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1192,7 +1192,7 @@ func Test_GetTotalCountWithSpecifiedRole(t *testing.T) {
 
 func Test_GetTotalPrivisionedCountWithSpecifiedRole(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1213,7 +1213,7 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole(t *testing.T) {
 
 func Test_GetTotalPrivisionedCountWithSpecifiedRole2(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),
@@ -1235,7 +1235,7 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole2(t *testing.T) {
 
 func Test_GetTotalPrivisionedCountWithSpecifiedRole3(t *testing.T) {
 	ac := cache.AgentCache{}
-	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),
 		ClusterId: uuid.NewV4().String(),

@@ -20,6 +20,7 @@ var (
 				"k8s":     {ImageName: "g0194776/lightning-monkey-hyperkube:v1.12.5-2", DownloadAddr: "%s/apis/v1/registry/1.12.5/k8s.tar?token=%s"},
 				"infra":   {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.12.5/infra.tar?token=%s"},
 				"coredns": {ImageName: "docker.io/coredns/coredns:1.5.2", DownloadAddr: "%s/apis/v1/registry/1.12.5/coredns.tar?token=%s"},
+				"ha":      {ImageName: "docker.io/pelin/haproxy-keepalived", DownloadAddr: "%s/apis/v1/registry/1.12.5/ha.tar?token=%s"},
 			},
 		},
 		"1.13.8": {
@@ -30,6 +31,7 @@ var (
 				"k8s":     {ImageName: "g0194776/lightning-monkey-hyperkube:v1.13.8", DownloadAddr: "%s/apis/v1/registry/1.13.8/k8s.tar?token=%s"},
 				"infra":   {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.13.8/infra.tar?token=%s"},
 				"coredns": {ImageName: "docker.io/coredns/coredns:1.5.2", DownloadAddr: "%s/apis/v1/registry/1.13.8/coredns.tar?token=%s"},
+				"ha":      {ImageName: "docker.io/pelin/haproxy-keepalived", DownloadAddr: "%s/apis/v1/registry/1.13.8/ha.tar?token=%s"},
 			},
 		},
 	}
