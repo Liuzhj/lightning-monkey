@@ -62,6 +62,7 @@ type AgentState struct {
 	HasProvisionedMasterComponents bool      `json:"provisioned_master_components"`
 	HasProvisionedETCD             bool      `json:"provisioned_etcd"`
 	HasProvisionedMinion           bool      `json:"provisioned_minion"`
+	HasProvisionedHA               bool      `json:"has_provisioned_ha"`
 }
 
 func (a *LightningMonkeyAgent) HasInitializedRoles() bool {

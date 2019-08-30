@@ -13,6 +13,7 @@ const (
 	AgentRole_Master                                      = "master"
 	AgentRole_ETCD                                        = "etcd"
 	AgentRole_Minion                                      = "minion"
+	AgentRole_HA                                          = "ha"
 	ClusterNew                                            = "New"
 	ClusterProvisioning                                   = "Provisiong"
 	ClusterUncontrollable                                 = "Uncontrollable"
@@ -75,7 +76,13 @@ type LightningMonkeyClusterSettings struct {
 	MaximumAllowedPodCountPerNode int                                         `json:"maximum_allowed_pod_count_per_node"`
 	NetworkStack                  *NetworkStackSettings                       `json:"network_stack"`
 	DNSSettings                   *DNSDeploymentSettings                      `json:"dns_deployment_settings"`
+	HASettings                    *HASettings                                 `json:"ha_settings"`
 	ExtensionalDeployments        map[string] /*key->args*/ map[string]string `json:"ext_deployments"`
+}
+
+type HASettings struct {
+	VIP      string `json:"vip"`
+	RouterID string `json:"router_id"`
 }
 
 type ClusterStatus struct {

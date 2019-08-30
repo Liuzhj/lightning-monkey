@@ -38,6 +38,13 @@ func NewCluster(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
+	if cluster.HASettings != nil && cluster.HASettings.VIP == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"VIP\" is needed for initializing HAProxy & KeepAlived installation."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
 	clusterId, err := managers.NewCluster(&cluster)
 	if err != nil {
 		rsp = entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}

@@ -858,7 +858,7 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 	gc := gomock.NewController(t)
 	defer gc.Finish()
 	cc := mock_lm.NewMockClusterController(gc)
-	cc.EXPECT().GetSettings().Return(cs)
+	cc.EXPECT().GetSettings().Return(cs).AnyTimes()
 
 	agent1 := entities.LightningMonkeyAgent{
 		Id:        uuid.NewV4().String(),

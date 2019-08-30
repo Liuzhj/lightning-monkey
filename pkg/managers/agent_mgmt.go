@@ -143,6 +143,13 @@ func AgentReportStatus(clusterId, agentId string, status entities.LightningMonke
 	} else {
 		state.HasProvisionedMasterComponents = false
 	}
+	//detect HA deployment status.
+	if v, isOK := status.Items[entities.AgentJob_Deploy_HA]; isOK {
+		state.HasProvisionedHA = v.HasProvisioned
+		state.Reason = v.Reason //TODO: different component's reason should explicitly break off.
+	} else {
+		state.HasProvisionedHA = false
+	}
 	//detect Kubernetes Minion deployment status.
 	if v, isOK := status.Items[entities.AgentJob_Deploy_Minion]; isOK {
 		state.HasProvisionedMinion = v.HasProvisioned
