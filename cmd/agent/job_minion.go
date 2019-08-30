@@ -10,11 +10,18 @@ import (
 )
 
 func HandleDeployMinion(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
-	if job.Arguments == nil || job.Arguments["addresses"] == "" {
+	if job.Arguments == nil || (job.Arguments["addresses"] == "" && job.Arguments["ha_address"] == "") {
 		return false, xerrors.Errorf("Illegal Minion deployment job, required arguments are missed %w", crashError)
 	}
-	servers := strings.Split(job.Arguments["addresses"], ",")
-	err := a.runKubeletContainer(servers[0])
+	var masterIP string
+	//use VIP to communicate with Kubernetes Master is the top priority.
+	if job.Arguments["ha_address"] != "" {
+		masterIP = job.Arguments["ha_address"]
+	} else {
+		//instead, pick one of Kubernetes master address is not HA solution.
+		masterIP = strings.Split(job.Arguments["addresses"], ",")[0]
+	}
+	err := a.runKubeletContainer(masterIP)
 	return err == nil, err
 }
 
