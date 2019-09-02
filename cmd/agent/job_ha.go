@@ -107,7 +107,8 @@ func HandleDeployHA(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, erro
 	}
 	//STEP 1, generates configuration files.
 	masterIPs := strings.Split(job.Arguments["master-addresses"], ",")
-	result, err := writeKeepAlivedConfigFile(masterIPs, job, a)
+	haIPs := strings.Split(job.Arguments["ha-addresses"], ",")
+	result, err := writeKeepAlivedConfigFile(haIPs, job, a)
 	if !result || err != nil {
 		return result, err
 	}
@@ -144,12 +145,12 @@ func HandleDeployHA(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, erro
 	return true, nil
 }
 
-func writeKeepAlivedConfigFile(masterIPs []string, job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
+func writeKeepAlivedConfigFile(haIPs []string, job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
 	sb := strings.Builder{}
-	for i := 0; i < len(masterIPs); i++ {
-		if masterIPs[i] != *a.arg.Address {
-			sb.WriteString("        " + masterIPs[i])
-			if i+1 < len(masterIPs) {
+	for i := 0; i < len(haIPs); i++ {
+		if haIPs[i] != *a.arg.Address {
+			sb.WriteString("        " + haIPs[i])
+			if i+1 < len(haIPs) {
 				sb.WriteString("\n")
 			}
 		}

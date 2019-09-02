@@ -81,8 +81,9 @@ type LightningMonkeyClusterSettings struct {
 }
 
 type HASettings struct {
-	VIP      string `json:"vip"`
-	RouterID string `json:"router_id"`
+	VIP       string `json:"vip"`
+	RouterID  string `json:"router_id"`
+	NodeCount int    `json:"count"`
 }
 
 type ClusterStatus struct {
