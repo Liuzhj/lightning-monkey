@@ -950,6 +950,159 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 	assert.True(t, job.Name == entities.AgentJob_Deploy_Minion)
 }
 
+func Test_GetK8sMinionDeploymentJob2(t *testing.T) {
+	js := cache.ClusterJobSchedulerImple{}
+	js.InitializeStrategies()
+
+	cs := entities.LightningMonkeyClusterSettings{
+		Name:              "demo_cluster",
+		ExpectedETCDCount: 3,
+		ServiceCIDR:       "10.254.0.0/16",
+		KubernetesVersion: "1.12.5",
+		PodNetworkCIDR:    "172.1.0.0/16",
+		SecurityToken:     "",
+		ServiceDNSDomain:  ".cluster.local",
+		NetworkStack: &entities.NetworkStackSettings{
+			Type: entities.NetworkStack_KubeRouter,
+		},
+		HASettings: &entities.HASettings{
+			VIP:       "172.1.1.100",
+			RouterID:  "40",
+			NodeCount: 2,
+		},
+	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs).AnyTimes()
+
+	agent1 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-1",
+		IsDelete:      false,
+		HasETCDRole:   true,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:       "127.0.0.1",
+			HasProvisionedETCD: true,
+			LastReportTime:     time.Now(),
+		},
+	}
+	agent2 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-2",
+		IsDelete:      false,
+		HasETCDRole:   true,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:       "127.0.0.2",
+			HasProvisionedETCD: true,
+			LastReportTime:     time.Now(),
+		},
+	}
+	agent3 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-3",
+		IsDelete:      false,
+		HasETCDRole:   true,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:       "127.0.0.3",
+			HasProvisionedETCD: true,
+			LastReportTime:     time.Now(),
+		},
+	}
+	agent4 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-4",
+		IsDelete:      false,
+		HasETCDRole:   false,
+		HasMasterRole: true,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:                   "192.168.1.1",
+			LastReportTime:                 time.Now(),
+			HasProvisionedMasterComponents: true,
+		},
+	}
+	agent5 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-5",
+		IsDelete:      false,
+		HasETCDRole:   false,
+		HasMasterRole: false,
+		HasMinionRole: true,
+		State: &entities.AgentState{
+			LastReportIP:   "172.1.0.1",
+			LastReportTime: time.Now(),
+		},
+	}
+	agent6 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-6",
+		IsDelete:      false,
+		HasETCDRole:   false,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		HasHARole:     true,
+		State: &entities.AgentState{
+			LastReportIP:     "172.1.0.1",
+			LastReportTime:   time.Now(),
+			HasProvisionedHA: true,
+		},
+	}
+	agent7 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-7",
+		IsDelete:      false,
+		HasETCDRole:   false,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		HasHARole:     true,
+		State: &entities.AgentState{
+			LastReportIP:     "172.1.0.1",
+			LastReportTime:   time.Now(),
+			HasProvisionedHA: true,
+		},
+	}
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent1,
+		uuid.NewV4().String(): &agent2,
+		uuid.NewV4().String(): &agent3,
+	}, map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent4,
+	}, map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent5,
+	}, map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent6,
+		uuid.NewV4().String(): &agent7,
+	})
+	job, err := js.GetNextJob(cc, agent5, &ac)
+	assert.NotNil(t, job)
+	assert.Nil(t, err)
+	fmt.Printf("%#v\n", job)
+	assert.True(t, job.Name == entities.AgentJob_Deploy_Minion)
+}
+
 func Test_CacheOnline(t *testing.T) {
 	ac := cache.AgentCache{}
 	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
