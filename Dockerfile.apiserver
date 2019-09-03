@@ -18,6 +18,7 @@ COPY --from=builder /go/k8s.tar /opt/registry/1.13.8/k8s.tar
 COPY --from=builder /go/infra.tar /opt/registry/1.13.8/infra.tar
 COPY --from=builder /go/coredns.tar /opt/registry/1.13.8/coredns.tar
 COPY --from=builder /go/ha.tar /opt/registry/1.13.8/ha.tar
+COPY --from=builder /go/metrics.tar /opt/registry/1.13.8/metrics.tar
 #Copy basic RPM packages.
 COPY --from=builder /go/docker-engine-1.12.6-1.el7.centos.x86_64.rpm /opt/docker/1.12.6/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
 COPY --from=builder /go/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm /opt/docker/1.12.6/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm

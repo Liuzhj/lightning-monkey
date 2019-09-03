@@ -23,7 +23,10 @@ type ExtensionDeploymentController struct {
 }
 
 func (dc *ExtensionDeploymentController) Initialize(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
-	controllers := []DeploymentController{&PrometheusDeploymentController{}}
+	controllers := []DeploymentController{
+		&PrometheusDeploymentController{},
+		&MetricServerDeploymentController{},
+	}
 	var err error
 	for i := 0; i < len(controllers); i++ {
 		err = controllers[i].Initialize(client, clientIp, settings)

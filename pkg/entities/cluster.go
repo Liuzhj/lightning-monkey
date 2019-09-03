@@ -39,6 +39,7 @@ const (
 	DNS_CoreDNS                                          = "coredns"
 	EXT_DEPLOYMENT_PROMETHEUS                            = "prometheus"
 	EXT_DEPLOYMENT_ALTERMANAGER                          = "altermanager"
+	EXT_DEPLOYMENT_METRICSERVER                          = "metric-server"
 	_                                    AgentStatusFlag = iota
 	AgentStatusFlag_Whatever
 	AgentStatusFlag_Running

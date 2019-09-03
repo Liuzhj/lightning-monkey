@@ -53,7 +53,7 @@ func RegisterAgent(ctx iris.Context) {
 		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
 		AgentId:     agentId,
 		LeaseId:     leaseId,
-		BasicImages: common.BasicImages["1.13.8"], /*test only*/
+		BasicImages: common.BasicImages[settings.KubernetesVersion],
 		MasterSettings: map[string]string{
 			entities.MasterSettings_PodCIDR:               settings.PodNetworkCIDR,
 			entities.MasterSettings_ServiceCIDR:           settings.ServiceCIDR,
