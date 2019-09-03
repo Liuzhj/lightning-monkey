@@ -89,6 +89,9 @@ type AgentJob struct {
 	Name      string            `json:"name"`
 	Arguments map[string]string `json:"arguments"`
 	Reason    string            `json:"reason"`
+	//agent internal status listed blow.
+	HadDone            bool
+	HealthCheckHandler interface{}
 }
 
 type AgentStatus struct {

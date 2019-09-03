@@ -27,6 +27,7 @@ type LightningMonkeyAgentReportStatus struct {
 
 type LightningMonkeyAgent struct {
 	c                     chan LightningMonkeyAgentReportStatus
+	currentJob            *entities.AgentJob
 	statusLock            *sync.RWMutex
 	recoveryLock          *sync.Mutex
 	arg                   *AgentArgs

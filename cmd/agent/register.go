@@ -343,6 +343,31 @@ func (a *LightningMonkeyAgent) Start() {
 		}
 		//do block when it's busy performing previous job.
 		a.workQueue <- job
+		//start tracing current executing job progressing.
+		a.currentJob = job
+		for {
+			time.Sleep(time.Second)
+			if a.currentJob == nil {
+				break
+			}
+			if a.currentJob.HadDone {
+				a.currentJob = nil
+				break
+			}
+			if a.currentJob.HealthCheckHandler != nil {
+				hc := a.currentJob.HealthCheckHandler.(AgentJobHandler)
+				healthy, err := hc(a.currentJob, a)
+				if err != nil {
+					logrus.Errorf("Waiting, Failed to check job(%s)'s health status, error: %s", a.currentJob.Name, err.Error())
+					continue
+				}
+				if healthy {
+					a.currentJob = nil
+					break
+				}
+			}
+			logrus.Debugf("Waiting for job execution finish...Job: %s, Args: %#v", a.currentJob.Name, a.currentJob.Arguments)
+		}
 	}
 }
 
@@ -451,44 +476,57 @@ func (a *LightningMonkeyAgent) queryJob() (*entities.AgentJob, error) {
 }
 
 func (a *LightningMonkeyAgent) performJob() {
-	var job *entities.AgentJob
-	var handlers []AgentJobHandler
-	var succeed bool
 	var err error
+	var job *entities.AgentJob
 	var isOpen bool
 	for {
 		job, isOpen = <-a.workQueue
 		if !isOpen {
+			job.HadDone = true
 			return
 		}
-		handlers = a.handlerFactory.GetHandler(job.Name)
-		if handlers == nil {
-			logrus.Warnf("No any handler could process this job: %s", job.Name)
-			continue
-		}
-		succeed, err = handlers[1](job, a)
+		err = a.handleJob(job)
 		if err != nil {
-			logrus.Errorf("Failed to process job(Phase -> Health Check): %#v, error: %s", job, err.Error())
-			continue
-		}
-		if succeed {
-			logrus.Debugf("Skipped job: %s, It's already running...", job.Name)
-			continue
-		}
-		//do provision.
-		succeed, err = handlers[0](job, a)
-		if err != nil {
-			logrus.Errorf("Failed to process job: %#v, error: %s", job, err.Error())
-			if xerrors.Is(err, crashError) {
-				os.Exit(1)
-			}
-			continue
-		}
-		if !succeed {
-			logrus.Errorf("Failed to process job: %#v, which returned an un-successful status!", job)
-			continue
+			logrus.Error(err)
 		}
 	}
+}
+
+func (a *LightningMonkeyAgent) handleJob(job *entities.AgentJob) error {
+	var err error
+	var succeed bool
+	var handlers []AgentJobHandler
+	handlers = a.handlerFactory.GetHandler(job.Name)
+	if handlers == nil {
+		job.HadDone = true
+		logrus.Fatalf("No any handler could process this job: %s", job.Name)
+		return nil
+	}
+	job.HealthCheckHandler = handlers[1]
+	succeed, err = handlers[1](job, a)
+	if err != nil {
+		job.HadDone = true
+		return fmt.Errorf("Failed to process job(Phase -> Health Check): %#v, error: %s", job, err.Error())
+	}
+	if succeed {
+		job.HadDone = true
+		logrus.Debugf("Skipped job: %s, It's already running...", job.Name)
+		return nil
+	}
+	//do provision.
+	succeed, err = handlers[0](job, a)
+	if err != nil {
+		job.HadDone = true
+		if xerrors.Is(err, crashError) {
+			os.Exit(1)
+		}
+		return fmt.Errorf("Failed to process job: %#v, error: %s", job, err.Error())
+	}
+	if !succeed {
+		job.HadDone = true
+		return fmt.Errorf("Failed to process job: %#v, which returned an un-successful status!", job)
+	}
+	return nil
 }
 
 func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
