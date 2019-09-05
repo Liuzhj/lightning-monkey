@@ -21,7 +21,7 @@ var (
 				"infra":   {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.12.5/infra.tar?token=%s"},
 				"coredns": {ImageName: "docker.io/coredns/coredns:1.5.2", DownloadAddr: "%s/apis/v1/registry/1.12.5/coredns.tar?token=%s"},
 				"ha":      {ImageName: "docker.io/pelin/haproxy-keepalived:latest", DownloadAddr: "%s/apis/v1/registry/1.12.5/ha.tar?token=%s"},
-				"metrics": {ImageName: "k8s.gcr.io/metrics-server-amd64:v0.3.3", DownloadAddr: "%s/apis/v1/registry/1.12.5/metrics.tar?token=%s"},
+				"metrics": {ImageName: "docker.io/mirrorgooglecontainers/metrics-server-amd64:v0.3.3", DownloadAddr: "%s/apis/v1/registry/1.12.5/metrics.tar?token=%s"},
 			},
 		},
 		"1.13.8": {
@@ -33,7 +33,7 @@ var (
 				"infra":   {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.13.8/infra.tar?token=%s"},
 				"coredns": {ImageName: "docker.io/coredns/coredns:1.5.2", DownloadAddr: "%s/apis/v1/registry/1.13.8/coredns.tar?token=%s"},
 				"ha":      {ImageName: "docker.io/pelin/haproxy-keepalived:latest", DownloadAddr: "%s/apis/v1/registry/1.13.8/ha.tar?token=%s"},
-				"metrics": {ImageName: "k8s.gcr.io/metrics-server-amd64:v0.3.3", DownloadAddr: "%s/apis/v1/registry/1.13.8/metrics.tar?token=%s"},
+				"metrics": {ImageName: "docker.io/mirrorgooglecontainers/metrics-server-amd64:v0.3.3", DownloadAddr: "%s/apis/v1/registry/1.13.8/metrics.tar?token=%s"},
 			},
 		},
 	}

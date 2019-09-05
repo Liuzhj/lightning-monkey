@@ -104,7 +104,7 @@ spec:
         emptyDir: {}
       containers:
       - name: metrics-server
-        image: k8s.gcr.io/metrics-server-amd64:v0.3.3
+        image: mirrorgooglecontainers/metrics-server-amd64:v0.3.3
         args:
         - --metric-resolution=1m
         - --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP

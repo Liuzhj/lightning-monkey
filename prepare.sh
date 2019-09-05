@@ -11,7 +11,7 @@ echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_infra mirrorgooglecontainers/pause-amd64:3.1
 ./download-frozen-image-v2.sh img_coredns coredns/coredns:1.5.2
 ./download-frozen-image-v2.sh img_ha pelin/haproxy-keepalived:latest
-./download-frozen-image-v2.sh img_metrics k8s.gcr.io/metrics-server-amd64:v0.3.3
+./download-frozen-image-v2.sh img_metrics mirrorgooglecontainers/metrics-server-amd64:v0.3.3
 echo "Assmebling downloaded Docker image layers to tarball files..."
 tar -C 'img_etcd' -cf ./etcd.tar .
 tar -C 'img_hyperkube' -cf ./k8s.tar .
