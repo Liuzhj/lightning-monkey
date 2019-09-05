@@ -196,7 +196,7 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 			settings[entities.MasterSettings_ServiceDNSDomain],
 			settings[entities.MasterSettings_ServiceCIDR],
 			certPath,
-			settings[entities.MasterSettings_APIServerVIP],
+			getExtraSans(settings),
 		),
 		fmt.Sprintf("kubeadm init phase certs apiserver-etcd-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs apiserver-kubelet-client --cert-dir=%s", certPath),
@@ -272,6 +272,13 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 		return f.Sync()
 	})
 	return err
+}
+
+func getExtraSans(settings map[string]string) string {
+	if v, isOK := settings[entities.MasterSettings_APIServerVIP]; isOK {
+		return v
+	}
+	return "127.0.0.1"
 }
 
 func getCertificatesContent(path, title string, m *GeneratedCertsMap) (*GeneratedCertsMap, error) {
