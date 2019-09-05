@@ -196,8 +196,7 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 			settings[entities.MasterSettings_ServiceDNSDomain],
 			settings[entities.MasterSettings_ServiceCIDR],
 			certPath,
-			//Troy:only test vip ipsan
-			"192.168.33.100",
+			settings[entities.MasterSettings_APIServerVIP],
 		),
 		fmt.Sprintf("kubeadm init phase certs apiserver-etcd-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs apiserver-kubelet-client --cert-dir=%s", certPath),

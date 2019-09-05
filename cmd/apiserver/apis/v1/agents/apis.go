@@ -49,6 +49,10 @@ func RegisterAgent(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
+	vip := ""
+	if settings.HASettings != nil {
+		vip = settings.HASettings.VIP
+	}
 	r := entities.RegisterAgentResponse{
 		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
 		AgentId:     agentId,
@@ -60,6 +64,7 @@ func RegisterAgent(ctx iris.Context) {
 			entities.MasterSettings_ServiceDNSDomain:      settings.ServiceDNSDomain,
 			entities.MasterSettings_ServiceDNSClusterIP:   settings.ServiceDNSClusterIP,
 			entities.MasterSettings_KubernetesVersion:     settings.KubernetesVersion,
+			entities.MasterSettings_APIServerVIP:          vip,
 			entities.MasterSettings_MaxPodCountPerNode:    strconv.Itoa(settings.MaximumAllowedPodCountPerNode),
 			entities.MasterSettings_ExpectedETCDNodeCount: strconv.Itoa(settings.ExpectedETCDCount),
 			entities.MasterSettings_DockerRegistry:        "mirrorgooglecontainers/hyperkube",
