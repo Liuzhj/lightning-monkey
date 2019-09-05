@@ -23,7 +23,7 @@ const (
     daemon
     maxconn 30000
     log 127.0.0.1 local0 debug
-    ssl-server-verify none
+    nbproc          2
 
 #---------------------------------------------------------------------
 # common defaults that all the 'listen' and 'backend' sections will
@@ -58,8 +58,8 @@ frontend kubernetes-apiserver
 # round robin balancing between the various backends
 #---------------------------------------------------------------------
 backend kubernetes-apiserver
-    mode        http
-    balance     roundrobin
+    mode        tcp
+    balance     static-rr
 {{.MASTERS}}
 
 
@@ -187,7 +187,7 @@ func writeKeepAlivedConfigFile(haIPs []string, job *entities.AgentJob, a *Lightn
 func writeHAProxyConfigFile(masterIPs []string, job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
 	sb := strings.Builder{}
 	for i := 0; i < len(masterIPs); i++ {
-		sb.WriteString(fmt.Sprintf("    server  master-%d %s:6443 ssl check", i, masterIPs[i]))
+		sb.WriteString(fmt.Sprintf("    server  master-%d %s:6443 check inter 10s rise 3 fall 3", i, masterIPs[i]))
 		if i+1 < len(masterIPs) {
 			sb.WriteString("\n")
 		}

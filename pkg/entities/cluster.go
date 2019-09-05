@@ -32,6 +32,7 @@ const (
 	MasterSettings_MaxPodCountPerNode                    = "max_pod_count"
 	MasterSettings_ServiceDNSClusterIP                   = "service_dns_cluster_ip"
 	MasterSettings_ExpectedETCDNodeCount                 = "expected_etcd_node_count"
+	MasterSettings_APIServerVIP                          = "ha_settings"
 	NetworkStack_Flannel                                 = "flannel"
 	NetworkStack_Calico                                  = "calico"
 	NetworkStack_KubeRouter                              = "kuberouter"

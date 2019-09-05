@@ -191,11 +191,13 @@ func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(cer
 
 func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error {
 	subCommands := []string{
-		fmt.Sprintf("kubeadm init phase certs apiserver --apiserver-advertise-address=%s --service-dns-domain=%s --service-cidr=%s --cert-dir=%s",
+		fmt.Sprintf("kubeadm init phase certs apiserver --apiserver-advertise-address=%s --service-dns-domain=%s --service-cidr=%s --cert-dir=%s --apiserver-cert-extra-sans=%s",
 			address,
 			settings[entities.MasterSettings_ServiceDNSDomain],
 			settings[entities.MasterSettings_ServiceCIDR],
 			certPath,
+			//Troy:only test vip ipsan
+			"192.168.33.100",
 		),
 		fmt.Sprintf("kubeadm init phase certs apiserver-etcd-client --cert-dir=%s", certPath),
 		fmt.Sprintf("kubeadm init phase certs apiserver-kubelet-client --cert-dir=%s", certPath),
