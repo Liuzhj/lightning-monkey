@@ -27,14 +27,16 @@ func (dc *ExtensionDeploymentController) Initialize(client *k8s.Clientset, clien
 		&PrometheusDeploymentController{},
 		&MetricServerDeploymentController{},
 	}
+	dc.controllers = []DeploymentController{}
 	var err error
 	for i := 0; i < len(controllers); i++ {
 		err = controllers[i].Initialize(client, clientIp, settings)
 		if err != nil {
-			return fmt.Errorf("Failed to initialize %s deployment controller, error: %s", controllers[i].GetName(), err.Error())
+			logrus.Errorf("Failed to initialize %s deployment controller, error: %s", controllers[i].GetName(), err.Error())
+			continue
 		}
+		dc.controllers = append(dc.controllers, controllers[i])
 	}
-	dc.controllers = controllers
 	logrus.Infof("Registered extensional deployment controller count: %d", len(dc.controllers))
 	return nil
 }
