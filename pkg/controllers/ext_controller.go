@@ -26,6 +26,7 @@ func (dc *ExtensionDeploymentController) Initialize(client *k8s.Clientset, clien
 	controllers := []DeploymentController{
 		&PrometheusDeploymentController{},
 		&MetricServerDeploymentController{},
+		&TraefikDeploymentController{},
 	}
 	dc.controllers = []DeploymentController{}
 	var err error

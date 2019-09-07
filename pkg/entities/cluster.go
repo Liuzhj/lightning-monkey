@@ -41,6 +41,7 @@ const (
 	EXT_DEPLOYMENT_PROMETHEUS                            = "prometheus"
 	EXT_DEPLOYMENT_ALTERMANAGER                          = "altermanager"
 	EXT_DEPLOYMENT_METRICSERVER                          = "metric-server"
+	EXT_DEPLOYMENT_TRAEFIK                               = "traefik"
 	_                                    AgentStatusFlag = iota
 	AgentStatusFlag_Whatever
 	AgentStatusFlag_Running

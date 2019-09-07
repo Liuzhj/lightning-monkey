@@ -186,7 +186,7 @@ func (dc *MetricServerDeploymentController) Install() error {
 	var hasInstalled bool
 	hasInstalled, err = dc.HasInstalled()
 	if err != nil {
-		return fmt.Errorf("Failed to check installation status in the %s deployment controller, error: %s", err.Error())
+		return fmt.Errorf("Failed to check installation status in the %s deployment controller, error: %s", dc.GetName(), err.Error())
 	}
 	//duplicated installation action, ignore.
 	if hasInstalled {
