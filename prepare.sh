@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Cleaning diry data..."
-rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics
+rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics && rm -rf img_traefik
 echo "Downloading RPM packages..."
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
@@ -12,6 +12,7 @@ echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_coredns coredns/coredns:1.5.2
 ./download-frozen-image-v2.sh img_ha pelin/haproxy-keepalived:latest
 ./download-frozen-image-v2.sh img_metrics mirrorgooglecontainers/metrics-server-amd64:v0.3.3
+./download-frozen-image-v2.sh img_traefik traefik:1.7.14
 echo "Assmebling downloaded Docker image layers to tarball files..."
 tar -C 'img_etcd' -cf ./etcd.tar .
 tar -C 'img_hyperkube' -cf ./k8s.tar .
@@ -19,5 +20,6 @@ tar -C 'img_infra' -cf ./infra.tar .
 tar -C 'img_coredns' -cf ./coredns.tar .
 tar -C 'img_ha' -cf ./ha.tar .
 tar -C 'img_metrics' -cf ./metrics.tar .
+tar -C 'img_traefik' -cf ./traefik.tar .
 echo "Cleaning downloaded files..."
-rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics
+rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics && rm -rf img_traefik
