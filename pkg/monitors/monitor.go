@@ -39,6 +39,11 @@ func NewMonitor(t string, c *kubernetes.Clientset, clusterId string) KubernetesR
 			clusterId: clusterId,
 			client:    c,
 		}
+	case "daemonset":
+		return &KubernetesDaemonSetMonitor{
+			clusterId: clusterId,
+			client:    c,
+		}
 	default:
 		return nil
 	}

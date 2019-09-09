@@ -346,6 +346,14 @@ func (cc *ClusterControllerImple) EnableMonitors() {
 		return
 	}
 	cc.monitors = append(cc.monitors, deployMonitor)
+	//Kubernetes Daemonset.
+	dsMonitor := monitors.NewMonitor("daemonset", cc.client, cc.GetClusterId())
+	err = dsMonitor.Start()
+	if err != nil {
+		logrus.Errorf("Failed to start Kubernetes daemonset monitor, error: %s", err.Error())
+		return
+	}
+	cc.monitors = append(cc.monitors, dsMonitor)
 }
 
 func (cc *ClusterControllerImple) GetExtensionDeploymentController() controllers.DeploymentController {
