@@ -86,6 +86,7 @@ Vagrant.configure("2") do |config|
         echo "waiting 10s..."
         sleep 10s
         sudo docker cp agent:/usr/bin/kubectl /usr/bin
+        sudo mkdir ~/.kube/ && sudo curl -s http://192.168.33.10:8080/apis/v1/certs/admin/get?cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 | jq -r .content | sed 's/\\n/\n/g' > ~/.kube/config
         echo "try to retrieving Agent logs..."
         docker logs agent
         echo "retrieving all docker containers..."
@@ -131,6 +132,7 @@ Vagrant.configure("2") do |config|
           echo "waiting 10s..."
           sleep 10s
           sudo docker cp agent:/usr/bin/kubectl /usr/bin
+          sudo mkdir ~/.kube/ && sudo curl -s http://192.168.33.10:8080/apis/v1/certs/admin/get?cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 | jq -r .content | sed 's/\\n/\n/g' > ~/.kube/config
           echo "try to retrieving Agent logs..."
           docker logs agent
           echo "retrieving all docker containers..."
@@ -175,6 +177,7 @@ Vagrant.configure("2") do |config|
           echo "waiting 10s..."
           sleep 10s
           sudo docker cp agent:/usr/bin/kubectl /usr/bin
+          sudo mkdir ~/.kube/ && sudo curl -s http://192.168.33.10:8080/apis/v1/certs/admin/get?cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 | jq -r .content | sed 's/\\n/\n/g' > ~/.kube/config
           echo "try to retrieving Agent logs..."
           docker logs agent
           echo "retrieving all docker containers..."
