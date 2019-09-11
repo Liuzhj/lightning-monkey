@@ -240,3 +240,17 @@ func (ac *AgentCache) GetFirstProvisionedKubernetesMasterAgent() *entities.Light
 	}
 	return nil
 }
+
+func (ac *AgentCache) GetAdminConfFromMasterAgents() string {
+	ac.Lock()
+	defer ac.Unlock()
+	f := func(a *entities.LightningMonkeyAgent) bool {
+		return a.State != nil
+	}
+	for _, v := range ac.k8sMaster {
+		if f(v) {
+			return v.AdminCertificate
+		}
+	}
+	return ""
+}

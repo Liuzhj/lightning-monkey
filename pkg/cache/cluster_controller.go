@@ -47,6 +47,7 @@ type ClusterController interface {
 	GetDNSController() controllers.DeploymentController
 	GetExtensionDeploymentController() controllers.DeploymentController
 	GetWachPoints() []monitors.WatchPoint
+	GetRandomAdminConfFromMasterAgents() (string, error)
 	EnableMonitors()
 }
 
@@ -370,4 +371,8 @@ func (cc *ClusterControllerImple) InitializeExtensionDeploymentController() erro
 		return fmt.Errorf("Failed to initialize extension deployment controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
 	}
 	return nil
+}
+
+func (cc *ClusterControllerImple) GetRandomAdminConfFromMasterAgents() (string, error) {
+	return cc.cache.GetAdminConfFromMasterAgents(), nil
 }
