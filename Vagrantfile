@@ -83,7 +83,7 @@ Vagrant.configure("2") do |config|
                 --cert-dir=/etc/kubernetes/pki
         echo "waiting 10s..."
         sleep 10s
-        docker cp agent:/usr/bin/kubectl /usr/bin
+        sudo docker cp agent:/usr/bin/kubectl /usr/bin
         echo "try to retrieving Agent logs..."
         docker logs agent
         echo "retrieving all docker containers..."
@@ -126,7 +126,7 @@ Vagrant.configure("2") do |config|
                   --cert-dir=/etc/kubernetes/pki
           echo "waiting 10s..."
           sleep 10s
-          docker cp agent:/usr/bin/kubectl /usr/bin
+          sudo docker cp agent:/usr/bin/kubectl /usr/bin
           echo "try to retrieving Agent logs..."
           docker logs agent
           echo "retrieving all docker containers..."
@@ -168,7 +168,7 @@ Vagrant.configure("2") do |config|
                   --cert-dir=/etc/kubernetes/pki
           echo "waiting 10s..."
           sleep 10s
-          docker cp agent:/usr/bin/kubectl /usr/bin
+          sudo docker cp agent:/usr/bin/kubectl /usr/bin
           echo "try to retrieving Agent logs..."
           docker logs agent
           echo "retrieving all docker containers..."
