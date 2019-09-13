@@ -7,7 +7,7 @@ wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.1
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
 echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_etcd mirrorgooglecontainers/etcd:3.2.24
-./download-frozen-image-v2.sh img_hyperkube g0194776/lightning-monkey-hyperkube:v1.13.8
+./download-frozen-image-v2.sh img_hyperkube g0194776/lightning-monkey-hyperkube:v1.13.10
 ./download-frozen-image-v2.sh img_infra mirrorgooglecontainers/pause-amd64:3.1
 ./download-frozen-image-v2.sh img_coredns coredns/coredns:1.5.2
 ./download-frozen-image-v2.sh img_ha pelin/haproxy-keepalived:latest
