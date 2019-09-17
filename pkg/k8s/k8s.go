@@ -41,7 +41,7 @@ authorization:
   webhook:
     cacheAuthorizedTTL: 5m0s
     cacheUnauthorizedTTL: 30s
-cgroupDriver: systemd
+cgroupDriver: cgroupfs
 clusterDNS:
 - {{.DNSIP}}
 clusterDomain: {{.DOMAIN}}
