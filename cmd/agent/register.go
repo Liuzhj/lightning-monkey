@@ -574,7 +574,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 		fmt.Sprintf("--pod-infra-container-image=%s", infraContainer),
 		fmt.Sprintf("--register-node=%t", *a.arg.IsMinionRole),
 		fmt.Sprintf("--hostname-override=%s", *a.arg.Address),
-		"--cgroup-driver=cgroupfs",
+		"--cgroup-driver=systemd",
 		"--cgroups-per-qos=false",
 		"--enforce-node-allocatable=",
 		"--allow-privileged=true",

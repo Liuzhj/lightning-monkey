@@ -59,12 +59,9 @@ Vagrant.configure("2") do |config|
       trigger.run_remote = {inline: <<-SHELL
         setenforce 0 && swapoff -a
         systemctl stop firewalld
-        yum update -y && yum install -y wget
+        yum update -y && yum install -y wget docker
         yum install epel-release -y
         yum install jq -y
-        wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-        wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-        yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
         sudo su && systemctl start docker && systemctl status docker
         docker run -itd --restart=always --net=host \
             --name agent \
@@ -104,12 +101,9 @@ Vagrant.configure("2") do |config|
         trigger.run_remote = {inline: <<-SHELL
           setenforce 0 && swapoff -a
           systemctl stop firewalld
-          yum update -y && yum install -y wget
+          yum update -y && yum install -y wget docker
           yum install epel-release -y
           yum install jq -y
-          wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-          wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-          yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
           sudo su && systemctl start docker && systemctl status docker
           docker run -itd --restart=always --net=host \
               --name agent \
@@ -148,12 +142,9 @@ Vagrant.configure("2") do |config|
         trigger.run_remote = {inline: <<-SHELL
           setenforce 0 && swapoff -a
           systemctl stop firewalld
-          yum update -y && yum install -y wget
+          yum update -y && yum install -y wget docker
           yum install epel-release -y
           yum install jq -y
-          wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-          wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-          yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
           sudo su && systemctl start docker && systemctl status docker
           docker run -itd --restart=always --net=host \
               --name agent \
@@ -194,10 +185,7 @@ Vagrant.configure("2") do |config|
           trigger.run_remote = {inline: <<-SHELL
             setenforce 0 && swapoff -a
             systemctl stop firewalld
-            yum update -y && yum install -y wget
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+            yum update -y && yum install -y wget docker
             sudo su && systemctl start docker && systemctl status docker
             docker run -itd --restart=always --net=host \
                 --name agent \
@@ -235,10 +223,7 @@ Vagrant.configure("2") do |config|
           trigger.run_remote = {inline: <<-SHELL
             setenforce 0 && swapoff -a
             systemctl stop firewalld
-            yum update -y && yum install -y wget
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+            yum update -y && yum install -y wget docker
             sudo su && systemctl start docker && systemctl status docker
             docker run -itd --restart=always --net=host \
                 --name agent \
@@ -276,10 +261,7 @@ Vagrant.configure("2") do |config|
           trigger.run_remote = {inline: <<-SHELL
             setenforce 0 && swapoff -a
             systemctl stop firewalld
-            yum update -y && yum install -y wget
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+            yum update -y && yum install -y wget docker
             sudo su && systemctl start docker && systemctl status docker
             docker run -itd --restart=always --net=host \
                 --name agent \
