@@ -13,7 +13,7 @@ import (
 func Register(app *iris.Application) error {
 	logrus.Infof("    Registering Agents Mgmt APIs...")
 	app.Get("/apis/v1/registry/1.12.5/*", downloadFile)
-	app.Get("/apis/v1/registry/1.13.8/*", downloadFile)
+	app.Get("/apis/v1/registry/1.13.10/*", downloadFile)
 	return nil
 }
 

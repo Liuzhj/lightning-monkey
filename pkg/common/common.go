@@ -25,17 +25,17 @@ var (
 				"traefik": {ImageName: "docker.io/traefik:1.7.14", DownloadAddr: "%s/apis/v1/registry/1.12.5/traefik.tar?token=%s"},
 			},
 		},
-		"1.13.8": {
+		"1.13.10": {
 			DownloadType:      entities.DockerImageDownloadType_HTTP,
 			HTTPDownloadToken: "",
 			Images: map[string]entities.DockerImage{
-				"etcd":    {ImageName: "docker.io/mirrorgooglecontainers/etcd:3.2.24", DownloadAddr: "%s/apis/v1/registry/1.13.8/etcd.tar?token=%s"},
-				"k8s":     {ImageName: "g0194776/lightning-monkey-hyperkube:v1.13.8", DownloadAddr: "%s/apis/v1/registry/1.13.8/k8s.tar?token=%s"},
-				"infra":   {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.13.8/infra.tar?token=%s"},
-				"coredns": {ImageName: "docker.io/coredns/coredns:1.5.2", DownloadAddr: "%s/apis/v1/registry/1.13.8/coredns.tar?token=%s"},
-				"ha":      {ImageName: "docker.io/pelin/haproxy-keepalived:latest", DownloadAddr: "%s/apis/v1/registry/1.13.8/ha.tar?token=%s"},
-				"metrics": {ImageName: "docker.io/mirrorgooglecontainers/metrics-server-amd64:v0.3.3", DownloadAddr: "%s/apis/v1/registry/1.13.8/metrics.tar?token=%s"},
-				"traefik": {ImageName: "docker.io/traefik:1.7.14", DownloadAddr: "%s/apis/v1/registry/1.13.8/traefik.tar?token=%s"},
+				"etcd":    {ImageName: "docker.io/mirrorgooglecontainers/etcd:3.2.24", DownloadAddr: "%s/apis/v1/registry/1.13.10/etcd.tar?token=%s"},
+				"k8s":     {ImageName: "g0194776/lightning-monkey-hyperkube:v1.13.10", DownloadAddr: "%s/apis/v1/registry/1.13.10/k8s.tar?token=%s"},
+				"infra":   {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.13.10/infra.tar?token=%s"},
+				"coredns": {ImageName: "docker.io/coredns/coredns:1.5.2", DownloadAddr: "%s/apis/v1/registry/1.13.10/coredns.tar?token=%s"},
+				"ha":      {ImageName: "docker.io/pelin/haproxy-keepalived:latest", DownloadAddr: "%s/apis/v1/registry/1.13.10/ha.tar?token=%s"},
+				"metrics": {ImageName: "docker.io/mirrorgooglecontainers/metrics-server-amd64:v0.3.3", DownloadAddr: "%s/apis/v1/registry/1.13.10/metrics.tar?token=%s"},
+				"traefik": {ImageName: "docker.io/traefik:1.7.14", DownloadAddr: "%s/apis/v1/registry/1.13.10/traefik.tar?token=%s"},
 			},
 		},
 	}

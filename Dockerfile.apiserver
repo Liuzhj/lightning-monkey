@@ -9,22 +9,22 @@ RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
 
 FROM centos:7
 
-RUN mkdir -p /opt/registry/1.13.8 && mkdir -p /opt/docker/1.12.6
+RUN mkdir -p /opt/registry/1.13.10 && mkdir -p /opt/docker/1.12.6
 COPY --from=builder /go/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY --from=builder /go/lm-apiserver /opt
 #Copy depended images.
-COPY --from=builder /go/etcd.tar /opt/registry/1.13.8/etcd.tar
-COPY --from=builder /go/k8s.tar /opt/registry/1.13.8/k8s.tar
-COPY --from=builder /go/infra.tar /opt/registry/1.13.8/infra.tar
-COPY --from=builder /go/coredns.tar /opt/registry/1.13.8/coredns.tar
-COPY --from=builder /go/ha.tar /opt/registry/1.13.8/ha.tar
-COPY --from=builder /go/metrics.tar /opt/registry/1.13.8/metrics.tar
-COPY --from=builder /go/traefik.tar /opt/registry/1.13.8/traefik.tar
+COPY --from=builder /go/etcd.tar /opt/registry/1.13.10/etcd.tar
+COPY --from=builder /go/k8s.tar /opt/registry/1.13.10/k8s.tar
+COPY --from=builder /go/infra.tar /opt/registry/1.13.10/infra.tar
+COPY --from=builder /go/coredns.tar /opt/registry/1.13.10/coredns.tar
+COPY --from=builder /go/ha.tar /opt/registry/1.13.10/ha.tar
+COPY --from=builder /go/metrics.tar /opt/registry/1.13.10/metrics.tar
+COPY --from=builder /go/traefik.tar /opt/registry/1.13.10/traefik.tar
 #Copy basic RPM packages.
 COPY --from=builder /go/docker-engine-1.12.6-1.el7.centos.x86_64.rpm /opt/docker/1.12.6/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
 COPY --from=builder /go/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm /opt/docker/1.12.6/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
 
-RUN yum install -y kubeadm-1.13.8-0 net-tools --disableexcludes=kubernetes
+RUN yum install -y kubeadm-1.13.10-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-apiserver
 
 EXPOSE 8080
