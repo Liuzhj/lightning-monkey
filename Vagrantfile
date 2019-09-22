@@ -202,6 +202,8 @@ Vagrant.configure("2") do |config|
             wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
             yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
             sudo su && systemctl start docker && systemctl status docker
+            mount -o remount,rw '/sys/fs/cgroup'
+            ln -s /sys/fs/cgroup/cpu,cpuacct /sys/fs/cgroup/cpuacct,cpu
             docker run -itd --restart=always --net=host \
                 --name agent \
                 -v /etc:/etc \
