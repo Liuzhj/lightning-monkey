@@ -32,6 +32,8 @@ RUN chmod +x /opt/lm-apiserver
 
 EXPOSE 8080
 
+ENV GET_TOKEN df1733d40a31
+
 #Update time zone to Asia-Shanghai
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 ENTRYPOINT /opt/lm-apiserver
