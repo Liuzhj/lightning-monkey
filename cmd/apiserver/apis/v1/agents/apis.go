@@ -68,6 +68,7 @@ func RegisterAgent(ctx iris.Context) {
 			entities.MasterSettings_MaxPodCountPerNode:    strconv.Itoa(settings.MaximumAllowedPodCountPerNode),
 			entities.MasterSettings_ExpectedETCDNodeCount: strconv.Itoa(settings.ExpectedETCDCount),
 			entities.MasterSettings_DockerRegistry:        "mirrorgooglecontainers/hyperkube",
+			entities.MasterSettings_DockerExtraGraphPath:  settings.ExtraDockerGraphPath,
 		},
 	}
 	r.BasicImages.HTTPDownloadToken = entities.HTTPDockerImageDownloadToken

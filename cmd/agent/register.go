@@ -585,6 +585,19 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	if a.arg.NodeLabels != nil && *a.arg.NodeLabels != "" {
 		cmd = append(cmd, fmt.Sprintf("--node-labels=%s", *a.arg.NodeLabels))
 	}
+	binds := []string{
+		//"/:/rootfs:ro",
+		"/sys:/sys:ro",
+		//"/dev:/dev",
+		"/etc:/etc",
+		"/var/run:/var/run:rw",
+		"/var/lib/docker:/var/lib/docker:rw",
+		"/var/lib/kubelet:/var/lib/kubelet:rshared",
+		"/opt/cni/bin:/opt/cni/bin",
+	}
+	if v, isOK := a.masterSettings[entities.MasterSettings_DockerExtraGraphPath]; isOK && v != "" {
+		binds = append(binds, fmt.Sprintf("%s:%s:rw", v, v))
+	}
 	resp, err := a.dockerClient.ContainerCreate(context.Background(), &container.Config{
 		Hostname: *a.arg.Address,
 		Image:    img,
@@ -592,16 +605,7 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 		Cmd:      cmd,
 		Volumes:  map[string]struct{}{},
 	}, &container.HostConfig{
-		Binds: []string{
-			//"/:/rootfs:ro",
-			"/sys:/sys:ro",
-			//"/dev:/dev",
-			"/etc:/etc",
-			"/var/run:/var/run:rw",
-			"/var/lib/docker:/var/lib/docker:rw",
-			"/var/lib/kubelet:/var/lib/kubelet:rshared",
-			"/opt/cni/bin:/opt/cni/bin",
-		},
+		Binds:         binds,
 		Privileged:    true,
 		NetworkMode:   "host",
 		PidMode:       "host",

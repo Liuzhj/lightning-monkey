@@ -29,6 +29,7 @@ const (
 	MasterSettings_ServiceDNSDomain                      = "service_dns_domain"
 	MasterSettings_KubernetesVersion                     = "k8s_version"
 	MasterSettings_DockerRegistry                        = "docker_registry"
+	MasterSettings_DockerExtraGraphPath                  = "docker_extra_graph_path"
 	MasterSettings_MaxPodCountPerNode                    = "max_pod_count"
 	MasterSettings_ServiceDNSClusterIP                   = "service_dns_cluster_ip"
 	MasterSettings_ExpectedETCDNodeCount                 = "expected_etcd_node_count"
@@ -81,6 +82,7 @@ type LightningMonkeyClusterSettings struct {
 	DNSSettings                   *DNSDeploymentSettings                      `json:"dns_deployment_settings"`
 	HASettings                    *HASettings                                 `json:"ha_settings"`
 	ExtensionalDeployments        map[string] /*key->args*/ map[string]string `json:"ext_deployments"`
+	ExtraDockerGraphPath          string                                      `json:"extra_docker_graph_path"`
 }
 
 type HASettings struct {
