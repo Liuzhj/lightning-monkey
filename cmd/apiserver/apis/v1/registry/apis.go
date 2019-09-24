@@ -14,6 +14,7 @@ func Register(app *iris.Application) error {
 	logrus.Infof("    Registering Agents Mgmt APIs...")
 	app.Get("/apis/v1/registry/1.12.5/*", downloadFile)
 	app.Get("/apis/v1/registry/1.13.10/*", downloadFile)
+	app.Get("/bootstrap/*", downloadFile2)
 	return nil
 }
 
@@ -24,4 +25,8 @@ func downloadFile(ctx iris.Context) {
 		return
 	}
 	http.StripPrefix("/apis/v1/", http.FileServer(http.Dir(path.Dir(os.Args[0])))).ServeHTTP(ctx.ResponseWriter(), ctx.Request())
+}
+
+func downloadFile2(ctx iris.Context) {
+	http.StripPrefix("/bootstrap/", http.FileServer(http.Dir(path.Dir(os.Args[0])))).ServeHTTP(ctx.ResponseWriter(), ctx.Request())
 }

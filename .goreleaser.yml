@@ -35,6 +35,7 @@ dockers:
     - extras/kubernetes.repo
     - download-frozen-image-v2.sh
     - prepare.sh
+    - init.sh
   - dockerfile: Dockerfile.agent
     binary: lm-agent
     # Path to the Dockerfile (from the project root).
