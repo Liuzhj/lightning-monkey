@@ -57,32 +57,9 @@ Vagrant.configure("2") do |config|
     k8s_master1.vm.hostname = "192.168.33.11"
     k8s_master1.trigger.after :up do |trigger|
       trigger.run_remote = {inline: <<-SHELL
-        setenforce 0 && swapoff -a
-        systemctl stop firewalld
-        yum update -y && yum install -y wget
-        yum install epel-release -y
-        yum install jq -y
-        wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-        wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-        yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-        sudo su && systemctl start docker && systemctl status docker
-        docker run -itd --restart=always --net=host \
-            --name agent \
-            -v /etc:/etc \
-            -v /var/run:/var/run \
-            -v /var/lib:/var/lib \
-            -v /opt/cni/bin:/opt/cni/bin \
-            -v /opt/lightning-monkey:/opt/lightning-monkey \
-            -e "LOG_LEVEL=debug" \
-            --entrypoint=/opt/lm-agent \
-            registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
-                --server=http://192.168.33.10:8080 \
-                --nc=eth1 \
-                --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
-                --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
-                --etcd \
-                --master \
-                --cert-dir=/etc/kubernetes/pki
+	    curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
+		reboot
+        curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd run
         echo "waiting 10s..."
         sleep 10s
         sudo docker cp agent:/usr/bin/kubectl /usr/bin
@@ -103,32 +80,9 @@ Vagrant.configure("2") do |config|
       k8s_master2.vm.hostname = "192.168.33.12"
       k8s_master2.trigger.after :up do |trigger|
         trigger.run_remote = {inline: <<-SHELL
-          setenforce 0 && swapoff -a
-          systemctl stop firewalld
-          yum update -y && yum install -y wget
-          yum install epel-release -y
-          yum install jq -y
-          wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-          wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-          yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-          sudo su && systemctl start docker && systemctl status docker
-          docker run -itd --restart=always --net=host \
-              --name agent \
-              -v /etc:/etc \
-              -v /var/run:/var/run \
-              -v /var/lib:/var/lib \
-              -v /opt/cni/bin:/opt/cni/bin \
-              -v /opt/lightning-monkey:/opt/lightning-monkey \
-              -e "LOG_LEVEL=debug" \
-              --entrypoint=/opt/lm-agent \
-              registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
-                  --server=http://192.168.33.10:8080 \
-                  --nc=eth1 \
-                  --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
-                  --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
-                  --etcd \
-                  --master \
-                  --cert-dir=/etc/kubernetes/pki
+		  curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
+		  reboot
+          curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd run
           echo "waiting 10s..."
           sleep 10s
           sudo docker cp agent:/usr/bin/kubectl /usr/bin
@@ -148,32 +102,9 @@ Vagrant.configure("2") do |config|
       k8s_master3.vm.hostname = "192.168.33.13"
       k8s_master3.trigger.after :up do |trigger|
         trigger.run_remote = {inline: <<-SHELL
-          setenforce 0 && swapoff -a
-          systemctl stop firewalld
-          yum update -y && yum install -y wget
-          yum install epel-release -y
-          yum install jq -y
-          wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-          wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-          yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-          sudo su && systemctl start docker && systemctl status docker
-          docker run -itd --restart=always --net=host \
-              --name agent \
-              -v /etc:/etc \
-              -v /var/run:/var/run \
-              -v /var/lib:/var/lib \
-              -v /opt/cni/bin:/opt/cni/bin \
-              -v /opt/lightning-monkey:/opt/lightning-monkey \
-              -e "LOG_LEVEL=debug" \
-              --entrypoint=/opt/lm-agent \
-              registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
-                  --server=http://192.168.33.10:8080 \
-                  --nc=eth1 \
-                  --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
-                  --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
-                  --etcd \
-                  --master \
-                  --cert-dir=/etc/kubernetes/pki
+		  curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
+		  reboot
+          curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd run
           echo "waiting 10s..."
           sleep 10s
           sudo docker cp agent:/usr/bin/kubectl /usr/bin
@@ -195,31 +126,9 @@ Vagrant.configure("2") do |config|
         k8s_minion1.vm.hostname = "192.168.33.14"
         k8s_minion1.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
-            setenforce 0 && swapoff -a
-            systemctl stop firewalld
-            yum update -y && yum install -y wget
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            sudo su && systemctl start docker && systemctl status docker
-            mount -o remount,rw '/sys/fs/cgroup'
-            ln -s /sys/fs/cgroup/cpu,cpuacct /sys/fs/cgroup/cpuacct,cpu
-            docker run -itd --restart=always --net=host \
-                --name agent \
-                -v /etc:/etc \
-                -v /var/run:/var/run \
-                -v /var/lib:/var/lib \
-                -v /opt/cni/bin:/opt/cni/bin \
-                -v /opt/lightning-monkey:/opt/lightning-monkey \
-                -e "LOG_LEVEL=debug" \
-                --entrypoint=/opt/lm-agent \
-                registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
-                    --server=http://192.168.33.10:8080 \
-                    --nc=eth1 \
-                    --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
-                    --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
-                    --minion \
-                    --cert-dir=/etc/kubernetes/pki
+            curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
+		    reboot
+            curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion run
             echo "waiting 10s..."
             sleep 10s
             echo "try to retrieving Agent logs..."
@@ -238,29 +147,9 @@ Vagrant.configure("2") do |config|
         k8s_lb1.vm.hostname = "192.168.33.15"
         k8s_lb1.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
-            setenforce 0 && swapoff -a
-            systemctl stop firewalld
-            yum update -y && yum install -y wget
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            sudo su && systemctl start docker && systemctl status docker
-            docker run -itd --restart=always --net=host \
-                --name agent \
-                -v /etc:/etc \
-                -v /var/run:/var/run \
-                -v /var/lib:/var/lib \
-                -v /opt/cni/bin:/opt/cni/bin \
-                -v /opt/lightning-monkey:/opt/lightning-monkey \
-                -e "LOG_LEVEL=debug" \
-                --entrypoint=/opt/lm-agent \
-                registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
-                    --server=http://192.168.33.10:8080 \
-                    --nc=eth1 \
-                    --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
-                    --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
-                    --ha \
-                    --cert-dir=/etc/kubernetes/pki
+            curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha setup
+		    reboot
+            curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha run
             echo "waiting 10s..."
             sleep 10s
             echo "try to retrieving Agent logs..."
@@ -279,29 +168,9 @@ Vagrant.configure("2") do |config|
         k8s_lb2.vm.hostname = "192.168.33.16"
         k8s_lb2.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
-            setenforce 0 && swapoff -a
-            systemctl stop firewalld
-            yum update -y && yum install -y wget
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-            wget http://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            yum localinstall -y docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-            sudo su && systemctl start docker && systemctl status docker
-            docker run -itd --restart=always --net=host \
-                --name agent \
-                -v /etc:/etc \
-                -v /var/run:/var/run \
-                -v /var/lib:/var/lib \
-                -v /opt/cni/bin:/opt/cni/bin \
-                -v /opt/lightning-monkey:/opt/lightning-monkey \
-                -e "LOG_LEVEL=debug" \
-                --entrypoint=/opt/lm-agent \
-                registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest \
-                    --server=http://192.168.33.10:8080 \
-                    --nc=eth1 \
-                    --address=$(ip addr show dev eth1 | grep "inet " | awk '{print $2}' | cut -f1 -d '/') \
-                    --cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 \
-                    --ha \
-                    --cert-dir=/etc/kubernetes/pki
+            curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha setup
+		    reboot
+            curl -fsSL http://192.168.33.10:8080/bootstrap/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha run
             echo "waiting 10s..."
             sleep 10s
             echo "try to retrieving Agent logs..."
