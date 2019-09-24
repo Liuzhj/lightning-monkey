@@ -159,7 +159,7 @@ _show_network() {
 }
 
 _show_internet() {
-  if [[ "$(ping -W1 -c1 114.114.114.114 &>/dev/null; echo $?)" -eq 0 ]]; then
+  if ping -W1 -c1 114.114.114.114 &>/dev/null; then
     _show_label "Internet" "Yes"
   else
     _show_label "Internet" "No"
@@ -335,11 +335,8 @@ _check_timezone() {
 }
 
 _check_ntp() {
-  local retval
   local msg="chronyd enabled"
-  chronyc -a makestep > /dev/null 2>&1
-  retval=$?
-  if [[ ${retval} == 0 ]];then
+  if chronyc -a makestep > /dev/null 2>&1;then
     state "${msg}" 0 && return 0
   else
     state "${msg}. Actual: Disabled" 2 && return 1
@@ -355,11 +352,8 @@ _check_selinux() {
 }
 
 _check_firewalld() {
-  local retval
   local msg="firewalld disabled"
-  systemctl status firewalld >/dev/null 2>&1
-  retval=$?
-  if [[ ${retval} -ne 0 ]];then
+  if systemctl status firewalld >/dev/null 2>&1;then
     state "${msg}" 0 && return 0
   else
     state "${msg}. Actual: Running" 1 && return 1
@@ -379,11 +373,8 @@ _check_docker() {
 }
 
 _check_kernel_module() {
-  local ip_mod
   msg="ip conntrack module"
-  lsmod|grep nf_conntrack_ipv4>/dev/null 2>&1
-  ip_mod=$?
-  if [[ ${ip_mod} -eq 0 ]];then
+  if lsmod|grep nf_conntrack_ipv4>/dev/null 2>&1;then
     state "${msg}" 0;return 0
   else
     state "${msg}. Actual:not load" 1;return 1
