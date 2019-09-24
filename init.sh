@@ -49,7 +49,7 @@ _usage(){
     -g, --graph               docker data directory, ex:/data/docker
     -c, --clusterid           cluster id,ex:1b8624d9-b3cf-41a3-a95b-748277484ba5
     -r, --role                server role,support :master|minion|ha|etcd.ex:master
-    -f, --force               force install,support true|false
+    -f, --force               force install,ignore kernel version,support true|false
 
 
   Command:
@@ -609,15 +609,15 @@ _run_main() {
   role=$(echo ${@:6}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   if [[ "${force}" == "false" ]];then
-    _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version."
-    _check_swap>/dev/null 2>&1 || abort "No Swap disabled"
-    _check_sysctl>/dev/null 2>&1 || abort "No Kernel Parameters configured"
-    _check_selinux>/dev/null 2>&1 || abort "No Selinux disabled"
-    _check_firewalld>/dev/null 2>&1 || abort "No Firewalld disabled"
-    _check_hostname "${nic}">/dev/null 2>&1 || abort "Host name was not configured correctly"
-    _check_docker>/dev/null 2>&1 || abort "No docker install"
     _check_kernel>/dev/null 2>&1 || abort "No kernel upgrade to 4.15.x"
   fi
+  _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version."
+  _check_swap>/dev/null 2>&1 || abort "No Swap disabled"
+  _check_sysctl>/dev/null 2>&1 || abort "No Kernel Parameters configured"
+  _check_selinux>/dev/null 2>&1 || abort "No Selinux disabled"
+  _check_firewalld>/dev/null 2>&1 || abort "No Firewalld disabled"
+  _check_hostname "${nic}">/dev/null 2>&1 || abort "Host name was not configured correctly"
+  _check_docker>/dev/null 2>&1 || abort "No docker install"
 
   if ! command -v wget >/dev/null 2>&1;then
     abort "wget command not found"
