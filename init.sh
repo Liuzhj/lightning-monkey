@@ -29,10 +29,8 @@ DOCKER_ENGINE_SELINUX_PKG="docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
 
 LMAGENT_URL="/apis/v1/registry/1.13.10/lmagent.tar?token=${TOKEN}"
 #LMAGENT_URL="/pkg/lmagent.tar"
-LMAGENT_PKG="lmagent.tar"
 PROM_NODE_URL="/apis/v1/registry/1.13.10/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
-PROM_NODE_PKG="exporter.tar"
 
 
 _usage(){
@@ -51,6 +49,7 @@ _usage(){
     -g, --graph               docker data directory, ex:/data/docker
     -c, --clusterid           cluster id,ex:1b8624d9-b3cf-41a3-a95b-748277484ba5
     -r, --role                server role,support :master|minion|ha|etcd.ex:master
+    -f, --force               force install,support true|false
 
 
   Command:
@@ -70,7 +69,14 @@ _usage(){
     /bin/bash k8setup.sh show
 	
     #remote run
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e enp0s8  -r master  -r etcd run
+    #setup k8s env
+    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd setup
+    #show server information
+    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd show
+    #check server env
+    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd check
+    #deploy lightingmonkey role
+    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd run
 
 EOF
 }
@@ -607,17 +613,20 @@ _run_main() {
   local apiserver=$2
   local clusterid=$3
   local graph=$4
+  local force=$5
   local role
-  role=$(echo ${@:5}|sed -e 's/ / --/g' -e 's/^/ --/g')
+  role=$(echo ${@:6}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
-  _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version."
-  _check_swap>/dev/null 2>&1 || abort "No Swap disabled"
-  _check_sysctl>/dev/null 2>&1 || abort "No Kernel Parameters configured"
-  _check_selinux>/dev/null 2>&1 || abort "No Selinux disabled"
-  _check_firewalld>/dev/null 2>&1 || abort "No Firewalld disabled"
-  _check_hostname "${nic}">/dev/null 2>&1 || abort "Host name was not configured correctly"
-  _check_docker>/dev/null 2>&1 || abort "No docker install"
-  _check_kernel>/dev/null 2>&1 || abort "No kernel upgrade to 4.15.x"
+  if [[ "${force}" == "false" ]];then
+    _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version."
+    _check_swap>/dev/null 2>&1 || abort "No Swap disabled"
+    _check_sysctl>/dev/null 2>&1 || abort "No Kernel Parameters configured"
+    _check_selinux>/dev/null 2>&1 || abort "No Selinux disabled"
+    _check_firewalld>/dev/null 2>&1 || abort "No Firewalld disabled"
+    _check_hostname "${nic}">/dev/null 2>&1 || abort "Host name was not configured correctly"
+    _check_docker>/dev/null 2>&1 || abort "No docker install"
+    _check_kernel>/dev/null 2>&1 || abort "No kernel upgrade to 4.15.x"
+  fi
 
   if ! command -v wget >/dev/null 2>&1;then
     abort "wget command not found"
@@ -626,11 +635,11 @@ _run_main() {
   #check node exporter
   #netstat -tulnp|grep 9100
   #curl http://localhost:9100/metrics
-  wget "${apiserver}${PROM_NODE_URL}" -O /tmp/${PROM_NODE_PKG}
+  wget "${apiserver}${PROM_NODE_URL}" -O /tmp/exporter.tar
   docker load </tmp/exporter.tar
   docker run -d --net="host" --pid="host" --cap-add=SYS_TIME prom/node-exporter:v0.18.1
   
-  wget "${apiserver}${LMAGENT_URL}" -O /tmp/${LMAGENT_PKG}
+  wget "${apiserver}${LMAGENT_URL}" -O /tmp/lmagent.tar
   docker load </tmp/lmagent.tar
   docker run -itd --restart=always --net=host \
             --name agent \
@@ -668,8 +677,11 @@ while test $# -ne 0; do
     -a|--apiserver)  apiserver="${1}"; shift ;;
     -c|--clusterid)  clusterid="${1}"; shift ;;
     -g|--graph)      graph="${1}"; shift ;;
+    -f|--force)      force="${1}"; shift ;;
     run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage && exit 1
-                     [[ -z "${graph}" ]] || graph="${DOCKERGRAPH}" &&_run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${role}";;
+                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
+                     [[ -z "${force}" ]] && force="false"
+                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${role}";;
 
     check)           [[ -z "${nic}" ]] && _usage && exit 1
                      _check_main "${nic}";;
@@ -677,7 +689,8 @@ while test $# -ne 0; do
     show)            _show_main ;;
 
     setup)           [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage &&  exit 1
-                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" ; _setup_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${role}";;
+                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
+                      _setup_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${role}";;
                     
     *)_usage
       ;;

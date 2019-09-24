@@ -57,9 +57,8 @@ Vagrant.configure("2") do |config|
     k8s_master1.vm.hostname = "192.168.33.11"
     k8s_master1.trigger.after :up do |trigger|
       trigger.run_remote = {inline: <<-SHELL
-	    curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
-		reboot
-        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd run
+        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
+        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd -f true run
         echo "waiting 10s..."
         sleep 10s
         sudo docker cp agent:/usr/bin/kubectl /usr/bin
@@ -80,9 +79,8 @@ Vagrant.configure("2") do |config|
       k8s_master2.vm.hostname = "192.168.33.12"
       k8s_master2.trigger.after :up do |trigger|
         trigger.run_remote = {inline: <<-SHELL
-		  curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
-		  reboot
-          curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd run
+          curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
+          curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd -f true run
           echo "waiting 10s..."
           sleep 10s
           sudo docker cp agent:/usr/bin/kubectl /usr/bin
@@ -102,9 +100,8 @@ Vagrant.configure("2") do |config|
       k8s_master3.vm.hostname = "192.168.33.13"
       k8s_master3.trigger.after :up do |trigger|
         trigger.run_remote = {inline: <<-SHELL
-		  curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
-		  reboot
-          curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd run
+          curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
+          curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd -f true run
           echo "waiting 10s..."
           sleep 10s
           sudo docker cp agent:/usr/bin/kubectl /usr/bin
@@ -126,9 +123,8 @@ Vagrant.configure("2") do |config|
         k8s_minion1.vm.hostname = "192.168.33.14"
         k8s_minion1.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
-            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
-		    reboot
-            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion run
+		    curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
+            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -f true run
             echo "waiting 10s..."
             sleep 10s
             echo "try to retrieving Agent logs..."
@@ -148,8 +144,7 @@ Vagrant.configure("2") do |config|
         k8s_lb1.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
             curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha setup
-		    reboot
-            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha run
+            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha -f true run
             echo "waiting 10s..."
             sleep 10s
             echo "try to retrieving Agent logs..."
@@ -169,8 +164,7 @@ Vagrant.configure("2") do |config|
         k8s_lb2.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
             curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha setup
-		    reboot
-            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha run
+            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha -f true run
             echo "waiting 10s..."
             sleep 10s
             echo "try to retrieving Agent logs..."
