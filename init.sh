@@ -630,6 +630,7 @@ _run_main() {
   docker load </tmp/exporter.tar
   docker run -d --net="host" --pid="host" --cap-add=SYS_TIME prom/node-exporter:v0.18.1
   
+  #deployment lmagent
   wget "${apiserver}${LMAGENT_URL}" -O /tmp/lmagent.tar
   docker load </tmp/lmagent.tar
   docker run -itd --restart=always --net=host \
