@@ -55,4 +55,5 @@ type RecoveryRecord struct {
 	MasterDeploymentType string    `json:"master_deployment_type"`
 	ETCDDeploymentType   string    `json:"etcd_deployment_type"`
 	MinionDeploymentType string    `json:"minion_deployment_type"`
+	ClusterID            string    `json:"cluster_id"`
 }

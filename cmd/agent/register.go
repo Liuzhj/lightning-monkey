@@ -308,7 +308,7 @@ func (a *LightningMonkeyAgent) Start() {
 	}
 	//create new recovery record when it's the first time to boot up.
 	if a.rr == nil {
-		a.rr = &RecoveryRecord{}
+		a.rr = &RecoveryRecord{ClusterID: *a.arg.ClusterId}
 	}
 	//start new go-routine for periodic reporting its status.
 	go a.reportStatus()

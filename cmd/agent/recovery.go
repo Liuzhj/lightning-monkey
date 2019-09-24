@@ -29,6 +29,10 @@ func (a *LightningMonkeyAgent) recover() error {
 		return err
 	}
 	a.rr = &rr
+	if a.rr.ClusterID != "" {
+		//reset after cluster-id changed.
+		a.arg.ClusterId = &a.rr.ClusterID
+	}
 	logrus.Warn("Entering recovery mode...")
 	//wait until all of installed components becomes healthy.
 	for {
