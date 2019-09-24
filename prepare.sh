@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Cleaning diry data..."
-rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics && rm -rf img_traefik && rm -rf img_router && rm -rf img_busybox && rm -rf img_prometheus
+rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics && rm -rf img_traefik && rm -rf img_router && rm -rf img_busybox && rm -rf img_prometheus && rm -rf img_lmagent && rm -rf img_exporter
 echo "Downloading RPM packages..."
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
@@ -17,6 +17,8 @@ echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_router cloudnativelabs/kube-router:v0.2.5
 ./download-frozen-image-v2.sh img_busybox busybox:latest
 ./download-frozen-image-v2.sh img_prometheus prom/prometheus:v2.2.1
+./download-frozen-image-v2.sh img_lmagent g0194776/lightning-monkey-agent:latest
+./download-frozen-image-v2.sh img_exporter prom/node-exporter:v0.18.1
 echo "Assmebling downloaded Docker image layers to tarball files..."
 tar -C 'img_etcd' -cf ./etcd.tar .
 tar -C 'img_hyperkube' -cf ./k8s.tar .
@@ -28,5 +30,7 @@ tar -C 'img_traefik' -cf ./traefik.tar .
 tar -C 'img_router' -cf ./router.tar .
 tar -C 'img_busybox' -cf ./busybox.tar .
 tar -C 'img_prometheus' -cf ./prometheus.tar .
+tar -C 'img_lmagent' -cf ./lmagent.tar .
+tar -C 'img_exporter' -cf ./exporter.tar .
 echo "Cleaning downloaded files..."
-rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics && rm -rf img_traefik && rm -rf img_router && rm -rf img_busybox && rm -rf img_prometheus
+rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics && rm -rf img_traefik && rm -rf img_router && rm -rf img_busybox && rm -rf img_prometheus && rm -rf img_lmagent && rm -rf img_exporter

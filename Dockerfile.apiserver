@@ -23,6 +23,8 @@ COPY --from=builder /go/traefik.tar /opt/registry/1.13.10/traefik.tar
 COPY --from=builder /go/router.tar /opt/registry/1.13.10/router.tar
 COPY --from=builder /go/busybox.tar /opt/registry/1.13.10/busybox.tar
 COPY --from=builder /go/prometheus.tar /opt/registry/1.13.10/prometheus.tar
+COPY --from=builder /go/lmagent.tar /opt/registry/1.13.10/lmagent.tar
+COPY --from=builder /go/exporter.tar /opt/registry/1.13.10/exporter.tar
 #Copy basic RPM packages.
 COPY --from=builder /go/docker-engine-1.12.6-1.el7.centos.x86_64.rpm /opt/registry/1.13.10/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
 COPY --from=builder /go/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm /opt/registry/1.13.10/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
