@@ -29,8 +29,10 @@ DOCKER_ENGINE_SELINUX_PKG="docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
 
 LMAGENT_URL="/apis/v1/registry/1.13.10/lmagent.tar?token=${TOKEN}"
 #LMAGENT_URL="/pkg/lmagent.tar"
+LMAGENT_PKG="lmagent.tar"
 PROM_NODE_URL="/apis/v1/registry/1.13.10/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
+PROM_NODE_PKG="exporter.tar"
 
 
 _usage(){
@@ -428,7 +430,7 @@ _setup_kernel() {
   if ! command -v wget >/dev/null 2>&1;then
     abort "wget command not found"
   fi
-  wget "${apiserver}${KERNEL_URL}" -P /tmp
+  wget "${apiserver}${KERNEL_URL}" -O /tmp/${KERNEL_PKG}
   rpm -ivh /tmp/${KERNEL_PKG}
   grub2-set-default 0
   grub2-mkconfig -o /boot/grub2/grub.cfg 
@@ -499,8 +501,8 @@ _setup_docker() {
     abort "wget command not found"
   fi
   yum remove -y docker*
-  wget ${apiserver}${DOCKER_ENGINE_URL} -P /tmp/
-  wget ${apiserver}${DOCKER_ENGINE_SELINUX_URL} -P /tmp/
+  wget ${apiserver}${DOCKER_ENGINE_URL} -O /tmp/${DOCKER_ENGINE_PKG}
+  wget ${apiserver}${DOCKER_ENGINE_SELINUX_URL} -O /tmp/${DOCKER_ENGINE_SELINUX_PKG}
   yum install -y /tmp/${DOCKER_ENGINE_PKG} /tmp/${DOCKER_ENGINE_SELINUX_PKG}
 
   pt="/usr/bin/dockerd --insecure-registry=repository.test.com:8444 --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --storage-driver=overlay2 --graph=${dir}"
@@ -624,11 +626,11 @@ _run_main() {
   #check node exporter
   #netstat -tulnp|grep 9100
   #curl http://localhost:9100/metrics
-  wget "${apiserver}${PROM_NODE_URL}" -P /tmp
+  wget "${apiserver}${PROM_NODE_URL}" -O /tmp/${PROM_NODE_PKG}
   docker load </tmp/exporter.tar
-  docker run -d --net="host" --pid="host" --cap-add=SYS_TIME rom/node-exporter:v0.18.1
+  docker run -d --net="host" --pid="host" --cap-add=SYS_TIME prom/node-exporter:v0.18.1
   
-  wget "${apiserver}${LMAGENT_URL}" -P /tmp
+  wget "${apiserver}${LMAGENT_URL}" -O /tmp/${LMAGENT_PKG}
   docker load </tmp/lmagent.tar
   docker run -itd --restart=always --net=host \
             --name agent \
