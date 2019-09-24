@@ -9,7 +9,7 @@ RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
 
 FROM centos:7
 
-RUN mkdir -p /opt/registry/1.13.10 && mkdir -p /opt/docker/1.12.6
+RUN mkdir -p /opt/registry/1.13.10
 COPY --from=builder /go/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY --from=builder /go/lm-apiserver /opt
 #Copy depended images.
@@ -26,6 +26,7 @@ COPY --from=builder /go/prometheus.tar /opt/registry/1.13.10/prometheus.tar
 #Copy basic RPM packages.
 COPY --from=builder /go/docker-engine-1.12.6-1.el7.centos.x86_64.rpm /opt/registry/1.13.10/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
 COPY --from=builder /go/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm /opt/registry/1.13.10/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
+COPY --from=builder /go/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm /opt/registry/1.13.10/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm
 
 RUN yum install -y kubeadm-1.13.10-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-apiserver

@@ -5,6 +5,7 @@ rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredn
 echo "Downloading RPM packages..."
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
+wget http://mirror.rc.usf.edu/compute_lock/elrepo/kernel/el7/x86_64/RPMS/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm
 echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_etcd mirrorgooglecontainers/etcd:3.2.24
 ./download-frozen-image-v2.sh img_hyperkube g0194776/lightning-monkey-hyperkube:v1.13.10
