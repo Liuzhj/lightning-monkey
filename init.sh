@@ -353,7 +353,7 @@ _check_selinux() {
 
 _check_firewalld() {
   local msg="firewalld disabled"
-  if systemctl status firewalld >/dev/null 2>&1;then
+  if ! systemctl status firewalld >/dev/null 2>&1;then
     state "${msg}" 0 && return 0
   else
     state "${msg}. Actual: Running" 1 && return 1
