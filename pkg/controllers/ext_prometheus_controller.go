@@ -82,32 +82,50 @@ data:
           - "alertmanager.kube-system.svc:9093"
 
     scrape_configs:
-      - job_name: 'kubernetes-apiservers'
-
-        kubernetes_sd_configs:
-        - role: endpoints
+      - job_name: 'kubernetes-node-exporter'
+        metrics_path: /metrics
         scheme: https
-
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node 
+        relabel_configs:
+        - separator: ;
+          regex: __meta_kubernetes_node_label_(.+)
+          replacement: $1
+          action: labelmap
+        - separator: ;
+          regex: (.*)
+          target_label: __address__
+          replacement: kubernetes.default.svc:443
+          action: replace
+        - source_labels: [__meta_kubernetes_node_name]
+          separator: ;
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}:9100/proxy/metrics
+          action: replace
 
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
         - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
           regex: default;kubernetes;https
 
       - job_name: 'kubernetes-nodes'
-
         scheme: https
-
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-
         kubernetes_sd_configs:
         - role: node
-
         relabel_configs:
         - action: labelmap
           regex: __meta_kubernetes_node_label_(.+)
@@ -120,10 +138,8 @@ data:
 
 
       - job_name: 'kubernetes-pods'
-
         kubernetes_sd_configs:
         - role: pod
-
         relabel_configs:
         - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
           action: keep
@@ -147,16 +163,12 @@ data:
           target_label: kubernetes_pod_name
 
       - job_name: 'kubernetes-cadvisor'
-
         scheme: https
-
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-
         kubernetes_sd_configs:
         - role: node
-
         relabel_configs:
         - action: labelmap
           regex: __meta_kubernetes_node_label_(.+)
@@ -168,10 +180,8 @@ data:
           replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
 
       - job_name: 'kubernetes-service-endpoints'
-
         kubernetes_sd_configs:
         - role: endpoints
-
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
           action: keep
