@@ -18,7 +18,7 @@ echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_busybox busybox:latest
 ./download-frozen-image-v2.sh img_prometheus prom/prometheus:v2.2.1
 ./download-frozen-image-v2.sh img_lmagent g0194776/lightning-monkey-agent:latest
-./download-frozen-image-v2.sh img_exporter prom/node-exporter:v0.18.1
+./download-frozen-image-v2.sh img_exporter quay.io/prometheus/node-exporter:v0.15.2
 echo "Assmebling downloaded Docker image layers to tarball files..."
 tar -C 'img_etcd' -cf ./etcd.tar .
 tar -C 'img_hyperkube' -cf ./k8s.tar .
