@@ -20,6 +20,18 @@ The agent is a background running service which has responsibility for interacti
 |Kubernetes Version|Supported|Tested|
 |---|---|---|
 |v1.12.5|√|√|
+|v1.13.10|√|√|
+
+# Supported Components Deployment
+|Component|Version|Tested|
+|---|---|---|
+|ETCD|3.2.24|√|
+|CoreDNS|1.5.2|√|
+|Traefik|1.7.14|√|
+|Kube-Router|0.2.5|√|
+|Prometheus|2.2.1|√|
+|HAProxy|1.7.11|√|
+|KeepAlived|1.3.9|√|
 
 
 # Usage
@@ -65,6 +77,23 @@ docker run -itd --restart=always --net=host \
 
 ```bash
 docker ps -aq | xargs -ti docker rm -f {}
-rm -rf /etc/kubernetes/ && rm -rf /data/etcd/
-rm -rf /opt/cni
+rm -rf /etc/kubernetes/
+rm -rf /opt/lightning-monkey/
+rm -rf /etc/cni/net.d/10-kuberouter.conf
+rm -rf /var/lib/kube*
 ```
+
+The details of how to run up an entire cluster using Vagrant , Please directly run this command at the root path:
+```bash
+vagrant up
+```
+It'll create & start 6 VMs to build the cluster of HA.
+
+|VM Name|Role|
+|---|---|
+|k8s_master1|Kubernetes Master|
+|k8s_master2|Kubernetes Master|
+|k8s_master3|Kubernetes Master|
+|k8s_minion1|Kubernetes Minion|
+|k8s_lb1|HAProxy & KeepAlived|
+|k8s_lb2|HAProxy & KeepAlived|
