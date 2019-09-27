@@ -65,14 +65,14 @@ kind: APIService
 metadata:
   name: v1beta1.metrics.k8s.io
 spec:
-  service:
-    name: metrics-server
-    namespace: kube-system
-  group: metrics.k8s.io
-  version: v1beta1
-  insecureSkipTLSVerify: true
-  groupPriorityMinimum: 100
-  versionPriority: 100
+ service:
+   name: metrics-server
+   namespace: kube-system
+ group: metrics.k8s.io
+ version: v1beta1
+ insecureSkipTLSVerify: true
+ groupPriorityMinimum: 100
+ versionPriority: 100
 ---
 apiVersion: v1
 kind: ServiceAccount
