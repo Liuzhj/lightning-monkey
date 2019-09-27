@@ -30,8 +30,9 @@ jobs:
 
     - name: Build
       run: |
-        pwd
-        ls -sl
-        cd cmd/agent && go build -v .
+        cd cmd/agent && go build .
+        cd cmd/apiserver && go build .
+        ls -sl cmd/agent
+        ls -sl cmd/apiserver
       env:
         GOPATH: /home/runner/work/lightning-monkey/go
