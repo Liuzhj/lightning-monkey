@@ -30,6 +30,4 @@ jobs:
 
     - name: Build
       run: |
-        echo $GOPATH
-        pwd
-        cd cmd/agent && go build -v .
+        ls -sl
