@@ -31,7 +31,9 @@ jobs:
     - name: Build
       run: |
         cd cmd/agent && go build .
+        cd ..
         cd cmd/apiserver && go build .
+        cd ..
         ls -sl cmd/agent
         ls -sl cmd/apiserver
       env:
