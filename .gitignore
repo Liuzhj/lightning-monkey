@@ -4,6 +4,11 @@
 *.dll
 *.so
 *.dylib
+*.tar
+
+.vagrant/*
+mocks/*
+
 
 # Test binary, build with `go test -c`
 *.test
