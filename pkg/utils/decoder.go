@@ -2,22 +2,30 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	uuid "github.com/satori/go.uuid"
 	"html/template"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	agg_v1betaObj "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 )
 
-func ObjectMetaFor(obj runtime.Object) (*v1.ObjectMeta, error) {
-	v, err := conversion.EnforcePtr(obj)
-	if err != nil {
-		return nil, err
+func ObjectMetaFor(obj interface{}) (*v1.ObjectMeta, error) {
+	if newObj, isOK := obj.(runtime.Object); isOK {
+		v, err := conversion.EnforcePtr(newObj)
+		if err != nil {
+			return nil, err
+		}
+		var meta *v1.ObjectMeta
+		err = runtime.FieldPtr(v, "ObjectMeta", &meta)
+		return meta, err
 	}
-	var meta *v1.ObjectMeta
-	err = runtime.FieldPtr(v, "ObjectMeta", &meta)
-	return meta, err
+	if newObj, isOK := obj.(*agg_v1betaObj.APIService); isOK {
+		return &newObj.ObjectMeta, nil
+	}
+	return nil, fmt.Errorf("Unsupported object: %#v", obj)
 }
 
 func DecodeYamlOrJson(content string) (runtime.Object, error) {
