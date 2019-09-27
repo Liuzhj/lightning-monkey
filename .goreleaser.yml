@@ -1,0 +1,48 @@
+builds:
+  - binary: lm-apiserver
+    id: "apiserver"
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+    main: ./cmd/apiserver
+    gcflags:
+      - -N -l
+  - binary: lm-agent
+    id: "agent"
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+    main: ./cmd/agent
+# Archive customization
+archive:
+  format: tar.gz
+dockers:
+  - dockerfile: Dockerfile.apiserver
+    binary: lm-apiserver
+    # Path to the Dockerfile (from the project root).
+    image_templates:
+    - "g0194776/lightning-monkey-apiserver:{{ .Tag }}"
+    - "g0194776/lightning-monkey-apiserver:latest"
+    - "registry.cn-beijing.aliyuncs.com/lightning-monkey/apiserver:{{ .Tag }}"
+    - "registry.cn-beijing.aliyuncs.com/lightning-monkey/apiserver:latest"
+    extra_files:
+    - extras/kubernetes.repo
+    - download-frozen-image-v2.sh
+    - prepare.sh
+    - init.sh
+  - dockerfile: Dockerfile.agent
+    binary: lm-agent
+    # Path to the Dockerfile (from the project root).
+    image_templates:
+    - "g0194776/lightning-monkey-agent:{{ .Tag }}"
+    - "g0194776/lightning-monkey-agent:latest"
+    - "registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:{{ .Tag }}"
+    - "registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest"
+    extra_files:
+    - extras/kubernetes.repo
