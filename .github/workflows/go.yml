@@ -18,7 +18,7 @@ jobs:
       with:
         path: go/src/github.com/g0194776/lightningmonkey
 
-    - name: Debug
+    - name: Print Debugging Parameters
       run: |
         pwd
         echo ${HOME}
@@ -28,9 +28,14 @@ jobs:
       env:
         GOPATH: /home/runner/work/lightning-monkey/go
 
-    - name: Build
+    - name: Build Agent
       run: |
         cd cmd/agent && go build .
-        cd ../cmd/apiserver && go build .
+      env:
+        GOPATH: /home/runner/work/lightning-monkey/go
+        
+    - name: Build API Server
+      run: |
+        cd cmd/apiserver && go build .
       env:
         GOPATH: /home/runner/work/lightning-monkey/go
