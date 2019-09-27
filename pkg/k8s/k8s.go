@@ -138,184 +138,175 @@ func GenerateKubeletConfig(certPath, masterAPIAddr string, replacementSlots map[
 	return nil
 }
 
-func CreateK8SResource(client *k8s.Clientset, obj interface{}) (interface{}, error) {
+func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Object, error) {
 	var err error
-	if newObj, isOK := obj.(runtime.Object); isOK {
-		var o runtime.Object
-		metadata, _ := utils.ObjectMetaFor(newObj)
-		switch obj.(type) {
-		case *ko.ReplicationController:
-			o, err = client.CoreV1().ReplicationControllers(metadata.Namespace).Create(obj.(*ko.ReplicationController))
-		case *ko.Service:
-			o, err = client.CoreV1().Services(metadata.Namespace).Create(obj.(*ko.Service))
-		case *ko.Pod:
-			o, err = client.CoreV1().Pods(metadata.Namespace).Create(obj.(*ko.Pod))
-		case *ext_v1beta.Deployment:
-			o, err = client.ExtensionsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ext_v1beta.Deployment))
-		case *ko_v1beta.Deployment:
-			o, err = client.AppsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ko_v1beta.Deployment))
-		case *apps_v1.Deployment:
-			o, err = client.AppsV1().Deployments(metadata.Namespace).Create(obj.(*apps_v1.Deployment))
-		case *ko_v2alpha1.CronJob:
-			o, err = client.BatchV2alpha1().CronJobs(metadata.Namespace).Create(obj.(*ko_v2alpha1.CronJob))
-		case *ko_ext_v1beta.DaemonSet:
-			o, err = client.ExtensionsV1beta1().DaemonSets(metadata.Namespace).Create(obj.(*ko_ext_v1beta.DaemonSet))
-		case *ko.ConfigMap:
-			o, err = client.CoreV1().ConfigMaps(metadata.Namespace).Create(obj.(*ko.ConfigMap))
-		case *ko.ServiceAccount:
-			o, err = client.CoreV1().ServiceAccounts(metadata.Namespace).Create(obj.(*ko.ServiceAccount))
-		case *ko_ext_v1beta.Ingress:
-			o, err = client.ExtensionsV1beta1().Ingresses(metadata.Namespace).Create(obj.(*ko_ext_v1beta.Ingress))
-		case *ko.PersistentVolumeClaim:
-			o, err = client.CoreV1().PersistentVolumeClaims(metadata.Namespace).Create(obj.(*ko.PersistentVolumeClaim))
-		case *ko.PersistentVolume:
-			o, err = client.CoreV1().PersistentVolumes().Create(obj.(*ko.PersistentVolume))
-		case *rbac_v1beta.ClusterRole:
-			o, err = client.RbacV1beta1().ClusterRoles().Create(obj.(*rbac_v1beta.ClusterRole))
-		case *rbac_v1beta.ClusterRoleBinding:
-			o, err = client.RbacV1beta1().ClusterRoleBindings().Create(obj.(*rbac_v1beta.ClusterRoleBinding))
-		case *rbac_v1.ClusterRole:
-			o, err = client.RbacV1().ClusterRoles().Create(obj.(*rbac_v1.ClusterRole))
-		case *rbac_v1.ClusterRoleBinding:
-			o, err = client.RbacV1().ClusterRoleBindings().Create(obj.(*rbac_v1.ClusterRoleBinding))
-		default:
-			return nil, fmt.Errorf("Unsupported runtime.object kind %s", newObj.GetObjectKind().GroupVersionKind().Kind)
-		}
-		if err != nil {
-			return nil, err
-		}
-		o.GetObjectKind().SetGroupVersionKind(newObj.GetObjectKind().GroupVersionKind())
-		return o, nil
+	var o runtime.Object
+	metadata, _ := utils.ObjectMetaFor(obj)
+	switch obj.(type) {
+	case *ko.ReplicationController:
+		o, err = client.CoreV1().ReplicationControllers(metadata.Namespace).Create(obj.(*ko.ReplicationController))
+	case *ko.Service:
+		o, err = client.CoreV1().Services(metadata.Namespace).Create(obj.(*ko.Service))
+	case *ko.Pod:
+		o, err = client.CoreV1().Pods(metadata.Namespace).Create(obj.(*ko.Pod))
+	case *ext_v1beta.Deployment:
+		o, err = client.ExtensionsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ext_v1beta.Deployment))
+	case *ko_v1beta.Deployment:
+		o, err = client.AppsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ko_v1beta.Deployment))
+	case *apps_v1.Deployment:
+		o, err = client.AppsV1().Deployments(metadata.Namespace).Create(obj.(*apps_v1.Deployment))
+	case *ko_v2alpha1.CronJob:
+		o, err = client.BatchV2alpha1().CronJobs(metadata.Namespace).Create(obj.(*ko_v2alpha1.CronJob))
+	case *ko_ext_v1beta.DaemonSet:
+		o, err = client.ExtensionsV1beta1().DaemonSets(metadata.Namespace).Create(obj.(*ko_ext_v1beta.DaemonSet))
+	case *ko.ConfigMap:
+		o, err = client.CoreV1().ConfigMaps(metadata.Namespace).Create(obj.(*ko.ConfigMap))
+	case *ko.ServiceAccount:
+		o, err = client.CoreV1().ServiceAccounts(metadata.Namespace).Create(obj.(*ko.ServiceAccount))
+	case *ko_ext_v1beta.Ingress:
+		o, err = client.ExtensionsV1beta1().Ingresses(metadata.Namespace).Create(obj.(*ko_ext_v1beta.Ingress))
+	case *ko.PersistentVolumeClaim:
+		o, err = client.CoreV1().PersistentVolumeClaims(metadata.Namespace).Create(obj.(*ko.PersistentVolumeClaim))
+	case *ko.PersistentVolume:
+		o, err = client.CoreV1().PersistentVolumes().Create(obj.(*ko.PersistentVolume))
+	case *rbac_v1beta.ClusterRole:
+		o, err = client.RbacV1beta1().ClusterRoles().Create(obj.(*rbac_v1beta.ClusterRole))
+	case *rbac_v1beta.ClusterRoleBinding:
+		o, err = client.RbacV1beta1().ClusterRoleBindings().Create(obj.(*rbac_v1beta.ClusterRoleBinding))
+	case *rbac_v1.ClusterRole:
+		o, err = client.RbacV1().ClusterRoles().Create(obj.(*rbac_v1.ClusterRole))
+	case *rbac_v1.ClusterRoleBinding:
+		o, err = client.RbacV1().ClusterRoleBindings().Create(obj.(*rbac_v1.ClusterRoleBinding))
+	case *agg_v1betaObj.APIService:
+		o, err = agg_v1beta.New(client.RESTClient()).APIServices().Create(obj.(*agg_v1betaObj.APIService))
+	default:
+		return nil, fmt.Errorf("Unsupported runtime.object kind %s", obj.GetObjectKind().GroupVersionKind().Kind)
 	}
-	if newObj, isOK := obj.(*agg_v1betaObj.APIService); isOK {
-		return agg_v1beta.New(client.RESTClient()).APIServices().Create(newObj)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("Unsupported Kubernetes object kind %#v", obj)
+	return o, nil
 }
 
-func IsKubernetesResourceExists(client *k8s.Clientset, obj interface{}) (bool, error) {
-	if newObj, isOK := obj.(runtime.Object); isOK {
-		metadata, _ := utils.ObjectMetaFor(newObj)
-		switch obj.(type) {
-		case *ko.ReplicationController:
-			realObj, err := client.CoreV1().ReplicationControllers(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko.Service:
-			realObj, err := client.CoreV1().Services(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko.Pod:
-			realObj, err := client.CoreV1().Pods(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ext_v1beta.Deployment:
-			realObj, err := client.ExtensionsV1beta1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko_v1beta.Deployment:
-			realObj, err := client.AppsV1beta1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *apps_v1.Deployment:
-			realObj, err := client.AppsV1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko_v2alpha1.CronJob:
-			realObj, err := client.BatchV2alpha1().CronJobs(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko_ext_v1beta.DaemonSet:
-			realObj, err := client.ExtensionsV1beta1().DaemonSets(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko.ConfigMap:
-			realObj, err := client.CoreV1().ConfigMaps(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko.ServiceAccount:
-			realObj, err := client.CoreV1().ServiceAccounts(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko_ext_v1beta.Ingress:
-			realObj, err := client.ExtensionsV1beta1().Ingresses(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko.PersistentVolumeClaim:
-			realObj, err := client.CoreV1().PersistentVolumeClaims(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *ko.PersistentVolume:
-			realObj, err := client.CoreV1().PersistentVolumes().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *rbac_v1beta.ClusterRole:
-			realObj, err := client.RbacV1beta1().ClusterRoles().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *rbac_v1beta.ClusterRoleBinding:
-			realObj, err := client.RbacV1beta1().ClusterRoleBindings().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *rbac_v1.ClusterRole:
-			realObj, err := client.RbacV1().ClusterRoles().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		case *rbac_v1.ClusterRoleBinding:
-			realObj, err := client.RbacV1().ClusterRoleBindings().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
-		default:
+func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool, error) {
+	metadata, _ := utils.ObjectMetaFor(obj)
+	switch obj.(type) {
+	case *ko.ReplicationController:
+		realObj, err := client.CoreV1().ReplicationControllers(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
 		}
-		if sc, ok := obj.(*v1.StorageClass); ok {
-			realObj, err := client.StorageV1().StorageClasses().Get(sc.Name, meta_v1.GetOptions{ResourceVersion: "0"})
-			if err != nil {
-				return false, err
-			}
-			return realObj != nil, nil
+		return realObj != nil, nil
+	case *ko.Service:
+		realObj, err := client.CoreV1().Services(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
 		}
-		return false, errors.New("Unsupported Kubernetes runtime.object kind: " + newObj.GetObjectKind().GroupVersionKind().Kind)
+		return realObj != nil, nil
+	case *ko.Pod:
+		realObj, err := client.CoreV1().Pods(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ext_v1beta.Deployment:
+		realObj, err := client.ExtensionsV1beta1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko_v1beta.Deployment:
+		realObj, err := client.AppsV1beta1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *apps_v1.Deployment:
+		realObj, err := client.AppsV1().Deployments(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko_v2alpha1.CronJob:
+		realObj, err := client.BatchV2alpha1().CronJobs(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko_ext_v1beta.DaemonSet:
+		realObj, err := client.ExtensionsV1beta1().DaemonSets(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.ConfigMap:
+		realObj, err := client.CoreV1().ConfigMaps(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.ServiceAccount:
+		realObj, err := client.CoreV1().ServiceAccounts(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko_ext_v1beta.Ingress:
+		realObj, err := client.ExtensionsV1beta1().Ingresses(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.PersistentVolumeClaim:
+		realObj, err := client.CoreV1().PersistentVolumeClaims(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.PersistentVolume:
+		realObj, err := client.CoreV1().PersistentVolumes().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbac_v1beta.ClusterRole:
+		realObj, err := client.RbacV1beta1().ClusterRoles().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbac_v1beta.ClusterRoleBinding:
+		realObj, err := client.RbacV1beta1().ClusterRoleBindings().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbac_v1.ClusterRole:
+		realObj, err := client.RbacV1().ClusterRoles().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbac_v1.ClusterRoleBinding:
+		realObj, err := client.RbacV1().ClusterRoleBindings().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *agg_v1betaObj.APIService:
+		realObj, err := agg_v1beta.New(client.RESTClient()).APIServices().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	default:
 	}
-	if newObj, isOK := obj.(*agg_v1betaObj.APIService); isOK {
-		realObj, err := agg_v1beta.New(client.RESTClient()).APIServices().Get(newObj.Spec.Service.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+	if sc, ok := obj.(*v1.StorageClass); ok {
+		realObj, err := client.StorageV1().StorageClasses().Get(sc.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
 		return realObj != nil, nil
 	}
-	return false, fmt.Errorf("Unsupported object kind %#v", obj)
+	return false, errors.New("Unsupported Kubernetes runtime.object kind: " + obj.GetObjectKind().GroupVersionKind().Kind)
 }

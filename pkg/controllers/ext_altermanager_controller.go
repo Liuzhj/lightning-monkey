@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -290,5 +291,5 @@ spec:
 type AlterManagerDeploymentController struct {
 	client        *kubernetes.Clientset
 	settings      entities.LightningMonkeyClusterSettings
-	parsedObjects []interface{}
+	parsedObjects []runtime.Object
 }

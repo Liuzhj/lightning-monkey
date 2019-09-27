@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"strings"
 )
@@ -262,7 +263,7 @@ spec:
 type PrometheusDeploymentController struct {
 	client        *kubernetes.Clientset
 	settings      entities.LightningMonkeyClusterSettings
-	parsedObjects []interface{}
+	parsedObjects []runtime.Object
 }
 
 func (dc *PrometheusDeploymentController) Initialize(client *kubernetes.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
