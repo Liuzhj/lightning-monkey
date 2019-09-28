@@ -40,6 +40,7 @@ type Agent struct {
 	HasMasterRole                  bool      `json:"has_master_role"`
 	HasMinionRole                  bool      `json:"has_minion_role"`
 	HasHARole                      bool      `json:"has_ha_role"`
+	ListenPort                     int       `json:"listen_port"`
 }
 
 type LightningMonkeyAgent struct {
@@ -52,6 +53,7 @@ type LightningMonkeyAgent struct {
 	HasMasterRole    bool        `json:"has_master_role" bson:"has_master_role"`
 	HasMinionRole    bool        `json:"has_minion_role" bson:"has_minion_role"`
 	HasHARole        bool        `json:"has_ha_role"`
+	ListenPort       int         `json:"listen_port"`
 	State            *AgentState `json:"-"`
 }
 
@@ -112,4 +114,13 @@ type LightningMonkeyAgentReportStatusItem struct {
 	HasProvisioned bool      `json:"has_provisioned"`
 	Reason         string    `json:"reason"`
 	LastSeenTime   time.Time `json:"last_seen_time"`
+}
+
+type KubernetesNodeInfo struct {
+	NodeIP  string `json:"node_ip"`
+	PodCIDR string `json:"node_cidr"`
+}
+
+type GenerateSystemRoutingRulesRequest struct {
+	Nodes []KubernetesNodeInfo `json:"nodes"`
 }
