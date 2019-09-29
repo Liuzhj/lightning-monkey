@@ -25,12 +25,17 @@ func (js *MetricsServerAddStaticRouteStrategy) CanDeploy(cc ClusterController, a
 		return entities.ConditionInapplicable, "", nil, nil
 	}
 	cs := cc.GetSettings()
+	if cs.ExtensionalDeployments == nil || len(cs.ExtensionalDeployments) == 0 {
+		return entities.ConditionInapplicable, "", nil, nil
+	}
 	if _, isOK := cs.ExtensionalDeployments[entities.EXT_DEPLOYMENT_METRICSERVER]; !isOK {
 		return entities.ConditionInapplicable, "", nil, nil
 	}
 	wps := cc.GetWachPoints()
 	if !checkMetricsServerHealthy(wps) {
-		return entities.ConditionNotConfirmed, "", nil, fmt.Errorf("Cluster(%s)'s extensional deployment component: %s is not healthy yet!", cs.Id, entities.EXT_DEPLOYMENT_METRICSERVER)
+		wrappedErr := fmt.Errorf("Cluster(%s)'s extensional deployment component: %s is not healthy yet!", cs.Id, entities.EXT_DEPLOYMENT_METRICSERVER)
+		logrus.Error(wrappedErr)
+		return entities.ConditionNotConfirmed, "", nil, wrappedErr
 	}
 	err := cc.InitializeKubernetesClient()
 	if err != nil {
