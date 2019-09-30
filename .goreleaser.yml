@@ -2,7 +2,6 @@ builds:
   - binary: lm-apiserver
     id: "apiserver"
     goos:
-      - windows
       - darwin
       - linux
     goarch:
@@ -13,7 +12,6 @@ builds:
   - binary: lm-agent
     id: "agent"
     goos:
-      - windows
       - darwin
       - linux
     goarch:
