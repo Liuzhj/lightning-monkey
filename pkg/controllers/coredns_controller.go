@@ -255,7 +255,7 @@ func (dc *CoreDNSController) Install() error {
 				return fmt.Errorf("Failed to create Kubernetes resource: %s, error: %s", metadata.Name, err.Error())
 			}
 		}
-		logrus.Infof("Kubernetes resource %s(%s) has been created successfully!", metadata.Name, metadata.OwnerReferences[0].Kind)
+		logrus.Infof("Kubernetes resource %s(%s) has been created successfully!", metadata.Name, dc.parsedObjects[i].GetObjectKind().GroupVersionKind().Kind)
 	}
 	return nil
 }
