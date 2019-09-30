@@ -10,6 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/etcd/clientv3"
 	"io/ioutil"
+	v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
@@ -48,6 +50,7 @@ type ClusterController interface {
 	GetExtensionDeploymentController() controllers.DeploymentController
 	GetWachPoints() []monitors.WatchPoint
 	GetRandomAdminConfFromMasterAgents() (string, error)
+	GetNodesInformation() ([]entities.KubernetesNodeInfo, error)
 	EnableMonitors()
 }
 
@@ -375,4 +378,38 @@ func (cc *ClusterControllerImple) InitializeExtensionDeploymentController() erro
 
 func (cc *ClusterControllerImple) GetRandomAdminConfFromMasterAgents() (string, error) {
 	return cc.cache.GetAdminConfFromMasterAgents(), nil
+}
+
+func (cc *ClusterControllerImple) GetNodesInformation() ([]entities.KubernetesNodeInfo, error) {
+	if cc.client == nil {
+		return nil, fmt.Errorf("Cluster %s internal Kubernetes client has not be initialized yet!", cc.GetSettings().Id)
+	}
+	ns, err := cc.client.CoreV1().Nodes().List(meta_v1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("Failed to list cluster(%s)'s node, error: %s", cc.GetSettings().Id, err.Error())
+	}
+	if ns == nil || ns.Items == nil || len(ns.Items) == 0 {
+		return []entities.KubernetesNodeInfo{}, nil
+	}
+	result := []entities.KubernetesNodeInfo{}
+	for i := 0; i < len(ns.Items); i++ {
+		if ns.Items[i].Status.Addresses == nil || len(ns.Items[i].Status.Addresses) == 0 {
+			continue
+		}
+		var nodeIP string
+		for _, v := range ns.Items[i].Status.Addresses {
+			if v.Type == v1.NodeInternalIP {
+				nodeIP = v.Address
+				break
+			}
+		}
+		if nodeIP == "" {
+			continue
+		}
+		result = append(result, entities.KubernetesNodeInfo{
+			NodeIP:  nodeIP,
+			PodCIDR: ns.Items[i].Spec.PodCIDR,
+		})
+	}
+	return result, nil
 }

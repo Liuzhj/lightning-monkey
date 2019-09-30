@@ -74,7 +74,9 @@ func RegisterAgent(agent *entities.LightningMonkeyAgent) (*entities.LightningMon
 			return nil, "", -1, errors.New("Failed to generate kube admin configuration file, generated config file not found!")
 		}
 	}
-	agent.Id = uuid.NewV4().String()
+	if agent.Id == "" {
+		agent.Id = uuid.NewV4().String()
+	}
 	agent.State.LastReportTime = time.Now()
 	leaseId, err := saveAgent(agent)
 	if err != nil {

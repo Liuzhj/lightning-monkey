@@ -41,14 +41,15 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 		}
 	}()
 	hostname, _ := os.Hostname()
-	agentObj := entities.Agent{
+	agentObj := entities.LightningMonkeyAgent{
 		HasETCDRole:   *a.arg.IsETCDRole,
 		HasMasterRole: *a.arg.IsMasterRole,
 		HasMinionRole: *a.arg.IsMinionRole,
 		HasHARole:     *a.arg.IsHARole,
 		ClusterId:     *a.arg.ClusterId,
 		Hostname:      hostname,
-		LastReportIP:  *a.arg.Address,
+		ListenPort:    *a.arg.ListenPort,
+		Id:            a.arg.AgentId,
 	}
 	bodyData, err := json.Marshal(agentObj)
 	if err != nil {

@@ -1,0 +1,41 @@
+name: Go
+on: [push]
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Go 1.12.10
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.12.10
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+        with:
+          path: go/src/github.com/g0194776/lightningmonkey
+
+      - name: Print Debugging Parameters
+        run: |
+          pwd
+          echo ${HOME}
+          echo ${GITHUB_WORKSPACE}
+          echo ${GOPATH}
+          echo ${GOROOT}
+        env:
+          GOPATH: /home/runner/work/lightning-monkey/go
+
+      - name: Try Building Agent
+        run: |
+          cd cmd/agent && go build .
+        env:
+          GOPATH: /home/runner/work/lightning-monkey/go
+
+      - name: Try Building API Server
+        run: |
+          cd cmd/apiserver && go build .
+        env:
+          GOPATH: /home/runner/work/lightning-monkey/go

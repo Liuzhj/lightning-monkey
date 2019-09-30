@@ -218,7 +218,10 @@ func (dc *TraefikDeploymentController) Install() error {
 	}
 	logrus.Infof("Start provisioning %s for cluster: %s", dc.GetName(), dc.settings.Id)
 	for i := 0; i < len(dc.parsedObjects); i++ {
-		metadata, _ := utils.ObjectMetaFor(dc.parsedObjects[i])
+		metadata, err := utils.ObjectMetaFor(dc.parsedObjects[i])
+		if err != nil {
+			return fmt.Errorf("Failed to get Kubernetes resource, error: %s", err.Error())
+		}
 		if existed, err = k8s.IsKubernetesResourceExists(dc.client, dc.parsedObjects[i]); err != nil && !k8sErr.IsNotFound(err) {
 			return fmt.Errorf("Failed to check Kubernetes resource existence, error: %s", err.Error())
 		} else if !existed {
@@ -227,7 +230,7 @@ func (dc *TraefikDeploymentController) Install() error {
 				return fmt.Errorf("Failed to create Kubernetes resource: %s, error: %s", metadata.Name, err.Error())
 			}
 		}
-		logrus.Infof("Kubernetes resource %s(%s) has been created successfully!", metadata.Name, dc.parsedObjects[i].GetObjectKind().GroupVersionKind().Kind)
+		logrus.Infof("Kubernetes resource %s(%s) has been created successfully!", metadata.Name, metadata.OwnerReferences[0].Kind)
 	}
 	return nil
 }

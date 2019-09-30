@@ -21,6 +21,8 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8s "k8s.io/client-go/kubernetes"
+	agg_v1betaObj "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
+	agg_v1beta "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1beta1"
 	"os/exec"
 	"path/filepath"
 )
@@ -137,8 +139,8 @@ func GenerateKubeletConfig(certPath, masterAPIAddr string, replacementSlots map[
 }
 
 func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Object, error) {
-	var o runtime.Object
 	var err error
+	var o runtime.Object
 	metadata, _ := utils.ObjectMetaFor(obj)
 	switch obj.(type) {
 	case *ko.ReplicationController:
@@ -175,13 +177,14 @@ func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Objec
 		o, err = client.RbacV1().ClusterRoles().Create(obj.(*rbac_v1.ClusterRole))
 	case *rbac_v1.ClusterRoleBinding:
 		o, err = client.RbacV1().ClusterRoleBindings().Create(obj.(*rbac_v1.ClusterRoleBinding))
+	case *agg_v1betaObj.APIService:
+		o, err = agg_v1beta.New(client.RESTClient()).APIServices().Create(obj.(*agg_v1betaObj.APIService))
 	default:
-		return nil, fmt.Errorf("Unsupported obj kind %s", obj.GetObjectKind().GroupVersionKind().Kind)
+		return nil, fmt.Errorf("Unsupported runtime.object kind %s", obj.GetObjectKind().GroupVersionKind().Kind)
 	}
 	if err != nil {
 		return nil, err
 	}
-	o.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 	return o, nil
 }
 
@@ -290,6 +293,12 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 			return false, err
 		}
 		return realObj != nil, nil
+	case *agg_v1betaObj.APIService:
+		realObj, err := agg_v1beta.New(client.RESTClient()).APIServices().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
 	default:
 	}
 	if sc, ok := obj.(*v1.StorageClass); ok {
@@ -299,5 +308,5 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 		}
 		return realObj != nil, nil
 	}
-	return false, errors.New("Unsupported obj kind: " + obj.GetObjectKind().GroupVersionKind().Kind)
+	return false, errors.New("Unsupported Kubernetes runtime.object kind: " + obj.GetObjectKind().GroupVersionKind().Kind)
 }
