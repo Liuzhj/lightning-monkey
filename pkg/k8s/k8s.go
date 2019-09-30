@@ -179,6 +179,8 @@ func CreateK8SResource(client *k8s.Clientset, obj runtime.Object) (runtime.Objec
 		o, err = client.RbacV1().ClusterRoleBindings().Create(obj.(*rbac_v1.ClusterRoleBinding))
 	case *agg_v1betaObj.APIService:
 		o, err = agg_v1beta.New(client.RESTClient()).APIServices().Create(obj.(*agg_v1betaObj.APIService))
+	case *rbac_v1beta.RoleBinding:
+		o, err = client.RbacV1beta1().RoleBindings(metadata.Namespace).Create(obj.(*rbac_v1beta.RoleBinding))
 	default:
 		return nil, fmt.Errorf("Unsupported runtime.object kind %s", obj.GetObjectKind().GroupVersionKind().Kind)
 	}
@@ -295,6 +297,12 @@ func IsKubernetesResourceExists(client *k8s.Clientset, obj runtime.Object) (bool
 		return realObj != nil, nil
 	case *agg_v1betaObj.APIService:
 		realObj, err := agg_v1beta.New(client.RESTClient()).APIServices().Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *rbac_v1beta.RoleBinding:
+		realObj, err := client.RbacV1beta1().RoleBindings(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
