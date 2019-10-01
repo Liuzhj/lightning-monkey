@@ -30,6 +30,7 @@ jobs:
 
       - name: Execute Mock Tests
         run: |
+          go get -v github.com/golang/mock/mockgen
           go generate ./...
           go test ./test
         env:
