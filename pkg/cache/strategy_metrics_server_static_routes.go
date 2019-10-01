@@ -102,7 +102,7 @@ func generateSystemRoutingRules(agent entities.LightningMonkeyAgent, nodes []ent
 	return nil
 }
 
-func checkMetricsServerHealthy(wps []monitors.WatchPoint) bool {
+func checkMetricsServerHealthy(wps []entities.WatchPoint) bool {
 	if wps == nil || len(wps) == 0 {
 		return false
 	}

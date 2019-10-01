@@ -3,10 +3,10 @@ package controllers
 import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
-	k8s "k8s.io/client-go/kubernetes"
+	k8s "github.com/g0194776/lightningmonkey/pkg/k8s"
 )
 
-func CreateNetworkStackController(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) (DeploymentController, error) {
+func CreateNetworkStackController(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) (DeploymentController, error) {
 	if settings.NetworkStack == nil {
 		return nil, fmt.Errorf("Kubernetes cluster network settings is empty, cluster: %s", settings.Id)
 	}

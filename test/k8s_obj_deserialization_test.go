@@ -180,3 +180,44 @@ subjects:
 	}
 	assert.True(t, len(parsedObjects) == len(yamlContentArr))
 }
+
+//func Test_GetAPIServie(t *testing.T) {
+//	service := `---
+//    apiVersion: apiregistration.k8s.io/v1beta1
+//    kind: APIService
+//    metadata:
+//      name: v1beta1.metrics.k8s.io
+//    spec:
+//     service:
+//       name: metrics-server
+//       namespace: kube-system
+//     group: metrics.k8s.io
+//     version: v1beta1
+//     insecureSkipTLSVerify: true
+//     groupPriorityMinimum: 100
+//     versionPriority: 100`
+//	obj, err := utils.DecodeYamlOrJson(service)
+//	if err != nil {
+//		panic(err)
+//	}
+//	assert.NotNil(t, obj)
+//	client, err := k8s.NewForConfig(&rest.Config{
+//		Host: "http://10.203.40.21:8080",
+//	})
+//	if err != nil {
+//		panic(err)
+//	}
+//	client2, err := agg_v1beta.NewForConfig(&rest.Config{
+//		Host: "http://10.203.40.21:8080",
+//	})
+//	if err != nil {
+//		panic(err)
+//	}
+//	_, err = k8s_helper.IsKubernetesResourceExists(&k8s_helper.KubernetesClientSet{CoreClient: client, APIRegClientV1beta1: client2}, obj)
+//	if err != nil {
+//		if k8sErr.IsNotFound(err) {
+//			return
+//		}
+//		panic(err)
+//	}
+//}

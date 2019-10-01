@@ -9,7 +9,6 @@ import (
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
 	"strings"
 )
 
@@ -179,12 +178,12 @@ metadata:
 )
 
 type TraefikDeploymentController struct {
-	client        *kubernetes.Clientset
+	client        *k8s.KubernetesClientSet
 	settings      entities.LightningMonkeyClusterSettings
 	parsedObjects []runtime.Object
 }
 
-func (dc *TraefikDeploymentController) Initialize(client *kubernetes.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
+func (dc *TraefikDeploymentController) Initialize(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
 	dc.client = client
 	dc.settings = settings
 	yamlContentArr := strings.Split(traefik_payload, "---")
@@ -252,7 +251,7 @@ func (dc *TraefikDeploymentController) HasInstalled() (bool, error) {
 		//skipping installation procedure.
 		return true, nil
 	}
-	ds, err := dc.client.ExtensionsV1beta1().DaemonSets("kube-system").Get("traefik-ingress-controller", v1.GetOptions{})
+	ds, err := dc.client.CoreClient.ExtensionsV1beta1().DaemonSets("kube-system").Get("traefik-ingress-controller", v1.GetOptions{})
 	if err != nil {
 		if k8sErr.IsNotFound(err) {
 			return false, nil

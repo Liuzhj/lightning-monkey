@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/controllers"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/g0194776/lightningmonkey/pkg/monitors"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/sirupsen/logrus"
@@ -19,6 +20,8 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	agg_v1beta "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1beta1"
 )
 
 //go:generate mockgen -package=mock_lm -destination=../../mocks/mock_cluster_controller.go -source=cluster_controller.go ClusterController
@@ -48,14 +51,14 @@ type ClusterController interface {
 	GetNetworkController() controllers.DeploymentController
 	GetDNSController() controllers.DeploymentController
 	GetExtensionDeploymentController() controllers.DeploymentController
-	GetWachPoints() []monitors.WatchPoint
+	GetWachPoints() []entities.WatchPoint
 	GetRandomAdminConfFromMasterAgents() (string, error)
 	GetNodesInformation() ([]entities.KubernetesNodeInfo, error)
 	EnableMonitors()
 }
 
 type ClusterControllerImple struct {
-	client               *kubernetes.Clientset
+	cs                   *k8s.KubernetesClientSet
 	k8sClientIP          string
 	cache                *AgentCache
 	certs                map[string]string
@@ -247,7 +250,10 @@ func (cc *ClusterControllerImple) GetCachedAgent(agentId string) (*entities.Ligh
 }
 
 func (cc *ClusterControllerImple) InitializeKubernetesClient() error {
-	if cc.client != nil {
+	if cc.cs == nil {
+		cc.cs = &k8s.KubernetesClientSet{}
+	}
+	if cc.cs.CoreClient != nil {
 		return nil
 	}
 	agent := cc.cache.GetFirstProvisionedKubernetesMasterAgent()
@@ -271,9 +277,15 @@ func (cc *ClusterControllerImple) InitializeKubernetesClient() error {
 	if err != nil {
 		return fmt.Errorf("Failed to build Kubernetes master client configuration, error: %s", err.Error())
 	}
-	cc.client, err = kubernetes.NewForConfig(config)
+	//create core client.
+	cc.cs.CoreClient, err = kubernetes.NewForConfig(config)
 	if err != nil {
-		return fmt.Errorf("Failed to initialize Kubernetes master client, error: %s", err.Error())
+		return fmt.Errorf("Failed to initialize core Kubernetes client, error: %s", err.Error())
+	}
+	//create particular client for API Service.
+	cc.cs.APIRegClientV1beta1, err = agg_v1beta.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("Failed to initialize particular Kubernetes client for API reg, error: %s", err.Error())
 	}
 	cc.k8sClientIP = agent.State.LastReportIP
 	return nil
@@ -284,7 +296,7 @@ func (cc *ClusterControllerImple) InitializeNetworkController() error {
 		return nil
 	}
 	var err error
-	cc.nsc, err = controllers.CreateNetworkStackController(cc.client, cc.k8sClientIP, cc.GetSettings())
+	cc.nsc, err = controllers.CreateNetworkStackController(cc.cs, cc.k8sClientIP, cc.GetSettings())
 	if err != nil {
 		return fmt.Errorf("Failed to initialize Kubernetes network stack controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
 	}
@@ -300,7 +312,7 @@ func (cc *ClusterControllerImple) InitializeDNSController() error {
 		return nil
 	}
 	var err error
-	cc.ddc, err = controllers.CreateDNSDeploymentController(cc.client, cc.k8sClientIP, cc.GetSettings())
+	cc.ddc, err = controllers.CreateDNSDeploymentController(cc.cs, cc.k8sClientIP, cc.GetSettings())
 	if err != nil {
 		return fmt.Errorf("Failed to initialize Kubernetes DNS deployment controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
 	}
@@ -311,11 +323,11 @@ func (cc *ClusterControllerImple) GetDNSController() controllers.DeploymentContr
 	return cc.ddc
 }
 
-func (cc *ClusterControllerImple) GetWachPoints() []monitors.WatchPoint {
+func (cc *ClusterControllerImple) GetWachPoints() []entities.WatchPoint {
 	if cc.monitors == nil || len(cc.monitors) == 0 {
 		return nil
 	}
-	wps := []monitors.WatchPoint{}
+	wps := []entities.WatchPoint{}
 	for i := 0; i < len(cc.monitors); i++ {
 		wpl := cc.monitors[i].GetWatchPoints()
 		if wpl == nil || len(wpl) == 0 {
@@ -335,7 +347,7 @@ func (cc *ClusterControllerImple) EnableMonitors() {
 	logrus.Debugf("Enabling monitors to cluster: %s...", cc.GetClusterId())
 	cc.monitors = []monitors.KubernetesResourceMonitor{}
 	//System Component.
-	sysMonitor := monitors.NewMonitor("sys", cc.client, cc.GetClusterId())
+	sysMonitor := monitors.NewMonitor("sys", cc.cs, cc.GetClusterId())
 	err := sysMonitor.Start()
 	if err != nil {
 		logrus.Errorf("Failed to start Kubernetes system component monitor, error: %s", err.Error())
@@ -343,7 +355,7 @@ func (cc *ClusterControllerImple) EnableMonitors() {
 	}
 	cc.monitors = append(cc.monitors, sysMonitor)
 	//Kubernetes Deployment.
-	deployMonitor := monitors.NewMonitor("deployment", cc.client, cc.GetClusterId())
+	deployMonitor := monitors.NewMonitor("deployment", cc.cs, cc.GetClusterId())
 	err = deployMonitor.Start()
 	if err != nil {
 		logrus.Errorf("Failed to start Kubernetes deployment monitor, error: %s", err.Error())
@@ -351,7 +363,7 @@ func (cc *ClusterControllerImple) EnableMonitors() {
 	}
 	cc.monitors = append(cc.monitors, deployMonitor)
 	//Kubernetes Daemonset.
-	dsMonitor := monitors.NewMonitor("daemonset", cc.client, cc.GetClusterId())
+	dsMonitor := monitors.NewMonitor("daemonset", cc.cs, cc.GetClusterId())
 	err = dsMonitor.Start()
 	if err != nil {
 		logrus.Errorf("Failed to start Kubernetes daemonset monitor, error: %s", err.Error())
@@ -369,7 +381,7 @@ func (cc *ClusterControllerImple) InitializeExtensionDeploymentController() erro
 		return nil
 	}
 	var err error
-	cc.edc, err = controllers.CreateExtensionDeploymentController(cc.client, cc.k8sClientIP, cc.GetSettings())
+	cc.edc, err = controllers.CreateExtensionDeploymentController(cc.cs, cc.k8sClientIP, cc.GetSettings())
 	if err != nil {
 		return fmt.Errorf("Failed to initialize extension deployment controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
 	}
@@ -381,10 +393,10 @@ func (cc *ClusterControllerImple) GetRandomAdminConfFromMasterAgents() (string, 
 }
 
 func (cc *ClusterControllerImple) GetNodesInformation() ([]entities.KubernetesNodeInfo, error) {
-	if cc.client == nil {
+	if cc.cs == nil || cc.cs.CoreClient == nil {
 		return nil, fmt.Errorf("Cluster %s internal Kubernetes client has not be initialized yet!", cc.GetSettings().Id)
 	}
-	ns, err := cc.client.CoreV1().Nodes().List(meta_v1.ListOptions{})
+	ns, err := cc.cs.CoreClient.CoreV1().Nodes().List(meta_v1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("Failed to list cluster(%s)'s node, error: %s", cc.GetSettings().Id, err.Error())
 	}

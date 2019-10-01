@@ -10,7 +10,6 @@ import (
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
 	"strings"
 	"text/template"
 )
@@ -200,13 +199,13 @@ spec:
 )
 
 type CoreDNSController struct {
-	client        *kubernetes.Clientset
+	client        *k8s.KubernetesClientSet
 	settings      entities.LightningMonkeyClusterSettings
 	parsedObjects []runtime.Object
 }
 
-func (dc *CoreDNSController) Initialize(client *kubernetes.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
-	dc.client = client
+func (dc *CoreDNSController) Initialize(cs *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
+	dc.client = cs
 	dc.settings = settings
 	attributes := map[string]string{
 		"DOMAIN": dc.settings.ServiceDNSDomain,
@@ -269,7 +268,7 @@ func (dc *CoreDNSController) GetName() string {
 }
 
 func (dc *CoreDNSController) HasInstalled() (bool, error) {
-	ds, err := dc.client.AppsV1beta1().Deployments("kube-system").Get("coredns", v1.GetOptions{})
+	ds, err := dc.client.CoreClient.AppsV1beta1().Deployments("kube-system").Get("coredns", v1.GetOptions{})
 	if err != nil {
 		if k8sErr.IsNotFound(err) {
 			return false, nil

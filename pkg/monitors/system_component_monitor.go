@@ -1,6 +1,8 @@
 package monitors
 
 import (
+	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -8,13 +10,12 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 type KubernetesSystemComponentMonitor struct {
 	clusterId string
-	client    *kubernetes.Clientset
-	cache     *[]WatchPoint
+	client    *k8s.KubernetesClientSet
+	cache     *[]entities.WatchPoint
 	stopChan  chan int
 }
 
@@ -22,7 +23,7 @@ func (m *KubernetesSystemComponentMonitor) GetName() string {
 	return "Kubernetes System Component Monitor"
 }
 
-func (m *KubernetesSystemComponentMonitor) GetWatchPoints() []WatchPoint {
+func (m *KubernetesSystemComponentMonitor) GetWatchPoints() []entities.WatchPoint {
 	return *m.cache
 }
 
@@ -58,7 +59,7 @@ func (m *KubernetesSystemComponentMonitor) doMonitor() {
 	if m.client == nil {
 		return
 	}
-	csl, err := m.client.CoreV1().ComponentStatuses().List(meta_v1.ListOptions{})
+	csl, err := m.client.CoreClient.CoreV1().ComponentStatuses().List(meta_v1.ListOptions{})
 	if err != nil {
 		logrus.Errorf("Failed to list system components from cluster: %s, error: %s", m.clusterId, err.Error())
 		return
@@ -67,10 +68,10 @@ func (m *KubernetesSystemComponentMonitor) doMonitor() {
 		return
 	}
 	var item v1.ComponentStatus
-	wps := make([]WatchPoint, 0, len(csl.Items))
+	wps := make([]entities.WatchPoint, 0, len(csl.Items))
 	for i := 0; i < len(csl.Items); i++ {
 		item = csl.Items[i]
-		wp := WatchPoint{}
+		wp := entities.WatchPoint{}
 		wp.Name = item.Name
 		wp.Namespace = "-"
 		wp.Status = getHealthStatus(item.Conditions)

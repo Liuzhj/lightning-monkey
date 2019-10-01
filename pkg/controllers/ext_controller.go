@@ -3,11 +3,11 @@ package controllers
 import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/sirupsen/logrus"
-	k8s "k8s.io/client-go/kubernetes"
 )
 
-func CreateExtensionDeploymentController(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) (DeploymentController, error) {
+func CreateExtensionDeploymentController(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) (DeploymentController, error) {
 	dc := ExtensionDeploymentController{client: client, settings: settings}
 	err := dc.Initialize(client, clientIp, settings)
 	if err != nil {
@@ -17,12 +17,12 @@ func CreateExtensionDeploymentController(client *k8s.Clientset, clientIp string,
 }
 
 type ExtensionDeploymentController struct {
-	client      *k8s.Clientset
+	client      *k8s.KubernetesClientSet
 	settings    entities.LightningMonkeyClusterSettings
 	controllers []DeploymentController
 }
 
-func (dc *ExtensionDeploymentController) Initialize(client *k8s.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
+func (dc *ExtensionDeploymentController) Initialize(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
 	controllers := []DeploymentController{
 		&PrometheusDeploymentController{},
 		&MetricServerDeploymentController{},

@@ -10,7 +10,6 @@ import (
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
 	"strings"
 	"text/template"
 )
@@ -217,12 +216,12 @@ subjects:
 )
 
 type KubeRouterNetworkController struct {
-	client        *kubernetes.Clientset
+	client        *k8s.KubernetesClientSet
 	settings      entities.LightningMonkeyClusterSettings
 	parsedObjects []runtime.Object
 }
 
-func (nc *KubeRouterNetworkController) Initialize(client *kubernetes.Clientset, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
+func (nc *KubeRouterNetworkController) Initialize(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
 	nc.client = client
 	nc.settings = settings
 	//TODO: use VIP.
@@ -284,7 +283,7 @@ func (nc *KubeRouterNetworkController) GetName() string {
 }
 
 func (nc *KubeRouterNetworkController) HasInstalled() (bool, error) {
-	ds, err := nc.client.ExtensionsV1beta1().DaemonSets("kube-system").Get("kube-router", v1.GetOptions{})
+	ds, err := nc.client.CoreClient.ExtensionsV1beta1().DaemonSets("kube-system").Get("kube-router", v1.GetOptions{})
 	if err != nil {
 		if k8sErr.IsNotFound(err) {
 			return false, nil

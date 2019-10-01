@@ -1,6 +1,8 @@
 package entities
 
-import "github.com/g0194776/lightningmonkey/pkg/monitors"
+import (
+	"time"
+)
 
 const (
 	Succeed                          int = 0
@@ -71,5 +73,13 @@ type AgentReportStatusResponse struct {
 
 type GetClusterComponentStatusResponse struct {
 	Response
-	WatchPoints []monitors.WatchPoint `json:"status"`
+	WatchPoints []WatchPoint `json:"status"`
+}
+
+type WatchPoint struct {
+	IsSystemComponent bool      `json:"is_system_component"`
+	Name              string    `json:"name"`
+	Namespace         string    `json:"namespace"`
+	Status            string    `json:"status"`
+	LastCheckTime     time.Time `json:"last_check_time"`
 }

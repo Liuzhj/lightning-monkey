@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	etcdserverpb2 "github.com/coreos/etcd/etcdserver/etcdserverpb"
 	mock_lm "github.com/g0194776/lightningmonkey/mocks"
 	"github.com/g0194776/lightningmonkey/pkg/cache"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
@@ -9,7 +10,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	assert "github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/etcdserver/etcdserverpb"
 	"reflect"
 	"testing"
 	"unsafe"
@@ -22,7 +22,7 @@ func Test_AgentOnline(t *testing.T) {
 	sd := mock_lm.NewMockLightningMonkeyStorageDriver(gc)
 	//full-sync logic
 	sd.EXPECT().Get(gomock.Any(), fmt.Sprintf("/lightning-monkey/clusters/%s/", clusterId), gomock.Any()).Return(&clientv3.GetResponse{
-		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+		Header: &etcdserverpb2.ResponseHeader{Revision: 0},
 	}, nil)
 
 	cc := cache.ClusterControllerImple{}
@@ -57,7 +57,7 @@ func Test_AgentOnlineWithoutStateObject(t *testing.T) {
 	sd := mock_lm.NewMockLightningMonkeyStorageDriver(gc)
 	//full-sync logic
 	sd.EXPECT().Get(gomock.Any(), fmt.Sprintf("/lightning-monkey/clusters/%s/", clusterId), gomock.Any()).Return(&clientv3.GetResponse{
-		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+		Header: &etcdserverpb2.ResponseHeader{Revision: 0},
 	}, nil)
 
 	cc := cache.ClusterControllerImple{}
@@ -89,7 +89,7 @@ func Test_AgentOffline(t *testing.T) {
 	sd := mock_lm.NewMockLightningMonkeyStorageDriver(gc)
 	//full-sync logic
 	sd.EXPECT().Get(gomock.Any(), fmt.Sprintf("/lightning-monkey/clusters/%s/", clusterId), gomock.Any()).Return(&clientv3.GetResponse{
-		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+		Header: &etcdserverpb2.ResponseHeader{Revision: 0},
 	}, nil)
 
 	cc := cache.ClusterControllerImple{}
@@ -129,7 +129,7 @@ func Test_DisposedCall(t *testing.T) {
 	sd := mock_lm.NewMockLightningMonkeyStorageDriver(gc)
 	//full-sync logic
 	sd.EXPECT().Get(gomock.Any(), fmt.Sprintf("/lightning-monkey/clusters/%s/", clusterId), gomock.Any()).Return(&clientv3.GetResponse{
-		Header: &etcdserverpb.ResponseHeader{Revision: 0},
+		Header: &etcdserverpb2.ResponseHeader{Revision: 0},
 	}, nil)
 
 	cc := cache.ClusterControllerImple{}
