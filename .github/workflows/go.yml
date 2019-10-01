@@ -7,10 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Set up Go 1.12.10
+      - name: Set up Go 1.13
         uses: actions/setup-go@v1
         with:
-          go-version: 1.12.10
+          go-version: 1.13
         id: go
 
       - name: Check out code into the Go module directory
@@ -25,6 +25,13 @@ jobs:
           echo ${GITHUB_WORKSPACE}
           echo ${GOPATH}
           echo ${GOROOT}
+        env:
+          GOPATH: /home/runner/work/lightning-monkey/go
+
+      - name: Execute Mock Tests
+        run: |
+          go generate ./...
+          go test ./test
         env:
           GOPATH: /home/runner/work/lightning-monkey/go
 
