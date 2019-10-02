@@ -628,7 +628,7 @@ _run_main() {
   #curl http://localhost:9100/metrics
   wget "${apiserver}${PROM_NODE_URL}" -O /tmp/exporter.tar
   docker load </tmp/exporter.tar
-  docker run -d --net="host" --pid="host" --cap-add=SYS_TIME quay.io/prometheus/node-exporter:v0.15.2
+  docker run -d --net="host" --pid="host" --cap-add=SYS_TIME prom/node-exporter:v0.15.2
   
   #deployment lmagent
   wget "${apiserver}${LMAGENT_URL}" -O /tmp/lmagent.tar
