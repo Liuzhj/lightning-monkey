@@ -633,7 +633,7 @@ _run_main() {
   #deployment lmagent
   wget "${apiserver}${LMAGENT_URL}" -O /tmp/lmagent.tar
   docker load </tmp/lmagent.tar
-  docker run -itd --restart=always --net=host \
+  docker run -itd --restart=always --net=host --privileged \
             --name agent \
             -v /etc:/etc \
             -v /var/run:/var/run \
