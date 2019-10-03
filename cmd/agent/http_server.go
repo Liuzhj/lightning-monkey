@@ -47,6 +47,7 @@ func (a *LightningMonkeyAgent) GenerateSystemRoutingRules(ctx context.Context) {
 		if req.Nodes != nil && len(req.Nodes) > 0 {
 			addedRulesCount := 0
 			var rr netlink.Route
+			//TODO(g0194776): considering add more check logic for routing rules replacement.
 			for i := 0; i < len(req.Nodes); i++ {
 				_, cidr, err := net.ParseCIDR(req.Nodes[i].PodCIDR)
 				if err != nil {
