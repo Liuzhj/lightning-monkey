@@ -105,8 +105,8 @@ spec:
       - name: metrics-server
         image: mirrorgooglecontainers/metrics-server-amd64:v0.3.3
         args:
-        - --metric-resolution=1m
-        - --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP
+        - --kubelet-insecure-tls
+        - --kubelet-preferred-address-types=InternalIP
         imagePullPolicy: Always
         volumeMounts:
         - name: tmp-dir
