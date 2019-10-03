@@ -116,14 +116,54 @@ Vagrant.configure("2") do |config|
       end
 
 
+      config.vm.define "k8s_lb1" do |k8s_lb1|
+       k8s_lb1.vm.box = "centos/7"
+       k8s_lb1.vm.network "private_network", ip: "192.168.33.15"
+       k8s_lb1.vm.hostname = "192.168.33.15"
+       k8s_lb1.trigger.after :up do |trigger|
+         trigger.run_remote = {inline: <<-SHELL
+           curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha setup
+           curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha -f true run
+           echo "waiting 10s..."
+           sleep 10s
+           echo "try to retrieving Agent logs..."
+           docker logs agent
+           echo "retrieving all docker containers..."
+           docker ps -a
+           SHELL
+           }
+         end
+      end
+
+
+      config.vm.define "k8s_lb2" do |k8s_lb2|
+       k8s_lb2.vm.box = "centos/7"
+       k8s_lb2.vm.network "private_network", ip: "192.168.33.16"
+       k8s_lb2.vm.hostname = "192.168.33.16"
+       k8s_lb2.trigger.after :up do |trigger|
+         trigger.run_remote = {inline: <<-SHELL
+           curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha setup
+           curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha -f true run
+           echo "waiting 10s..."
+           sleep 10s
+           echo "try to retrieving Agent logs..."
+           docker logs agent
+           echo "retrieving all docker containers..."
+           docker ps -a
+           SHELL
+           }
+         end
+      end
+
+
 
       config.vm.define "k8s_minion1" do |k8s_minion1|
         k8s_minion1.vm.box = "centos/7"
-        k8s_minion1.vm.network "private_network", ip: "192.168.33.14"
-        k8s_minion1.vm.hostname = "192.168.33.14"
+        k8s_minion1.vm.network "private_network", ip: "192.168.33.20"
+        k8s_minion1.vm.hostname = "192.168.33.20"
         k8s_minion1.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
-		    curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
+		        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
             curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -f true run
             echo "waiting 10s..."
             sleep 10s
@@ -136,15 +176,14 @@ Vagrant.configure("2") do |config|
           end
        end
 
-
-       config.vm.define "k8s_lb1" do |k8s_lb1|
-        k8s_lb1.vm.box = "centos/7"
-        k8s_lb1.vm.network "private_network", ip: "192.168.33.15"
-        k8s_lb1.vm.hostname = "192.168.33.15"
-        k8s_lb1.trigger.after :up do |trigger|
+      config.vm.define "k8s_minion2" do |k8s_minion2|
+        k8s_minion2.vm.box = "centos/7"
+        k8s_minion2.vm.network "private_network", ip: "192.168.33.21"
+        k8s_minion2.vm.hostname = "192.168.33.21"
+        k8s_minion2.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
-            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha setup
-            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha -f true run
+		        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
+            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -f true run
             echo "waiting 10s..."
             sleep 10s
             echo "try to retrieving Agent logs..."
@@ -155,25 +194,62 @@ Vagrant.configure("2") do |config|
             }
           end
        end
+       
+       config.vm.define "k8s_minion3" do |k8s_minion3|
+         k8s_minion3.vm.box = "centos/7"
+         k8s_minion3.vm.network "private_network", ip: "192.168.33.22"
+         k8s_minion3.vm.hostname = "192.168.33.22"
+         k8s_minion3.trigger.after :up do |trigger|
+           trigger.run_remote = {inline: <<-SHELL
+             curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
+             curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -f true run
+             echo "waiting 10s..."
+             sleep 10s
+             echo "try to retrieving Agent logs..."
+             docker logs agent
+             echo "retrieving all docker containers..."
+             docker ps -a
+             SHELL
+             }
+           end
+        end
+        
+        config.vm.define "k8s_minion4" do |k8s_minion4|
+          k8s_minion4.vm.box = "centos/7"
+          k8s_minion4.vm.network "private_network", ip: "192.168.33.23"
+          k8s_minion4.vm.hostname = "192.168.33.23"
+          k8s_minion4.trigger.after :up do |trigger|
+            trigger.run_remote = {inline: <<-SHELL
+              curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
+              curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -f true run
+              echo "waiting 10s..."
+              sleep 10s
+              echo "try to retrieving Agent logs..."
+              docker logs agent
+              echo "retrieving all docker containers..."
+              docker ps -a
+              SHELL
+              }
+            end
+         end
 
-
-       config.vm.define "k8s_lb2" do |k8s_lb2|
-        k8s_lb2.vm.box = "centos/7"
-        k8s_lb2.vm.network "private_network", ip: "192.168.33.16"
-        k8s_lb2.vm.hostname = "192.168.33.16"
-        k8s_lb2.trigger.after :up do |trigger|
-          trigger.run_remote = {inline: <<-SHELL
-            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha setup
-            curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r ha -f true run
-            echo "waiting 10s..."
-            sleep 10s
-            echo "try to retrieving Agent logs..."
-            docker logs agent
-            echo "retrieving all docker containers..."
-            docker ps -a
-            SHELL
-            }
+         config.vm.define "k8s_minion5" do |k8s_minion5|
+           k8s_minion5.vm.box = "centos/7"
+           k8s_minion5.vm.network "private_network", ip: "192.168.33.24"
+           k8s_minion5.vm.hostname = "192.168.33.24"
+           k8s_minion5.trigger.after :up do |trigger|
+             trigger.run_remote = {inline: <<-SHELL
+               curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
+               curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -f true run
+               echo "waiting 10s..."
+               sleep 10s
+               echo "try to retrieving Agent logs..."
+               docker logs agent
+               echo "retrieving all docker containers..."
+               docker ps -a
+               SHELL
+               }
+             end
           end
-       end
 
 end
