@@ -34,8 +34,17 @@ jobs:
           go install -v github.com/golang/mock/mockgen
           go generate ./...
           go test -v ./test
+          go test -cover -coverprofile=coverage.xml ./test
         env:
           GOPATH: /home/runner/work/lightning-monkey/go
+          
+      - name: Uploading Coverage File
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}} #required
+          file: ./coverage.xml #optional
+          flags: unit-tests #optional
+          name: lightning-monkey #optional
 
       - name: Try Building Agent
         run: |
