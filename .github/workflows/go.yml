@@ -30,6 +30,7 @@ jobs:
 
       - name: Execute Mock Tests
         run: |
+          export PATH=${PATH}:`go env GOPATH`/bin
           go install -v github.com/golang/mock/mockgen
           go generate ./...
           go test ./test
