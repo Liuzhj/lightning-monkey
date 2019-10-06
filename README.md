@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.com/g0194776/lightning-monkey.svg?token=vHH8ZAATWuPpZvD2YF3L&branch=feature/init)](https://travis-ci.com/g0194776/lightning-monkey)
 [![codecov](https://codecov.io/gh/g0194776/lightning-monkey/branch/master/graph/badge.svg)](https://codecov.io/gh/g0194776/lightning-monkey)
 ![size](https://img.shields.io/github/languages/code-size/g0194776/lightning-monkey)
+![go](https://img.shields.io/badge/golang-1.13%2B-blue)
 ![platform](https://img.shields.io/badge/platform-linux--amd64%20%7C%20darwin-lightgrey)
 
 # Lightning Monkey
