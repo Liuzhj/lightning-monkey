@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/controllers/metrics"
+	"github.com/g0194776/lightningmonkey/pkg/controllers/prometheus"
+	"github.com/g0194776/lightningmonkey/pkg/controllers/traefik"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/sirupsen/logrus"
@@ -24,9 +27,9 @@ type ExtensionDeploymentController struct {
 
 func (dc *ExtensionDeploymentController) Initialize(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
 	controllers := []DeploymentController{
-		&PrometheusDeploymentController{},
-		&MetricServerDeploymentController{},
-		&TraefikDeploymentController{},
+		&prometheus.PrometheusDeploymentController{},
+		&metrics.MetricServerDeploymentController{},
+		&traefik.TraefikDeploymentController{},
 	}
 	dc.controllers = []DeploymentController{}
 	var err error

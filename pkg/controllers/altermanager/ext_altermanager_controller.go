@@ -1,4 +1,4 @@
-package controllers
+package altermanager
 
 import (
 	"github.com/g0194776/lightningmonkey/pkg/entities"

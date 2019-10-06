@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/controllers"
+	"github.com/g0194776/lightningmonkey/pkg/controllers/dns"
+	"github.com/g0194776/lightningmonkey/pkg/controllers/network"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/g0194776/lightningmonkey/pkg/monitors"
@@ -296,7 +298,7 @@ func (cc *ClusterControllerImple) InitializeNetworkController() error {
 		return nil
 	}
 	var err error
-	cc.nsc, err = controllers.CreateNetworkStackController(cc.cs, cc.k8sClientIP, cc.GetSettings())
+	cc.nsc, err = network.CreateNetworkStackController(cc.cs, cc.k8sClientIP, cc.GetSettings())
 	if err != nil {
 		return fmt.Errorf("Failed to initialize Kubernetes network stack controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
 	}
@@ -312,7 +314,7 @@ func (cc *ClusterControllerImple) InitializeDNSController() error {
 		return nil
 	}
 	var err error
-	cc.ddc, err = controllers.CreateDNSDeploymentController(cc.cs, cc.k8sClientIP, cc.GetSettings())
+	cc.ddc, err = dns.CreateDNSDeploymentController(cc.cs, cc.k8sClientIP, cc.GetSettings())
 	if err != nil {
 		return fmt.Errorf("Failed to initialize Kubernetes DNS deployment controller on cluster: %s, error: %s", cc.GetClusterId(), err.Error())
 	}
