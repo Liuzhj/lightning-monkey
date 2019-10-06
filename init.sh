@@ -435,6 +435,8 @@ _setup_kernel() {
 
 _setup_tools() {
   yum install -y strace lsof net-tools ipvsadm rpcbind nfs-utils wget chrony sysstat
+  yum install -y epel-release
+  yum install -y jq
 }
 
 _setup_swap() {

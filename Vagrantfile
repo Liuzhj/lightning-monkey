@@ -59,8 +59,8 @@ Vagrant.configure("2") do |config|
       trigger.run_remote = {inline: <<-SHELL
         curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
         curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd -f true run
-        echo "waiting 10s..."
-        sleep 10s
+        echo "waiting 100s..."
+        sleep 100s
         sudo docker cp agent:/usr/bin/kubectl /usr/bin
         sudo mkdir ~/.kube/ && sudo curl -s http://192.168.33.10:8080/apis/v1/certs/admin/get?cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 | jq -r .content | sed 's/\\n/\n/g' > ~/.kube/config
         echo "try to retrieving Agent logs..."
@@ -81,8 +81,8 @@ Vagrant.configure("2") do |config|
         trigger.run_remote = {inline: <<-SHELL
           curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
           curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd -f true run
-          echo "waiting 10s..."
-          sleep 10s
+          echo "waiting 100s..."
+          sleep 100s
           sudo docker cp agent:/usr/bin/kubectl /usr/bin
           sudo mkdir ~/.kube/ && sudo curl -s http://192.168.33.10:8080/apis/v1/certs/admin/get?cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 | jq -r .content | sed 's/\\n/\n/g' > ~/.kube/config
           echo "try to retrieving Agent logs..."
@@ -102,8 +102,8 @@ Vagrant.configure("2") do |config|
         trigger.run_remote = {inline: <<-SHELL
           curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd setup
           curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r master  -r etcd -f true run
-          echo "waiting 10s..."
-          sleep 10s
+          echo "waiting 100s..."
+          sleep 100s
           sudo docker cp agent:/usr/bin/kubectl /usr/bin
           sudo mkdir ~/.kube/ && sudo curl -s http://192.168.33.10:8080/apis/v1/certs/admin/get?cluster=1b8624d9-b3cf-41a3-a95b-748277484ba5 | jq -r .content | sed 's/\\n/\n/g' > ~/.kube/config
           echo "try to retrieving Agent logs..."
@@ -161,6 +161,9 @@ Vagrant.configure("2") do |config|
         k8s_minion1.vm.box = "centos/7"
         k8s_minion1.vm.network "private_network", ip: "192.168.33.20"
         k8s_minion1.vm.hostname = "192.168.33.20"
+        k8s_minion1.vm.provider :virtualbox do |vb|
+          vb.customize ["modifyvm", :id, "--memory", "6144"]
+        end
         k8s_minion1.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
 		        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
@@ -180,6 +183,9 @@ Vagrant.configure("2") do |config|
         k8s_minion2.vm.box = "centos/7"
         k8s_minion2.vm.network "private_network", ip: "192.168.33.21"
         k8s_minion2.vm.hostname = "192.168.33.21"
+        k8s_minion2.vm.provider :virtualbox do |vb|
+          vb.customize ["modifyvm", :id, "--memory", "6144"]
+        end
         k8s_minion2.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
 		        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
@@ -199,6 +205,9 @@ Vagrant.configure("2") do |config|
          k8s_minion3.vm.box = "centos/7"
          k8s_minion3.vm.network "private_network", ip: "192.168.33.22"
          k8s_minion3.vm.hostname = "192.168.33.22"
+         k8s_minion3.vm.provider :virtualbox do |vb|
+           vb.customize ["modifyvm", :id, "--memory", "6144"]
+         end
          k8s_minion3.trigger.after :up do |trigger|
            trigger.run_remote = {inline: <<-SHELL
              curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
@@ -218,6 +227,9 @@ Vagrant.configure("2") do |config|
           k8s_minion4.vm.box = "centos/7"
           k8s_minion4.vm.network "private_network", ip: "192.168.33.23"
           k8s_minion4.vm.hostname = "192.168.33.23"
+          k8s_minion4.vm.provider :virtualbox do |vb|
+            vb.customize ["modifyvm", :id, "--memory", "6144"]
+          end
           k8s_minion4.trigger.after :up do |trigger|
             trigger.run_remote = {inline: <<-SHELL
               curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
@@ -237,6 +249,9 @@ Vagrant.configure("2") do |config|
            k8s_minion5.vm.box = "centos/7"
            k8s_minion5.vm.network "private_network", ip: "192.168.33.24"
            k8s_minion5.vm.hostname = "192.168.33.24"
+           k8s_minion5.vm.provider :virtualbox do |vb|
+             vb.customize ["modifyvm", :id, "--memory", "6144"]
+           end
            k8s_minion5.trigger.after :up do |trigger|
              trigger.run_remote = {inline: <<-SHELL
                curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion setup
