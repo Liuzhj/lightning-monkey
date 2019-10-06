@@ -31,7 +31,6 @@ jobs:
       - name: Execute Mock Tests
         run: |
           go install -v github.com/golang/mock/mockgen
-          find / -name mockgen
           go generate ./...
           go test ./test
         env:
