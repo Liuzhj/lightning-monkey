@@ -43,7 +43,7 @@ jobs:
         with:
           token: ${{secrets.CODECOV_TOKEN}} #required
           file: ./coverage.xml #optional
-          flags: unit-tests #optional
+          flags: unittests #optional
           name: lightning-monkey #optional
 
       - name: Try Building Agent
