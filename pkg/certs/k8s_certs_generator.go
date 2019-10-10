@@ -257,7 +257,7 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 		re = regexp.MustCompile(`(--address=)(.*)`)
 		newContent = re.ReplaceAllString(newContent, "${1}0.0.0.0")
 		re = regexp.MustCompile(`(--enable-admission-plugins=)(.*)`)
-		newContent = re.ReplaceAllString(newContent, "${1}NamespaceLifecycle,NamespaceExists,LimitRanger,ResourceQuota,ServiceAccount")
+		newContent = re.ReplaceAllString(newContent, "${1}NamespaceLifecycle,NamespaceExists,LimitRanger,ResourceQuota,ServiceAccount,MutatingAdmissionWebhook,ValidatingAdmissionWebhook")
 		//set static routing rules for metrics-server.
 		newContent = strings.Replace(newContent, "- kube-apiserver", "- kube-apiserver\n    - --enable-aggregator-routing=true", -1)
 		//replace ETCD settings.
