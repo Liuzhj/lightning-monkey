@@ -150,7 +150,7 @@ spec:
      containers:
        - name: elasticsearch-data
          image: elasticsearch:6.8.3
-         command: ["bash", "-c", "ulimit -l unlimited && sysctl -w vm.max_map_count=262144 && chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/data && exec su elasticsearch docker-entrypoint.sh"]
+         command: ["bash", "-c", "ulimit -l unlimited && sysctl -w vm.max_map_count={{.MAX_MAP_COUNT}} && chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/data && exec su elasticsearch docker-entrypoint.sh"]
          ports:
            - containerPort: 9200
              protocol: TCP
@@ -179,7 +179,7 @@ spec:
      volumes:
        - name: elasticsearch-data-volume
          hostPath:
-          path: /data/elasticsearch
+          path: {{.DATA_DIR}}
           type: DirectoryOrCreate
 ---
 kind: Service
@@ -245,7 +245,7 @@ func (dc *ElasticSearchDeploymentController) Initialize(client *k8s.KubernetesCl
 
 func (dc *ElasticSearchDeploymentController) processArguments(args map[string]string) string {
 	var isOK bool
-	var dataXMS, dataXMX, masterXMS, masterXMX, pingTimeout string
+	var dataXMS, dataXMX, masterXMS, masterXMX, pingTimeout, dataDir, maxMapCount string
 	if masterXMS, isOK = args[VAR_MASTER_XMS]; !isOK {
 		masterXMS = "512m"
 	}
@@ -261,12 +261,20 @@ func (dc *ElasticSearchDeploymentController) processArguments(args map[string]st
 	if pingTimeout, isOK = args[VAR_PING_TIMEOUT]; !isOK {
 		pingTimeout = "5s"
 	}
+	if dataDir, isOK = args[VAR_DATA_DIR]; !isOK {
+		dataDir = "/data/elasticsearch"
+	}
+	if maxMapCount, isOK = args[VAR_MAX_MAP_COUNT]; !isOK {
+		maxMapCount = "262144"
+	}
 	attributes := map[string]string{
-		"DATA_XMS":     dataXMS,
-		"DATA_XMX":     dataXMX,
-		"MASTER_XMS":   masterXMS,
-		"MASTER_XMX":   masterXMX,
-		"PING_TIMEOUT": pingTimeout,
+		"DATA_XMS":      dataXMS,
+		"DATA_XMX":      dataXMX,
+		"MASTER_XMS":    masterXMS,
+		"MASTER_XMX":    masterXMX,
+		"PING_TIMEOUT":  pingTimeout,
+		"DATA_DIR":      dataDir,
+		"MAX_MAP_COUNT": maxMapCount,
 	}
 	t := template.New("t1")
 	t, err := t.Parse(Payload)
