@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/controllers/elasticsearch"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/metrics"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/prometheus"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/traefik"
@@ -30,6 +31,7 @@ func (dc *ExtensionDeploymentController) Initialize(client *k8s.KubernetesClient
 		&prometheus.PrometheusDeploymentController{},
 		&metrics.MetricServerDeploymentController{},
 		&traefik.TraefikDeploymentController{},
+		&elasticsearch.ElasticSearchDeploymentController{},
 	}
 	dc.controllers = []DeploymentController{}
 	var err error

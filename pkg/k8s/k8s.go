@@ -186,6 +186,8 @@ func CreateK8SResource(cs *KubernetesClientSet, obj runtime.Object) (runtime.Obj
 		o, err = cs.APIRegClientV1beta1.APIServices().Create(obj.(*agg_v1betaObj.APIService))
 	case *rbac_v1beta.RoleBinding:
 		o, err = cs.CoreClient.RbacV1beta1().RoleBindings(metadata.Namespace).Create(obj.(*rbac_v1beta.RoleBinding))
+	case *apps_v1.StatefulSet:
+		o, err = cs.CoreClient.AppsV1().StatefulSets(metadata.Namespace).Create(obj.(*apps_v1.StatefulSet))
 	default:
 		return nil, fmt.Errorf("Unsupported runtime.object kind %s", obj.GetObjectKind().GroupVersionKind().Kind)
 	}
@@ -308,6 +310,12 @@ func IsKubernetesResourceExists(cs *KubernetesClientSet, obj runtime.Object) (bo
 		return realObj != nil, nil
 	case *rbac_v1beta.RoleBinding:
 		realObj, err := cs.CoreClient.RbacV1beta1().RoleBindings(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *apps_v1.StatefulSet:
+		realObj, err := cs.CoreClient.AppsV1().StatefulSets(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}
