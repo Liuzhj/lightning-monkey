@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	payload = `apiVersion: v1
+	Payload = `apiVersion: v1
 kind: ServiceAccount
 metadata:
  labels:
@@ -269,7 +269,7 @@ func (dc *ElasticSearchDeploymentController) processArguments(args map[string]st
 		"PING_TIMEOUT": pingTimeout,
 	}
 	t := template.New("t1")
-	t, err := t.Parse(payload)
+	t, err := t.Parse(Payload)
 	if err != nil {
 		logrus.Errorf("Failed to parse %s deployment metadata as golang template content, error: %s", dc.GetName(), err.Error())
 		return ""
