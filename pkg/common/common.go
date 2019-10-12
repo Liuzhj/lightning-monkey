@@ -26,6 +26,7 @@ var (
 				"router":     {ImageName: "docker.io/cloudnativelabs/kube-router:v0.2.5", DownloadAddr: "%s/apis/v1/registry/1.12.5/router.tar?token=%s"},
 				"busybox":    {ImageName: "docker.io/busybox:latest", DownloadAddr: "%s/apis/v1/registry/1.12.5/busybox.tar?token=%s"},
 				"prometheus": {ImageName: "docker.io/prom/prometheus:v2.2.1", DownloadAddr: "%s/apis/v1/registry/1.12.5/prometheus.tar?token=%s"},
+				"es":         {ImageName: "docker.io/elasticsearch:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.12.5/es.tar?token=%s"},
 			},
 		},
 		"1.13.10": {
@@ -42,6 +43,7 @@ var (
 				"router":     {ImageName: "docker.io/cloudnativelabs/kube-router:v0.2.5", DownloadAddr: "%s/apis/v1/registry/1.13.10/router.tar?token=%s"},
 				"busybox":    {ImageName: "docker.io/busybox:latest", DownloadAddr: "%s/apis/v1/registry/1.13.10/busybox.tar?token=%s"},
 				"prometheus": {ImageName: "docker.io/prom/prometheus:v2.2.1", DownloadAddr: "%s/apis/v1/registry/1.13.10/prometheus.tar?token=%s"},
+				"es":         {ImageName: "docker.io/elasticsearch:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.13.10/es.tar?token=%s"},
 			},
 		},
 	}
