@@ -73,7 +73,7 @@ spec:
         ]
         env:
         - name: ELASTICSEARCH_HOST
-          value: elasticsearch-service
+          value: {{.ES_HOST}}
         - name: ELASTICSEARCH_PORT
           value: "9200"
         - name: ELASTICSEARCH_USERNAME
@@ -198,16 +198,20 @@ func (dc *FilebeatDeploymentController) Initialize(client *k8s.KubernetesClientS
 
 func (dc *FilebeatDeploymentController) processArguments(args map[string]string) string {
 	var isOK bool
-	var dockerContainerPath, filebeatStoragePath string
+	var dockerContainerPath, filebeatStoragePath, esHost string
 	if dockerContainerPath, isOK = args[VAR_DOCKER_CONTAINER_PATH]; !isOK {
 		dockerContainerPath = "/var/lib/docker/containers"
 	}
 	if filebeatStoragePath, isOK = args[VAR_FILEBEAT_STORAGE_PATH]; !isOK {
 		filebeatStoragePath = "/var/lib/filebeat-data"
 	}
+	if esHost, isOK = args[VAR_ES_HOST]; !isOK {
+		esHost = "elasticsearch-service"
+	}
 	attributes := map[string]string{
 		"CONTAINER_PATH": dockerContainerPath,
 		"STORAGE_PATH":   filebeatStoragePath,
+		"ES_HOST":        esHost,
 	}
 	t := template.New("t1")
 	t, err := t.Parse(Payload)
