@@ -44,6 +44,7 @@ const (
 	EXT_DEPLOYMENT_METRICSERVER                          = "metric-server"
 	EXT_DEPLOYMENT_TRAEFIK                               = "traefik"
 	EXT_DEPLOYMENT_ES                                    = "es"
+	EXT_DEPLOYMENT_FILEBEAT                              = "filebeat"
 	_                                    AgentStatusFlag = iota
 	AgentStatusFlag_Whatever
 	AgentStatusFlag_Running

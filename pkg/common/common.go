@@ -27,6 +27,7 @@ var (
 				"busybox":    {ImageName: "docker.io/busybox:latest", DownloadAddr: "%s/apis/v1/registry/1.12.5/busybox.tar?token=%s"},
 				"prometheus": {ImageName: "docker.io/prom/prometheus:v2.2.1", DownloadAddr: "%s/apis/v1/registry/1.12.5/prometheus.tar?token=%s"},
 				"es":         {ImageName: "docker.io/elasticsearch:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.12.5/es.tar?token=%s"},
+				"filebeat":   {ImageName: "docker.io/elastic/filebeat:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.12.5/filebeat.tar?token=%s"},
 			},
 		},
 		"1.13.10": {
@@ -44,6 +45,7 @@ var (
 				"busybox":    {ImageName: "docker.io/busybox:latest", DownloadAddr: "%s/apis/v1/registry/1.13.10/busybox.tar?token=%s"},
 				"prometheus": {ImageName: "docker.io/prom/prometheus:v2.2.1", DownloadAddr: "%s/apis/v1/registry/1.13.10/prometheus.tar?token=%s"},
 				"es":         {ImageName: "docker.io/elasticsearch:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.13.10/es.tar?token=%s"},
+				"filebeat":   {ImageName: "docker.io/elastic/filebeat:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.13.10/filebeat.tar?token=%s"},
 			},
 		},
 	}
