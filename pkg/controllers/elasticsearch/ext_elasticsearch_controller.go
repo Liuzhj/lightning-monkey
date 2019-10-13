@@ -3,6 +3,9 @@ package elasticsearch
 import (
 	"bytes"
 	"fmt"
+	"strings"
+	"text/template"
+
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/g0194776/lightningmonkey/pkg/utils"
@@ -10,8 +13,6 @@ import (
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"strings"
-	"text/template"
 )
 
 const (
@@ -147,6 +148,22 @@ spec:
        role: data
    spec:
      serviceAccountName: elasticsearch-admin
+	 affinity:
+	   podAntiAffinity:
+		 preferredDuringSchedulingIgnoredDuringExecution:
+		 - weight: 100
+		   podAffinityTerm:
+			 labelSelector:
+			   matchExpressions:
+			   - key: app
+				 operator: In
+				 values:
+				 - elasticsearch
+			   - key: role
+				 operator: In
+				 values:
+				 - data
+			 topologyKey: kubernetes.io/hostname
      containers:
        - name: elasticsearch-data
          image: elasticsearch:6.8.3
