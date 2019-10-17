@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	uuid "github.com/satori/go.uuid"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -27,9 +29,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
+var (
+	errNotInitialized error = errors.New("Not specified any cluster-id or roles.")
+)
+
 func (a *LightningMonkeyAgent) Register() (err error) {
 	if atomic.LoadInt32(&a.hasRegistered) == 1 {
 		return nil
+	}
+	if atomic.LoadInt32(&a.hasRegistered) == -1 {
+		return errNotInitialized
 	}
 	defer func() {
 		if err == nil {
@@ -37,7 +46,11 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 				a.lastRegisteredTime = time.Now()
 			}
 		} else {
-			atomic.SwapInt32(&a.hasRegistered, 0)
+			if err == errNotInitialized {
+				atomic.SwapInt32(&a.hasRegistered, -1)
+			} else {
+				atomic.SwapInt32(&a.hasRegistered, 0)
+			}
 		}
 	}()
 	hostname, _ := os.Hostname()
@@ -86,11 +99,30 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	if rspObj.ErrorId != entities.Succeed {
 		return fmt.Errorf("Remote API server returned a non-zero biz code: %d %w", rspObj.ErrorId, crashError)
 	}
+	a.arg.AgentId = rspObj.AgentId
+	a.arg.LeaseId = rspObj.LeaseId
+	if *a.arg.ClusterId == uuid.Nil.String() || !a.hasInitializedRoles() {
+		logrus.Warn("Currently, agent has not belong to any cluster or has no any initialized roles, it's waiting for the remote call...")
+		return errNotInitialized
+	}
 	a.basicImages = &rspObj.BasicImages
 	a.masterSettings = rspObj.MasterSettings
 	a.dockerImageManager, err = managers.NewDockerImageManager(*a.arg.Server, a.dockerClient, &rspObj.BasicImages)
-	a.arg.AgentId = rspObj.AgentId
-	a.arg.LeaseId = rspObj.LeaseId
+	if err != nil {
+		return xerrors.Errorf("Failed to create new docker image manager: %s %w", err.Error(), crashError)
+	}
+	//support lazy updating cluster-id which it belongs to.
+	if *a.arg.ClusterId == uuid.Nil.String() && rspObj.ClusterId != uuid.Nil.String() {
+		a.arg.ClusterId = &rspObj.ClusterId
+		if a.rr != nil {
+			a.rr.ClusterID = rspObj.ClusterId
+			err = a.saveRecoveryFile()
+			if err != nil {
+				logrus.Fatalf("Failed to save recovery file during updating its cluster-id, error: %s", err.Error())
+				return
+			}
+		}
+	}
 	a.expectedETCDNodeCount, err = strconv.Atoi(rspObj.MasterSettings[entities.MasterSettings_ExpectedETCDNodeCount])
 	if err != nil {
 		logrus.Fatal("Illegal number of expected ETCD count: %s", rspObj.MasterSettings[entities.MasterSettings_ExpectedETCDNodeCount])
@@ -98,9 +130,6 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	}
 	logrus.Debugf("API file server readonly token: %s", rspObj.BasicImages.HTTPDownloadToken)
 	entities.HTTPDockerImageDownloadToken = rspObj.BasicImages.HTTPDownloadToken
-	if err != nil {
-		return xerrors.Errorf("Failed to create new docker image manager: %s %w", err.Error(), crashError)
-	}
 	logrus.Info("Preparing downloading certificates & loading docker images...")
 	err = a.downloadCertificates()
 	if err != nil {
@@ -109,10 +138,6 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 	err = a.dockerImageManager.Ready()
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
-	}
-	if !a.hasInitializedRoles() {
-		logrus.Warn("Currently, agent has no any initialized roles, it's waiting for the remote call...")
-		return nil
 	}
 	//directly start kubelet up when it has not Minion role.
 	if !*a.arg.IsMinionRole {
@@ -307,8 +332,15 @@ func (a *LightningMonkeyAgent) Start() {
 		logrus.Fatalf("Occurred serious problem during recovery procedure, error: %s", err.Error())
 		return
 	}
-	//create new recovery record when it's the first time to boot up.
-	if a.rr == nil {
+	//recovered from file.
+	if a.rr != nil {
+		a.arg.ClusterId = &a.rr.ClusterID
+		a.arg.IsETCDRole = &a.rr.IsETCDRole
+		a.arg.IsMasterRole = &a.rr.IsMasterRole
+		a.arg.IsMinionRole = &a.rr.IsMinionRole
+		a.arg.IsHARole = &a.rr.IsHARole
+	} else {
+		//create new recovery record when it's the first time to boot up.
 		a.rr = &RecoveryRecord{ClusterID: *a.arg.ClusterId}
 	}
 	//start new go-routine for periodic reporting its status.
@@ -321,6 +353,10 @@ func (a *LightningMonkeyAgent) Start() {
 		//try to register itself.
 		err = a.Register()
 		if err != nil {
+			if err == errNotInitialized {
+				logrus.Infof("Entering resource pool mode, waiting for the remote call...")
+				continue
+			}
 			logrus.Errorf("Failed to register to API server, error: %s", err.Error())
 			if xerrors.Is(err, crashError) {
 				os.Exit(1)

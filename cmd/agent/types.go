@@ -46,6 +46,10 @@ type LightningMonkeyAgent struct {
 }
 
 type RecoveryRecord struct {
+	IsETCDRole           bool      `json:"is_etcd_role"`
+	IsMasterRole         bool      `json:"is_master_role"`
+	IsMinionRole         bool      `json:"is_minion_role"`
+	IsHARole             bool      `json:"is_ha_role"`
 	HasInstalledMaster   bool      `json:"has_installed_master"`
 	HasInstalledETCD     bool      `json:"has_installed_etcd"`
 	HasInstalledMinion   bool      `json:"has_installed_minion"`

@@ -7,8 +7,10 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/managers"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
 	"github.com/kataras/iris"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
@@ -82,7 +84,7 @@ func main() {
 			return
 		}
 		entities.HTTPDockerImageDownloadToken = fmt.Sprintf("%x", b)
-		logrus.Infof("*** Please kindly record this auto-generated token for downloading the deployment payloads ***")
+		logrus.Info("*** Please kindly record this auto-generated token for downloading the deployment payloads ***")
 		logrus.Info("***")
 		logrus.Info("*** " + entities.HTTPDockerImageDownloadToken)
 		logrus.Info("***")
@@ -91,6 +93,12 @@ func main() {
 		logrus.Info("***")
 		logrus.Info("*** " + entities.HTTPDockerImageDownloadToken)
 		logrus.Info("***")
+	}
+	logrus.Infof("Creating resource pool...")
+	_, err = managers.NewCluster(&entities.LightningMonkeyClusterSettings{Id: uuid.Nil.String()})
+	if err != nil {
+		logrus.Fatalf("Failed to create resource pool, error: %s", err.Error())
+		return
 	}
 	logrus.Infof("Starting Web Engine...")
 	app.Run(iris.Addr("0.0.0.0:8080"))

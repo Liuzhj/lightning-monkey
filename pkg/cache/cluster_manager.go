@@ -15,12 +15,14 @@ import (
 
 //go:generate mockgen -package=mock_lm -destination=../../mocks/mock_cluster_manager.go -source=cluster_manager.go ClusterManagerInterface
 type ClusterManagerInterface interface {
+	TransferAgentToCluster(oldClusterId string, newClusterId string, agent *entities.LightningMonkeyAgent, isETCDRole, isMasterRole, isMinionRole, isHARole bool) error
 	Initialize(storageDriver storage.LightningMonkeyStorageDriver) error
 	GetClusterCertificateByName(clusterId string, certName string) (string, error)
 	GetClusterCertificates(clusterId string) (entities.LightningMonkeyCertificateCollection, error)
 	GetClusterById(clusterId string) (ClusterController, error)
 	GetAgentFromETCD(clusterId, agentId string) (*entities.LightningMonkeyAgent, error)
 	Register(cc ClusterController) error
+	RemoveAgentFromETCD(clusterId string, agentId string) error
 }
 
 type ClusterManager struct {

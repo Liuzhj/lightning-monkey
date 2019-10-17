@@ -35,6 +35,7 @@ type RegisterAgentResponse struct {
 	Response
 	AgentId        string                `json:"agent_id"`
 	BasicImages    DockerImageCollection `json:"image_collection"`
+	ClusterId      string                `json:"cluster_id"`
 	MasterSettings map[string]string     `json:"master_settings"`
 	LeaseId        int64                 `json:"lease_id"`
 }

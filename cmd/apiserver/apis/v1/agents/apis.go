@@ -41,7 +41,7 @@ func RegisterAgent(ctx iris.Context) {
 	}
 	agent.State = &entities.AgentState{}
 	agent.State.LastReportIP = ctx.RemoteAddr()
-	settings, agentId, leaseId, err := managers.RegisterAgent(&agent)
+	settings, agentId, clusterId, leaseId, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		rsp = entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)
@@ -56,6 +56,7 @@ func RegisterAgent(ctx iris.Context) {
 	r := entities.RegisterAgentResponse{
 		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
 		AgentId:     agentId,
+		ClusterId:   clusterId,
 		LeaseId:     leaseId,
 		BasicImages: common.BasicImages[settings.KubernetesVersion],
 		MasterSettings: map[string]string{

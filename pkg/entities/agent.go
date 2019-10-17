@@ -124,3 +124,12 @@ type KubernetesNodeInfo struct {
 type GenerateSystemRoutingRulesRequest struct {
 	Nodes []KubernetesNodeInfo `json:"nodes"`
 }
+
+type ChangeClusterAndRolesRequest struct {
+	OldClusterId string `json:"old_cluster_id"`
+	NewClusterId string `json:"new_cluster_id"`
+	IsETCDRole   bool   `json:"is_etcd_role"`
+	IsMasterRole bool   `json:"is_master_role"`
+	IsMinionRole bool   `json:"is_minion_role"`
+	IsHARole     bool   `json:"is_ha_role"`
+}
