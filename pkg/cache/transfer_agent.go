@@ -2,6 +2,7 @@ package cache
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
@@ -75,5 +76,20 @@ func changeAgentCluster(agent *entities.LightningMonkeyAgent, oldClusterId strin
 }
 
 func (cm *ClusterManager) RemoveAgentFromETCD(clusterId string, agentId string) error {
-	return nil
+	//STEP 1, immediately delete state node to trigger the agent offline procedure.
+	statePath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", clusterId, agentId)
+	_, err := cm.storageDriver.Delete(context.Background(), statePath)
+	if err != nil {
+		return err
+	}
+	//STEP 2, subsequently delete settings node for permanent remove agent's registration information.
+	statePath = fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", clusterId, agentId)
+	_, err = cm.storageDriver.Delete(context.Background(), statePath)
+	if err != nil {
+		return err
+	}
+	//STEP 3, go on to clean-up current agent's data from remote ETCD.
+	statePath = fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s", clusterId, agentId)
+	_, err = cm.storageDriver.Delete(context.Background(), statePath)
+	return err
 }

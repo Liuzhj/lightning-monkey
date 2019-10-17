@@ -248,6 +248,9 @@ func (cc *ClusterControllerImple) GetCachedAgent(agentId string) (*entities.Ligh
 	if agent, isOK = cc.cache.ha[agentId]; isOK {
 		return agent, nil
 	}
+	if agent, isOK = cc.cache.pool[agentId]; isOK {
+		return agent, nil
+	}
 	return nil, nil
 }
 

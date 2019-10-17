@@ -14,6 +14,7 @@ type AgentCache struct {
 	k8sMaster map[string]*entities.LightningMonkeyAgent
 	k8sMinion map[string]*entities.LightningMonkeyAgent
 	ha        map[string]*entities.LightningMonkeyAgent
+	pool      map[string]*entities.LightningMonkeyAgent
 }
 
 func (ac *AgentCache) Initialize() {
@@ -24,6 +25,7 @@ func (ac *AgentCache) Initialize() {
 	ac.k8sMaster = make(map[string]*entities.LightningMonkeyAgent)
 	ac.k8sMinion = make(map[string]*entities.LightningMonkeyAgent)
 	ac.ha = make(map[string]*entities.LightningMonkeyAgent)
+	ac.pool = make(map[string]*entities.LightningMonkeyAgent)
 }
 
 func (ac *AgentCache) InitializeWithValues(etcd, k8sMaster, k8sMinion, ha map[string]*entities.LightningMonkeyAgent) {
@@ -50,8 +52,12 @@ func (ac *AgentCache) Online(agent entities.LightningMonkeyAgent) {
 	if agent.HasHARole {
 		ac.ha[agent.Id] = &agent
 	}
+	if !agent.HasETCDRole && !agent.HasMasterRole && !agent.HasMinionRole && !agent.HasHARole {
+		ac.pool[agent.Id] = &agent
+		logrus.Debugf("Agent %s(%s) added to resource pool.", agent.Id, agent.ClusterId)
+	}
 	ac.Unlock()
-	logrus.Infof("Agent %s online..., etcd-role: %t, master-role: %t, minion-role: %t, ha-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole, agent.HasHARole)
+	logrus.Infof("Agent %s(%s) online..., etcd-role: %t, master-role: %t, minion-role: %t, ha-role: %t", agent.Id, agent.ClusterId, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole, agent.HasHARole)
 }
 
 func (ac *AgentCache) Offline(agent entities.LightningMonkeyAgent) {
@@ -68,8 +74,12 @@ func (ac *AgentCache) Offline(agent entities.LightningMonkeyAgent) {
 	if agent.HasHARole {
 		delete(ac.ha, agent.Id)
 	}
+	if !agent.HasETCDRole && !agent.HasMasterRole && !agent.HasMinionRole && !agent.HasHARole {
+		delete(ac.pool, agent.Id)
+		logrus.Warnf("Agent %s(%s) removed from resource pool.", agent.Id, agent.ClusterId)
+	}
 	ac.Unlock()
-	logrus.Infof("Agent %s offline..., etcd-role: %t, master-role: %t, minion-role: %t, ha-role: %t", agent.Id, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole, agent.HasHARole)
+	logrus.Infof("Agent %s(%s) offline..., etcd-role: %t, master-role: %t, minion-role: %t, ha-role: %t", agent.Id, agent.ClusterId, agent.HasETCDRole, agent.HasMasterRole, agent.HasMinionRole, agent.HasHARole)
 }
 
 func (ac *AgentCache) GetTotalCountByRole(role string) int {

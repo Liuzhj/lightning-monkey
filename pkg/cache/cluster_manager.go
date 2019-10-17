@@ -120,7 +120,7 @@ func (cm *ClusterManager) GetAgentFromETCD(clusterId, agentId string) (*entities
 		return nil, err
 	}
 	if rsp.Count == 0 {
-		return nil, fmt.Errorf("Key: %s not found!", settingsPath)
+		return nil, nil
 	}
 	err = json.Unmarshal(rsp.Kvs[0].Value, &agent)
 	if err != nil {
@@ -258,7 +258,7 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 				continue
 			}
 			for i := 0; i < len(rsp.Events); i++ {
-				logrus.Infof("Received ETCD event: Key=%s", string(rsp.Events[i].Kv.Key))
+				logrus.Infof("Received ETCD event: Type=%s Key=%s", rsp.Events[i].Type, string(rsp.Events[i].Kv.Key))
 				subKeys := strings.FieldsFunc(string(rsp.Events[i].Kv.Key), func(r rune) bool {
 					return r == '/'
 				})
@@ -267,6 +267,10 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 					agent, err = cm.GetAgentFromETCD(cc.GetClusterId(), agentId)
 					if err != nil {
 						logrus.Errorf("Failed to retrieve newest version of Lightning Monkey's Agent data from remote ETCD, error: %s", err.Error())
+						continue
+					}
+					if agent == nil {
+						logrus.Errorf("Failed to retrieve newest version of Lightning Monkey's Agent data from remote ETCD, error: agent %s not found in the cluster %s", agentId, cc.GetClusterId())
 						continue
 					}
 					cc.Lock()
