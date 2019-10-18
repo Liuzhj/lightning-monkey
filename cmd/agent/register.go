@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/matishsiao/goInfo"
 	uuid "github.com/satori/go.uuid"
 	"io"
 	"io/ioutil"
@@ -24,6 +25,8 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -64,6 +67,23 @@ func (a *LightningMonkeyAgent) Register() (err error) {
 		ListenPort:    *a.arg.ListenPort,
 		Id:            a.arg.AgentId,
 	}
+	//obtains host information.
+	ci, err := cpu.InfoWithContext(context.Background())
+	if err != nil {
+		logrus.Fatalf("Failed to obtain host CPU information, error: %s", err.Error())
+		return
+	}
+	memory, err := mem.VirtualMemory()
+	if err != nil {
+		logrus.Fatalf("Failed to obtain host Memory information, error: %s", err.Error())
+		return
+	}
+	gi := goInfo.GetInfo()
+	agentObj.HostInformation.CPUCores = ci[0].Cores
+	agentObj.HostInformation.CPUMhz = ci[0].Mhz
+	agentObj.HostInformation.MemoryTotalMB = memory.Total / 1024 / 1024
+	agentObj.HostInformation.OS = gi.GoOS
+	agentObj.HostInformation.Kernel = fmt.Sprintf("%s %s", gi.Kernel, gi.Core)
 	bodyData, err := json.Marshal(agentObj)
 	if err != nil {
 		return xerrors.Errorf("%s %w", err.Error(), crashError)
