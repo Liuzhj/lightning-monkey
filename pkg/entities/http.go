@@ -77,6 +77,23 @@ type GetClusterComponentStatusResponse struct {
 	WatchPoints []WatchPoint `json:"status"`
 }
 
+type GetAgentListResponse struct {
+	Response
+	Agents []LightningMonkeyAgentBriefInformation `json:"agents"`
+}
+
+type LightningMonkeyAgentBriefInformation struct {
+	HostInformation
+
+	Id            string      `json:"id"`
+	HasETCDRole   bool        `json:"has_etcd_role"`
+	HasMasterRole bool        `json:"has_master_role"`
+	HasMinionRole bool        `json:"has_minion_role"`
+	HasHARole     bool        `json:"has_ha_role"`
+	Hostname      string      `json:"hostname"`
+	State         *AgentState `json:"state,omitempty"`
+}
+
 type WatchPoint struct {
 	IsSystemComponent bool      `json:"is_system_component"`
 	Name              string    `json:"name"`

@@ -19,6 +19,7 @@ func Register(app *iris.Application) error {
 	app.Get("/apis/v1/agent/query", AgentQueryNextWork)
 	app.Put("/apis/v1/agent/status", ReportStatus)
 	app.Put("/apis/v1/agent/change", ChangeAgentClusterAndRoles)
+	app.Get("/apis/v1/agents/list", ListAgentsByClusterId)
 	return nil
 }
 
@@ -240,6 +241,47 @@ func ChangeAgentClusterAndRoles(ctx iris.Context) {
 		return
 	}
 	rsp := entities.Response{ErrorId: entities.Succeed}
+	ctx.JSON(&rsp)
+	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+	ctx.Next()
+}
+
+func ListAgentsByClusterId(ctx iris.Context) {
+	clusterId := ctx.URLParam("cluster-id")
+	if clusterId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"cluster-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	cluster, err := common.ClusterManager.GetClusterById(clusterId)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: fmt.Sprintf("Failed to retrieve cluster(%s) information from cache, error: %s", clusterId, err.Error())}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	if cluster == nil {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: fmt.Sprintf("Cluster: %s not found!", clusterId)}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	agents, err := cluster.GetAgentList(false)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: fmt.Sprintf("Failed to list agents from cluster(%s), error: %s", clusterId, err.Error())}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	rsp := entities.GetAgentListResponse{
+		Response: entities.Response{ErrorId: entities.Succeed},
+		Agents:   agents,
+	}
 	ctx.JSON(&rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()
