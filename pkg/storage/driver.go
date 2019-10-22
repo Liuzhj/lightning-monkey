@@ -28,6 +28,7 @@ type StorageDriver interface {
 
 //go:generate mockgen -package=mock_lm -destination=../../mocks/mock_driver.go -source=driver.go LightningMonkeyStorageDriver
 type LightningMonkeyStorageDriver interface {
+	Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error)
 	Initialize(settings map[string]string) error
 	GetRequestTimeoutDuration() time.Duration
 	Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error)

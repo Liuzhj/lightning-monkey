@@ -14,48 +14,45 @@ import (
 	"time"
 )
 
-func RegisterAgent(agent *entities.LightningMonkeyAgent) (*entities.LightningMonkeyClusterSettings, string, int64, error) {
+func RegisterAgent(agent *entities.LightningMonkeyAgent) (*entities.LightningMonkeyClusterSettings, string, string, int64, error) {
 	if agent.ClusterId == "" {
-		return nil, "", -1, errors.New("HTTP body field \"cluster_id\" is required for registering agent.")
+		return nil, "", "", -1, errors.New("HTTP body field \"cluster_id\" is required for registering agent.")
 	}
 	if agent.Hostname == "" {
-		return nil, "", -1, errors.New("HTTP body field \"hostname\" is required for registering agent.")
+		return nil, "", "", -1, errors.New("HTTP body field \"hostname\" is required for registering agent.")
 	}
 	cluster, err := common.ClusterManager.GetClusterById(agent.ClusterId)
 	if err != nil {
-		return nil, "", -1, fmt.Errorf("Failed to retrieve cluster information from database, error: %s", err.Error())
+		return nil, "", "", -1, fmt.Errorf("Failed to retrieve cluster information from database, error: %s", err.Error())
 	}
 	if cluster.GetStatus() == entities.ClusterDeleted {
-		return nil, "", -1, fmt.Errorf("Target cluster: %s had been deleted.", cluster.GetClusterId())
+		return nil, "", "", -1, fmt.Errorf("Target cluster: %s had been deleted.", cluster.GetClusterId())
 	}
 	settings := cluster.GetSettings()
 	if cluster.GetStatus() == entities.ClusterBlockedAgentRegistering {
-		return nil, "", -1, fmt.Errorf("Target cluster: %s has been blocked agent registering, try it later.", settings.Name)
+		return nil, "", "", -1, fmt.Errorf("Target cluster: %s has been blocked agent registering, try it later.", settings.Name)
 	}
 	preAgent, err := common.ClusterManager.GetAgentFromETCD(agent.ClusterId, agent.Id)
 	if err != nil {
-		return nil, "", -1, fmt.Errorf("Failed to retrieve agent information from database, error: %s", err.Error())
+		return nil, "", "", -1, fmt.Errorf("Failed to retrieve agent information from database, error: %s", err.Error())
 	}
 	if preAgent != nil {
 		if preAgent.Id == "" {
-			return nil, "", -1, errors.New("Old agent has one or more fields contains dirty data.")
-		}
-		if agent.ClusterId != preAgent.ClusterId {
-			return nil, "", -1, errors.New("Duplicated agent registering with wrong cluster!")
+			return nil, "", "", -1, errors.New("Old agent has one or more fields contains dirty data.")
 		}
 		if strings.ToLower(agent.Hostname) != strings.ToLower(preAgent.Hostname) {
-			return nil, "", -1, errors.New("Duplicated agent registering with different hostname!")
+			return nil, "", "", -1, errors.New("Duplicated agent registering with different hostname!")
 		}
 		if agent.State != nil && preAgent.State != nil {
 			if agent.State.LastReportIP != preAgent.State.LastReportIP {
-				return nil, "", -1, errors.New("Duplicated agent registering with different client IP!")
+				return nil, "", "", -1, errors.New("Duplicated agent registering with different client IP!")
 			}
 		}
 		if preAgent.IsDelete {
-			return nil, "", -1, errors.New("Target registered agent has been deleted, Please do not reuse it again!")
+			return nil, "", "", -1, errors.New("Target registered agent has been deleted, Please do not reuse it again!")
 		}
 		//duplicated registering.
-		return &settings, preAgent.Id, -1, nil
+		return &settings, preAgent.Id, preAgent.ClusterId, -1, nil
 	}
 	//generate admin config for master role agent.
 	if agent.HasMasterRole {
@@ -63,15 +60,15 @@ func RegisterAgent(agent *entities.LightningMonkeyAgent) (*entities.LightningMon
 		logrus.Infof("Cluster: %s certs count: %d", agent.ClusterId, len(certMap))
 		adminKubeCert, err := common.CertManager.GenerateAdminKubeConfig(agent.State.LastReportIP, certMap)
 		if err != nil {
-			return nil, "", -1, fmt.Errorf("Failed to generate kube admin configuration file, error: %s", err.Error())
+			return nil, "", "", -1, fmt.Errorf("Failed to generate kube admin configuration file, error: %s", err.Error())
 		}
 		res := adminKubeCert.GetResources()
 		if res == nil || len(res) == 0 {
-			return nil, "", -1, errors.New("Failed to generate kube admin configuration file, generated config file not found!")
+			return nil, "", "", -1, errors.New("Failed to generate kube admin configuration file, generated config file not found!")
 		}
 		agent.AdminCertificate = adminKubeCert.GetResources()["admin.conf"]
 		if agent.AdminCertificate == "" {
-			return nil, "", -1, errors.New("Failed to generate kube admin configuration file, generated config file not found!")
+			return nil, "", "", -1, errors.New("Failed to generate kube admin configuration file, generated config file not found!")
 		}
 	}
 	if agent.Id == "" {
@@ -80,9 +77,9 @@ func RegisterAgent(agent *entities.LightningMonkeyAgent) (*entities.LightningMon
 	agent.State.LastReportTime = time.Now()
 	leaseId, err := saveAgent(agent)
 	if err != nil {
-		return nil, "", -1, fmt.Errorf("Failed to save registered agent to storage driver, error: %s", err.Error())
+		return nil, "", "", -1, fmt.Errorf("Failed to save registered agent to storage driver, error: %s", err.Error())
 	}
-	return &settings, agent.Id, leaseId, nil
+	return &settings, agent.Id, settings.Id, leaseId, nil
 }
 
 func QueryAgentNextWorkItem(clusterId, agentId string) (*entities.AgentJob, error) {

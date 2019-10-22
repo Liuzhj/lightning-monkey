@@ -15,12 +15,14 @@ import (
 
 //go:generate mockgen -package=mock_lm -destination=../../mocks/mock_cluster_manager.go -source=cluster_manager.go ClusterManagerInterface
 type ClusterManagerInterface interface {
+	TransferAgentToCluster(oldClusterId string, newClusterId string, agent *entities.LightningMonkeyAgent, isETCDRole, isMasterRole, isMinionRole, isHARole bool) error
 	Initialize(storageDriver storage.LightningMonkeyStorageDriver) error
 	GetClusterCertificateByName(clusterId string, certName string) (string, error)
 	GetClusterCertificates(clusterId string) (entities.LightningMonkeyCertificateCollection, error)
 	GetClusterById(clusterId string) (ClusterController, error)
 	GetAgentFromETCD(clusterId, agentId string) (*entities.LightningMonkeyAgent, error)
 	Register(cc ClusterController) error
+	RemoveAgentFromETCD(clusterId string, agentId string) error
 }
 
 type ClusterManager struct {
@@ -109,39 +111,14 @@ func (cm *ClusterManager) GetAgentFromETCD(clusterId, agentId string) (*entities
 	if agentId == "" {
 		return nil, nil
 	}
-	agent := entities.LightningMonkeyAgent{}
-	settingsPath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", clusterId, agentId)
-	ctx, cancel := context.WithTimeout(context.Background(), cm.storageDriver.GetRequestTimeoutDuration())
-	defer cancel()
-	rsp, err := cm.storageDriver.Get(ctx, settingsPath)
+	cluster, err := cm.GetClusterById(clusterId)
 	if err != nil {
 		return nil, err
 	}
-	if rsp.Count == 0 {
-		return nil, fmt.Errorf("Key: %s not found!", settingsPath)
+	if cluster == nil {
+		return nil, fmt.Errorf("Cluster: %s not found!", clusterId)
 	}
-	err = json.Unmarshal(rsp.Kvs[0].Value, &agent)
-	if err != nil {
-		return nil, err
-	}
-	statePath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", clusterId, agentId)
-	ctx2, cancel2 := context.WithTimeout(context.Background(), cm.storageDriver.GetRequestTimeoutDuration())
-	defer cancel2()
-	rsp, err = cm.storageDriver.Get(ctx2, statePath)
-	if err != nil {
-		return nil, err
-	}
-	if rsp.Count == 0 {
-		//ignored missed state object, it's lease-guaranteed.
-		return &agent, nil
-	}
-	state := entities.AgentState{}
-	err = json.Unmarshal(rsp.Kvs[0].Value, &state)
-	if err != nil {
-		return nil, err
-	}
-	agent.State = &state
-	return &agent, nil
+	return cluster.GetAgentFromETCD(agentId)
 }
 
 func (cm *ClusterManager) Register(cc ClusterController) error {
@@ -256,7 +233,7 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 				continue
 			}
 			for i := 0; i < len(rsp.Events); i++ {
-				logrus.Infof("Received ETCD event: Key=%s", string(rsp.Events[i].Kv.Key))
+				logrus.Infof("Received ETCD event: Type=%s Key=%s", rsp.Events[i].Type, string(rsp.Events[i].Kv.Key))
 				subKeys := strings.FieldsFunc(string(rsp.Events[i].Kv.Key), func(r rune) bool {
 					return r == '/'
 				})
@@ -265,6 +242,10 @@ func (cm *ClusterManager) watchChanges(ctx context.Context, wc clientv3.WatchCha
 					agent, err = cm.GetAgentFromETCD(cc.GetClusterId(), agentId)
 					if err != nil {
 						logrus.Errorf("Failed to retrieve newest version of Lightning Monkey's Agent data from remote ETCD, error: %s", err.Error())
+						continue
+					}
+					if agent == nil {
+						logrus.Errorf("Failed to retrieve newest version of Lightning Monkey's Agent data from remote ETCD, error: agent %s not found in the cluster %s", agentId, cc.GetClusterId())
 						continue
 					}
 					cc.Lock()
@@ -382,6 +363,15 @@ func (cm *ClusterManager) doClusterChange(clusterId string, value []byte, isDele
 func isAgentChanged(subKeys []string) (string /*parsed agent id*/, bool) {
 	if subKeys[0] == "lightning-monkey" && subKeys[1] == "clusters" && subKeys[3] == "agents" {
 		if subKeys[len(subKeys)-1] == "settings" || subKeys[len(subKeys)-1] == "state" {
+			return subKeys[len(subKeys)-2], true
+		}
+	}
+	return "", false
+}
+
+func isAgentSettingsChanged(subKeys []string) (string /*parsed agent id*/, bool) {
+	if subKeys[0] == "lightning-monkey" && subKeys[1] == "clusters" && subKeys[3] == "agents" {
+		if subKeys[len(subKeys)-1] == "settings" {
 			return subKeys[len(subKeys)-2], true
 		}
 	}

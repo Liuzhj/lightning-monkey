@@ -44,17 +44,26 @@ type Agent struct {
 }
 
 type LightningMonkeyAgent struct {
-	Id               string      `json:"id" bson:"_id"`
-	ClusterId        string      `json:"cluster_id" bson:"cluster_id"`
-	AdminCertificate string      `json:"admin_certificate"` //not exist if it has not master role.
-	Hostname         string      `json:"hostname" bson:"hostname"`
-	IsDelete         bool        `json:"is_delete" bson:"is_delete"`
-	HasETCDRole      bool        `json:"has_etcd_role" bson:"has_etcd_role"`
-	HasMasterRole    bool        `json:"has_master_role" bson:"has_master_role"`
-	HasMinionRole    bool        `json:"has_minion_role" bson:"has_minion_role"`
-	HasHARole        bool        `json:"has_ha_role"`
-	ListenPort       int         `json:"listen_port"`
-	State            *AgentState `json:"-"`
+	Id               string          `json:"id" bson:"_id"`
+	ClusterId        string          `json:"cluster_id" bson:"cluster_id"`
+	AdminCertificate string          `json:"admin_certificate"` //not exist if it has not master role.
+	Hostname         string          `json:"hostname" bson:"hostname"`
+	IsDelete         bool            `json:"is_delete" bson:"is_delete"`
+	HasETCDRole      bool            `json:"has_etcd_role" bson:"has_etcd_role"`
+	HasMasterRole    bool            `json:"has_master_role" bson:"has_master_role"`
+	HasMinionRole    bool            `json:"has_minion_role" bson:"has_minion_role"`
+	HasHARole        bool            `json:"has_ha_role"`
+	HostInformation  HostInformation `json:"host_information"`
+	ListenPort       int             `json:"listen_port"`
+	State            *AgentState     `json:"-"`
+}
+
+type HostInformation struct {
+	OS            string  `json:"os"`
+	Kernel        string  `json:"kernel"`
+	CPUCores      int32   `json:"cpu_cores"`
+	CPUMhz        float64 `json:"cpu_mhz"`
+	MemoryTotalMB uint64  `json:"memory_total_mb"`
 }
 
 type AgentState struct {
@@ -123,4 +132,13 @@ type KubernetesNodeInfo struct {
 
 type GenerateSystemRoutingRulesRequest struct {
 	Nodes []KubernetesNodeInfo `json:"nodes"`
+}
+
+type ChangeClusterAndRolesRequest struct {
+	OldClusterId string `json:"old_cluster_id"`
+	NewClusterId string `json:"new_cluster_id"`
+	IsETCDRole   bool   `json:"is_etcd_role"`
+	IsMasterRole bool   `json:"is_master_role"`
+	IsMinionRole bool   `json:"is_minion_role"`
+	IsHARole     bool   `json:"is_ha_role"`
 }

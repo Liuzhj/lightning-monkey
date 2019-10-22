@@ -2,6 +2,7 @@ package agents
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 
@@ -17,6 +18,8 @@ func Register(app *iris.Application) error {
 	app.Post("/apis/v1/agent/register", RegisterAgent)
 	app.Get("/apis/v1/agent/query", AgentQueryNextWork)
 	app.Put("/apis/v1/agent/status", ReportStatus)
+	app.Put("/apis/v1/agent/change", ChangeAgentClusterAndRoles)
+	app.Get("/apis/v1/agents/list", ListAgentsByClusterId)
 	return nil
 }
 
@@ -41,7 +44,7 @@ func RegisterAgent(ctx iris.Context) {
 	}
 	agent.State = &entities.AgentState{}
 	agent.State.LastReportIP = ctx.RemoteAddr()
-	settings, agentId, leaseId, err := managers.RegisterAgent(&agent)
+	settings, agentId, clusterId, leaseId, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		rsp = entities.Response{ErrorId: entities.OperationFailed, Reason: err.Error()}
 		ctx.JSON(&rsp)
@@ -56,6 +59,7 @@ func RegisterAgent(ctx iris.Context) {
 	r := entities.RegisterAgentResponse{
 		Response:    entities.Response{ErrorId: entities.Succeed, Reason: ""},
 		AgentId:     agentId,
+		ClusterId:   clusterId,
 		LeaseId:     leaseId,
 		BasicImages: common.BasicImages[settings.KubernetesVersion],
 		MasterSettings: map[string]string{
@@ -157,6 +161,127 @@ func ReportStatus(ctx iris.Context) {
 		return
 	}
 	rsp := entities.AgentReportStatusResponse{Response: entities.Response{ErrorId: entities.Succeed}, LeaseId: leaseId}
+	ctx.JSON(&rsp)
+	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+	ctx.Next()
+}
+
+func ChangeAgentClusterAndRoles(ctx iris.Context) {
+	agentId := ctx.URLParam("agent-id")
+	if agentId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"agent-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	oldClusterId := ctx.URLParam("old-cluster-id")
+	if oldClusterId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"old-cluster-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	newClusterId := ctx.URLParam("new-cluster-id")
+	if newClusterId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"new-cluster-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	cluster, err := common.ClusterManager.GetClusterById(oldClusterId)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: fmt.Sprintf("Failed to retrieve cluster information from cache, error: %s", err.Error())}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	if cluster == nil {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: fmt.Sprintf("Cluster: %s not found!", oldClusterId)}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	agent, err := cluster.GetCachedAgent(agentId)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: fmt.Sprintf("Failed to retrieve agent information from cache, cluster-id: %s, agent-id: %s, error: %s", oldClusterId, agentId, err.Error())}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	if agent == nil {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: fmt.Sprintf("Agent: %s not found!", agentId)}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	isETCDRole := ctx.URLParamInt32Default("etcd", 0) == 1
+	isMasterRole := ctx.URLParamInt32Default("master", 0) == 1
+	isMinionRole := ctx.URLParamInt32Default("minion", 0) == 1
+	isHARole := ctx.URLParamInt32Default("ha", 0) == 1
+	err = common.ClusterManager.TransferAgentToCluster(
+		oldClusterId,
+		newClusterId,
+		agent,
+		isETCDRole,
+		isMasterRole,
+		isMinionRole,
+		isHARole)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: err.Error()}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	rsp := entities.Response{ErrorId: entities.Succeed}
+	ctx.JSON(&rsp)
+	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+	ctx.Next()
+}
+
+func ListAgentsByClusterId(ctx iris.Context) {
+	clusterId := ctx.URLParam("cluster-id")
+	if clusterId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"cluster-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	cluster, err := common.ClusterManager.GetClusterById(clusterId)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: fmt.Sprintf("Failed to retrieve cluster(%s) information from cache, error: %s", clusterId, err.Error())}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	if cluster == nil {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: fmt.Sprintf("Cluster: %s not found!", clusterId)}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	agents, err := cluster.GetAgentList(false)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: fmt.Sprintf("Failed to list agents from cluster(%s), error: %s", clusterId, err.Error())}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	rsp := entities.GetAgentListResponse{
+		Response: entities.Response{ErrorId: entities.Succeed},
+		Agents:   agents,
+	}
 	ctx.JSON(&rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()

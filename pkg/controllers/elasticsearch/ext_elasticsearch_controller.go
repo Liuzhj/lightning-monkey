@@ -148,22 +148,22 @@ spec:
        role: data
    spec:
      serviceAccountName: elasticsearch-admin
-	 affinity:
-	   podAntiAffinity:
-		 preferredDuringSchedulingIgnoredDuringExecution:
-		 - weight: 100
-		   podAffinityTerm:
-			 labelSelector:
-			   matchExpressions:
-			   - key: app
-				 operator: In
-				 values:
-				 - elasticsearch
-			   - key: role
-				 operator: In
-				 values:
-				 - data
-			 topologyKey: kubernetes.io/hostname
+     affinity:
+       podAntiAffinity:
+         preferredDuringSchedulingIgnoredDuringExecution:
+         - weight: 100
+           podAffinityTerm:
+             labelSelector:
+               matchExpressions:
+               - key: app
+                 operator: In
+                 values:
+                 - elasticsearch
+               - key: role
+                 operator: In
+                 values:
+                 - data
+             topologyKey: kubernetes.io/hostname
      containers:
        - name: elasticsearch-data
          image: elasticsearch:6.8.3

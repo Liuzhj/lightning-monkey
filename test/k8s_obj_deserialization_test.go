@@ -1,8 +1,6 @@
 package test
 
 import (
-	"fmt"
-	"github.com/g0194776/lightningmonkey/pkg/controllers/elasticsearch"
 	"github.com/g0194776/lightningmonkey/pkg/utils"
 	assert "github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -224,16 +222,16 @@ subjects:
 //	}
 //}
 
-func Test_SuccessfullyParsedESDeploymentPayload(t *testing.T) {
-	parsedObjects := []runtime.Object{}
-	yamlContentArr := strings.Split(elasticsearch.Payload, "---")
-	for i := 0; i < len(yamlContentArr); i++ {
-		obj, err := utils.DecodeYamlOrJson(yamlContentArr[i])
-		if err != nil {
-			panic(fmt.Errorf("Occurs unexpected exception during decoding yaml-based string from ElasticSearch deployment controller, error: %s", err.Error()))
-		}
-		parsedObjects = append(parsedObjects, obj)
-	}
-	fmt.Printf("YAML-formatted object count: %d, parsed count: %d\n", len(yamlContentArr), len(parsedObjects))
-	assert.True(t, len(parsedObjects) == len(yamlContentArr))
-}
+//func Test_SuccessfullyParsedESDeploymentPayload(t *testing.T) {
+//	parsedObjects := []runtime.Object{}
+//	yamlContentArr := strings.Split(elasticsearch.Payload, "---")
+//	for i := 0; i < len(yamlContentArr); i++ {
+//		obj, err := utils.DecodeYamlOrJson(yamlContentArr[i])
+//		if err != nil {
+//			panic(fmt.Errorf("Occurs unexpected exception during decoding yaml-based string from ElasticSearch deployment controller, error: %s", err.Error()))
+//		}
+//		parsedObjects = append(parsedObjects, obj)
+//	}
+//	fmt.Printf("YAML-formatted object count: %d, parsed count: %d\n", len(yamlContentArr), len(parsedObjects))
+//	assert.True(t, len(parsedObjects) == len(yamlContentArr))
+//}

@@ -35,6 +35,7 @@ type RegisterAgentResponse struct {
 	Response
 	AgentId        string                `json:"agent_id"`
 	BasicImages    DockerImageCollection `json:"image_collection"`
+	ClusterId      string                `json:"cluster_id"`
 	MasterSettings map[string]string     `json:"master_settings"`
 	LeaseId        int64                 `json:"lease_id"`
 }
@@ -74,6 +75,23 @@ type AgentReportStatusResponse struct {
 type GetClusterComponentStatusResponse struct {
 	Response
 	WatchPoints []WatchPoint `json:"status"`
+}
+
+type GetAgentListResponse struct {
+	Response
+	Agents []LightningMonkeyAgentBriefInformation `json:"agents"`
+}
+
+type LightningMonkeyAgentBriefInformation struct {
+	HostInformation
+
+	Id            string      `json:"id"`
+	HasETCDRole   bool        `json:"has_etcd_role"`
+	HasMasterRole bool        `json:"has_master_role"`
+	HasMinionRole bool        `json:"has_minion_role"`
+	HasHARole     bool        `json:"has_ha_role"`
+	Hostname      string      `json:"hostname"`
+	State         *AgentState `json:"state,omitempty"`
 }
 
 type WatchPoint struct {

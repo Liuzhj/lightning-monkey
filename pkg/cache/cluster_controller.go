@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/controllers"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/dns"
@@ -29,6 +30,7 @@ import (
 //go:generate mockgen -package=mock_lm -destination=../../mocks/mock_cluster_controller.go -source=cluster_controller.go ClusterController
 type ClusterController interface {
 	Dispose() //clean all of in use resource including backend watching jobs.
+	GetAgentFromETCD(agentId string) (*entities.LightningMonkeyAgent, error)
 	GetSynchronizedRevision() int64
 	GetStatus() string
 	GetClusterId() string
@@ -57,6 +59,7 @@ type ClusterController interface {
 	GetRandomAdminConfFromMasterAgents() (string, error)
 	GetNodesInformation() ([]entities.KubernetesNodeInfo, error)
 	EnableMonitors()
+	GetAgentList(onlineOnly bool) ([]entities.LightningMonkeyAgentBriefInformation, error)
 }
 
 type ClusterControllerImple struct {
@@ -75,6 +78,7 @@ type ClusterControllerImple struct {
 	edc                  controllers.DeploymentController
 	settings             entities.LightningMonkeyClusterSettings
 	synchronizedRevision int64
+	sd                   storage.LightningMonkeyStorageDriver
 }
 
 func (cc *ClusterControllerImple) GetSettings() entities.LightningMonkeyClusterSettings {
@@ -98,12 +102,13 @@ func (cc *ClusterControllerImple) Initialize(sd storage.LightningMonkeyStorageDr
 	if cc.monitorLockObj == nil {
 		cc.monitorLockObj = &sync.Mutex{}
 	}
+	cc.sd = sd
 	cc.certs = make(map[string]string)
 	cc.cache = &AgentCache{}
 	cc.cache.Initialize()
 	cc.jobScheduler = &ClusterJobSchedulerImple{}
 	cc.jobScheduler.InitializeStrategies()
-	err := cc.fullSync(sd)
+	err := cc.fullSync(cc.sd)
 	if err != nil {
 		logrus.Fatalf("Failed to full-sync cluster %s data, error: %s", cc.settings.Id, err.Error())
 		os.Exit(1)
@@ -246,6 +251,9 @@ func (cc *ClusterControllerImple) GetCachedAgent(agentId string) (*entities.Ligh
 		return agent, nil
 	}
 	if agent, isOK = cc.cache.ha[agentId]; isOK {
+		return agent, nil
+	}
+	if agent, isOK = cc.cache.pool[agentId]; isOK {
 		return agent, nil
 	}
 	return nil, nil
@@ -426,4 +434,92 @@ func (cc *ClusterControllerImple) GetNodesInformation() ([]entities.KubernetesNo
 		})
 	}
 	return result, nil
+}
+
+func (cc *ClusterControllerImple) GetAgentList(onlineOnly bool) ([]entities.LightningMonkeyAgentBriefInformation, error) {
+	if onlineOnly {
+		//TODO(g0194776): to support it by using in-process cache.
+		return nil, fmt.Errorf("Not supported listing only online agents from cluster: %s", cc.GetSettings().Id)
+	}
+	//fully list all keys what under this cluster.
+	rsp, err := cc.sd.Get(context.Background(), fmt.Sprintf("/lightning-monkey/clusters/%s/", cc.GetClusterId()), clientv3.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+	if rsp.Count == 0 {
+		return nil, nil
+	}
+	var subKeys []string
+	agents := []entities.LightningMonkeyAgentBriefInformation{}
+	for i := 0; i < len(rsp.Kvs); i++ {
+		subKeys = strings.FieldsFunc(string(rsp.Kvs[i].Key), func(c rune) bool {
+			return c == '/'
+		})
+		//detect agents changes.
+		if agentId, changed := isAgentSettingsChanged(subKeys); changed {
+			agent, err := cc.GetAgentFromETCD(agentId)
+			if err != nil {
+				logrus.Errorf("Failed to retrieve newest version of Lightning Monkey's Agent data from remote ETCD, error: %s", err.Error())
+				continue
+			}
+			if agent == nil {
+				logrus.Errorf("Failed to retrieve newest version of Lightning Monkey's Agent data from remote ETCD, error: agent %s not found in the cluster %s", agentId, cc.GetClusterId())
+				continue
+			}
+			a := entities.LightningMonkeyAgentBriefInformation{
+				Id:              agent.Id,
+				HasETCDRole:     agent.HasETCDRole,
+				HasMasterRole:   agent.HasMasterRole,
+				HasMinionRole:   agent.HasMinionRole,
+				HasHARole:       agent.HasHARole,
+				Hostname:        agent.Hostname,
+				HostInformation: agent.HostInformation,
+			}
+			if agent.State != nil {
+				as := *agent.State
+				a.State = &as
+			}
+			agents = append(agents, a)
+		}
+	}
+	return agents, nil
+}
+
+func (cc *ClusterControllerImple) GetAgentFromETCD(agentId string) (*entities.LightningMonkeyAgent, error) {
+	if agentId == "" {
+		return nil, nil
+	}
+	agent := entities.LightningMonkeyAgent{}
+	settingsPath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", cc.GetClusterId(), agentId)
+	ctx, cancel := context.WithTimeout(context.Background(), cc.sd.GetRequestTimeoutDuration())
+	defer cancel()
+	rsp, err := cc.sd.Get(ctx, settingsPath)
+	if err != nil {
+		return nil, err
+	}
+	if rsp.Count == 0 {
+		return nil, nil
+	}
+	err = json.Unmarshal(rsp.Kvs[0].Value, &agent)
+	if err != nil {
+		return nil, err
+	}
+	statePath := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", cc.GetClusterId(), agentId)
+	ctx2, cancel2 := context.WithTimeout(context.Background(), cc.sd.GetRequestTimeoutDuration())
+	defer cancel2()
+	rsp, err = cc.sd.Get(ctx2, statePath)
+	if err != nil {
+		return nil, err
+	}
+	if rsp.Count == 0 {
+		//ignored missed state object, it's lease-guaranteed.
+		return &agent, nil
+	}
+	state := entities.AgentState{}
+	err = json.Unmarshal(rsp.Kvs[0].Value, &state)
+	if err != nil {
+		return nil, err
+	}
+	agent.State = &state
+	return &agent, nil
 }
