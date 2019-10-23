@@ -73,6 +73,7 @@ func RegisterAgent(ctx iris.Context) {
 			entities.MasterSettings_ExpectedETCDNodeCount: strconv.Itoa(settings.ExpectedETCDCount),
 			entities.MasterSettings_DockerRegistry:        "mirrorgooglecontainers/hyperkube",
 			entities.MasterSettings_DockerExtraGraphPath:  settings.ExtraDockerGraphPath,
+			entities.MasterSettings_PortRange:             fmt.Sprintf("%d-%d", settings.PortRangeSettings.Begin, settings.PortRangeSettings.End),
 		},
 	}
 	r.BasicImages.HTTPDownloadToken = entities.HTTPDockerImageDownloadToken

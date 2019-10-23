@@ -34,6 +34,7 @@ const (
 	MasterSettings_ServiceDNSClusterIP                   = "service_dns_cluster_ip"
 	MasterSettings_ExpectedETCDNodeCount                 = "expected_etcd_node_count"
 	MasterSettings_APIServerVIP                          = "ha_settings"
+	MasterSettings_PortRange                             = "port_range"
 	NetworkStack_Flannel                                 = "flannel"
 	NetworkStack_Calico                                  = "calico"
 	NetworkStack_KubeRouter                              = "kuberouter"
@@ -85,6 +86,12 @@ type LightningMonkeyClusterSettings struct {
 	HASettings                    *HASettings                                 `json:"ha_settings"`
 	ExtensionalDeployments        map[string] /*key->args*/ map[string]string `json:"ext_deployments"`
 	ExtraDockerGraphPath          string                                      `json:"extra_docker_graph_path"`
+	PortRangeSettings             *NodePortRangeSettings                      `json:"node_port_range_settings"`
+}
+
+type NodePortRangeSettings struct {
+	Begin int `json:"begin"`
+	End   int `json:"end"`
 }
 
 type HASettings struct {

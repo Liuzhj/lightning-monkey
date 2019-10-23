@@ -38,6 +38,7 @@ func NewCluster(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
+	//HA settings check.
 	if cluster.HASettings != nil {
 		if cluster.HASettings.VIP == "" {
 			rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"VIP\" is needed for initializing HAProxy & KeepAlived installation."}
@@ -53,6 +54,34 @@ func NewCluster(ctx iris.Context) {
 			ctx.Next()
 			return
 		}
+	}
+	//node port range check.
+	if cluster.PortRangeSettings == nil {
+		cluster.PortRangeSettings = &entities.NodePortRangeSettings{
+			Begin: 30000,
+			End:   32767,
+		}
+	}
+	if cluster.PortRangeSettings.Begin == 0 {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "Illegal node port range, \"node_port_range_settings.begin\" must greater than zero!"}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	if cluster.PortRangeSettings.End == 0 {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "Illegal node port range, \"node_port_range_settings.end\" must greater than zero!"}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	if cluster.PortRangeSettings.End <= cluster.PortRangeSettings.Begin {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "Illegal node port range, \"node_port_range_settings.end\" must greater than \"node_port_range_settings.begin\"!"}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
 	}
 	clusterId, err := managers.NewCluster(&cluster)
 	if err != nil {
