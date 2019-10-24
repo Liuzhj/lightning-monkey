@@ -79,6 +79,7 @@ _usage(){
     curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd run
 
 EOF
+  exit 1
 }
 
 
@@ -504,7 +505,7 @@ _setup_docker() {
 
   pt="/usr/bin/dockerd --insecure-registry=repository.test.com:8444 --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --storage-driver=overlay2 --graph=${dir}"
   execstart=$(echo ${pt}|sed 's/\//\\\//g')
-  sed -r  's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
+  sed -i -r  's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
 
   systemctl enable docker
   systemctl restart docker
@@ -670,17 +671,17 @@ while test $# -ne 0; do
     -c|--clusterid)  clusterid="${1}"; shift ;;
     -g|--graph)      graph="${1}"; shift ;;
     -f|--force)      force="${1}"; shift ;;
-    run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage && exit 1
+    run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
                      [[ -z "${force}" ]] && force="false"
                      _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${role}";;
 
-    check)           [[ -z "${nic}" ]] && _usage && exit 1
+    check)           [[ -z "${nic}" ]] && _usage
                      _check_main "${nic}";;
 
     show)            _show_main ;;
 
-    setup)           [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage &&  exit 1
+    setup)           [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
                       _setup_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${role}";;
                     
