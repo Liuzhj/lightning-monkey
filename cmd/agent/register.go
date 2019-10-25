@@ -616,7 +616,15 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 	}
 	img := a.basicImages.Images["k8s"].ImageName
 	infraContainer := a.basicImages.Images["infra"].ImageName
-
+	//resource reservation calculation.
+	var isOK bool
+	var kubeReserve, systemReserve string
+	if kubeReserve, isOK = a.masterSettings[entities.MasterSettings_ResourceReservation_Kube]; !isOK {
+		kubeReserve = "cpu=1,memory=1Gi"
+	}
+	if systemReserve, isOK = a.masterSettings[entities.MasterSettings_ResourceReservation_System]; !isOK {
+		systemReserve = "cpu=1,memory=1Gi"
+	}
 	//--volume=/:/rootfs:ro
 	//--volume=/sys:/sys:ro
 	//--volume=/dev:/dev
@@ -631,8 +639,8 @@ func (a *LightningMonkeyAgent) runKubeletContainer(masterIP string) error {
 		fmt.Sprintf("--pod-infra-container-image=%s", infraContainer),
 		fmt.Sprintf("--register-node=%t", *a.arg.IsMinionRole),
 		fmt.Sprintf("--hostname-override=%s", *a.arg.Address),
-		fmt.Sprintf("--kube-reserved=cpu=400m,memory=100Mi"),
-		fmt.Sprintf("--system-reserved=cpu=400m,memory=100Mi"),
+		fmt.Sprintf("--kube-reserved=%s", kubeReserve),
+		fmt.Sprintf("--system-reserved=%s", systemReserve),
 		"--cgroup-driver=cgroupfs",
 		//"--cgroups-per-qos=false",
 		"--enforce-node-allocatable=pods,system-reserved,kube-reserved",

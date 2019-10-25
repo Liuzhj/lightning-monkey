@@ -76,6 +76,10 @@ func RegisterAgent(ctx iris.Context) {
 			entities.MasterSettings_PortRange:             fmt.Sprintf("%d-%d", settings.PortRangeSettings.Begin, settings.PortRangeSettings.End),
 		},
 	}
+	if settings.ResourceReservation != nil {
+		r.MasterSettings[entities.MasterSettings_ResourceReservation_Kube] = settings.ResourceReservation.Kube
+		r.MasterSettings[entities.MasterSettings_ResourceReservation_System] = settings.ResourceReservation.System
+	}
 	r.BasicImages.HTTPDownloadToken = entities.HTTPDockerImageDownloadToken
 	rsp = r
 	_, _ = ctx.JSON(rsp)
