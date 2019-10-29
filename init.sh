@@ -63,20 +63,20 @@ _usage(){
   Example:
 
     #local run
-    /bin/bash k8setup.sh -e enp0s8 -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -r master  -r etcd run
-    /bin/bash k8setup.sh -e enp0s8 check
-    /bin/bash k8setup.sh -e enp0s8 -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -r master  -r etcd setup
-    /bin/bash k8setup.sh show
+    /bin/bash init.sh -e enp0s8 -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -r master  -r etcd run
+    /bin/bash init.sh -e enp0s8 check
+    /bin/bash init.sh -e enp0s8 -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -r master  -r etcd setup
+    /bin/bash init.sh show
 	
     #remote run
     #setup k8s env
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd setup
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd setup
     #show server information
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd show
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd show
     #check server env
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd check
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd check
     #deploy lightingmonkey role
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd run
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd run
 
 EOF
 }
