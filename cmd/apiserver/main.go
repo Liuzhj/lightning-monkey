@@ -94,8 +94,13 @@ func main() {
 		logrus.Info("*** " + entities.HTTPDockerImageDownloadToken)
 		logrus.Info("***")
 	}
+	//configure default port range
+	defaultNodePort := &entities.NodePortRangeSettings{
+		Begin: 30000,
+		End:   32767,
+	}
 	logrus.Infof("Creating resource pool...")
-	_, err = managers.NewCluster(&entities.LightningMonkeyClusterSettings{Id: uuid.Nil.String()})
+	_, err = managers.NewCluster(&entities.LightningMonkeyClusterSettings{Id: uuid.Nil.String(),PortRangeSettings:defaultNodePort})
 	if err != nil {
 		logrus.Fatalf("Failed to create resource pool, error: %s", err.Error())
 		return
