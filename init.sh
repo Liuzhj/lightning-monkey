@@ -637,6 +637,7 @@ _run_main() {
   docker load </tmp/lmagent.tar
   docker run -itd --restart=always --net=host --privileged \
             --name agent \
+            -v /sys:/sys \
             -v /etc:/etc \
             -v /var/run:/var/run \
             -v /var/lib:/var/lib \
