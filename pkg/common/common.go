@@ -28,6 +28,7 @@ var (
 				"prometheus": {ImageName: "docker.io/prom/prometheus:v2.2.1", DownloadAddr: "%s/apis/v1/registry/1.12.5/prometheus.tar?token=%s"},
 				"es":         {ImageName: "docker.io/elasticsearch:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.12.5/es.tar?token=%s"},
 				"filebeat":   {ImageName: "docker.io/elastic/filebeat:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.12.5/filebeat.tar?token=%s"},
+				"helm":       {ImageName: "docker.io/fishead/gcr.io.kubernetes-helm.tiller:v2.12.3", DownloadAddr: "%s/apis/v1/registry/1.12.5/helmv2.tar?token=%s"},
 			},
 		},
 		"1.13.10": {
@@ -46,6 +47,7 @@ var (
 				"prometheus": {ImageName: "docker.io/prom/prometheus:v2.2.1", DownloadAddr: "%s/apis/v1/registry/1.13.10/prometheus.tar?token=%s"},
 				"es":         {ImageName: "docker.io/elasticsearch:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.13.10/es.tar?token=%s"},
 				"filebeat":   {ImageName: "docker.io/elastic/filebeat:6.8.3", DownloadAddr: "%s/apis/v1/registry/1.13.10/filebeat.tar?token=%s"},
+				"helm":       {ImageName: "docker.io/fishead/gcr.io.kubernetes-helm.tiller:v2.12.3", DownloadAddr: "%s/apis/v1/registry/1.13.10/helmv2.tar?token=%s"},
 			},
 		},
 	}

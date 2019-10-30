@@ -48,6 +48,7 @@ const (
 	EXT_DEPLOYMENT_TRAEFIK                                    = "traefik"
 	EXT_DEPLOYMENT_ES                                         = "es"
 	EXT_DEPLOYMENT_FILEBEAT                                   = "filebeat"
+	EXT_DEPLOYMENT_HELM                                       = "helm"
 	_                                         AgentStatusFlag = iota
 	AgentStatusFlag_Whatever
 	AgentStatusFlag_Running

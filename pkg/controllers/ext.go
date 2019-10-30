@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/elasticsearch"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/filebeat"
+	v2 "github.com/g0194776/lightningmonkey/pkg/controllers/helm/v2"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/metrics"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/prometheus"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/traefik"
@@ -34,6 +35,7 @@ func (dc *ExtensionDeploymentController) Initialize(client *k8s.KubernetesClient
 		&traefik.TraefikDeploymentController{},
 		&elasticsearch.ElasticSearchDeploymentController{},
 		&filebeat.FilebeatDeploymentController{},
+		&v2.HelmDeploymentController{},
 	}
 	dc.controllers = []DeploymentController{}
 	var err error
