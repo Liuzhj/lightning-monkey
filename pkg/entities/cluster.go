@@ -91,6 +91,35 @@ type LightningMonkeyClusterSettings struct {
 	ExtraDockerGraphPath          string                                      `json:"extra_docker_graph_path"`
 	PortRangeSettings             *NodePortRangeSettings                      `json:"node_port_range_settings"`
 	ResourceReservation           *ResourceReservationSettings                `json:"resource_reservation"`
+	HelmSettings                  *HelmSettings                               `json:"helm_settings"`
+}
+
+type HelmSettings struct {
+	Repositories []HelmRepo  `json:"repositories"`
+	Charts       []HelmChart `json:"charts"`
+}
+
+type HelmRepo struct {
+	Name     string `json:"name"`
+	Url      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type HelmChart struct {
+	Name       string               `json:"name"`
+	Namespace  string               `json:"namespace"`
+	Chart      string               `json:"chart"`
+	Version    string               `json:"version"`
+	Username   string               `json:"username"`
+	Password   string               `json:"password"`
+	Repository string               `json:"repository"`
+	Parameters []HelmChartParameter `json:"parameters"`
+}
+
+type HelmChartParameter struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type ResourceReservationSettings struct {
