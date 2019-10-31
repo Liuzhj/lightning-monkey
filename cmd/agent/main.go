@@ -22,6 +22,7 @@ func main() {
 			logrus.Fatalf("Failed to copy depended CNI binary files to specified OS path, error: %s", err.Error())
 			return
 		}
+		createCgroupsSubDirectories()
 	}
 	arg := AgentArgs{}
 	arg.Server = flag.String("server", "", "api address")

@@ -24,29 +24,31 @@ const (
 	ConditionConfirmed
 	ConditionNotConfirmed
 	ConditionInapplicable
-	MasterSettings_PodCIDR                               = "pod_ip_cidr"
-	MasterSettings_ServiceCIDR                           = "service_ip_cidr"
-	MasterSettings_ServiceDNSDomain                      = "service_dns_domain"
-	MasterSettings_KubernetesVersion                     = "k8s_version"
-	MasterSettings_DockerRegistry                        = "docker_registry"
-	MasterSettings_DockerExtraGraphPath                  = "docker_extra_graph_path"
-	MasterSettings_MaxPodCountPerNode                    = "max_pod_count"
-	MasterSettings_ServiceDNSClusterIP                   = "service_dns_cluster_ip"
-	MasterSettings_ExpectedETCDNodeCount                 = "expected_etcd_node_count"
-	MasterSettings_APIServerVIP                          = "ha_settings"
-	MasterSettings_PortRange                             = "port_range"
-	NetworkStack_Flannel                                 = "flannel"
-	NetworkStack_Calico                                  = "calico"
-	NetworkStack_KubeRouter                              = "kuberouter"
-	DNS_KubeDNS                                          = "kubedns"
-	DNS_CoreDNS                                          = "coredns"
-	EXT_DEPLOYMENT_PROMETHEUS                            = "prometheus"
-	EXT_DEPLOYMENT_ALTERMANAGER                          = "altermanager"
-	EXT_DEPLOYMENT_METRICSERVER                          = "metric-server"
-	EXT_DEPLOYMENT_TRAEFIK                               = "traefik"
-	EXT_DEPLOYMENT_ES                                    = "es"
-	EXT_DEPLOYMENT_FILEBEAT                              = "filebeat"
-	_                                    AgentStatusFlag = iota
+	MasterSettings_PodCIDR                                    = "pod_ip_cidr"
+	MasterSettings_ServiceCIDR                                = "service_ip_cidr"
+	MasterSettings_ServiceDNSDomain                           = "service_dns_domain"
+	MasterSettings_KubernetesVersion                          = "k8s_version"
+	MasterSettings_DockerRegistry                             = "docker_registry"
+	MasterSettings_DockerExtraGraphPath                       = "docker_extra_graph_path"
+	MasterSettings_MaxPodCountPerNode                         = "max_pod_count"
+	MasterSettings_ServiceDNSClusterIP                        = "service_dns_cluster_ip"
+	MasterSettings_ExpectedETCDNodeCount                      = "expected_etcd_node_count"
+	MasterSettings_APIServerVIP                               = "ha_settings"
+	MasterSettings_PortRange                                  = "port_range"
+	MasterSettings_ResourceReservation_Kube                   = "kube_res_reserve"
+	MasterSettings_ResourceReservation_System                 = "system_res_reserve"
+	NetworkStack_Flannel                                      = "flannel"
+	NetworkStack_Calico                                       = "calico"
+	NetworkStack_KubeRouter                                   = "kuberouter"
+	DNS_KubeDNS                                               = "kubedns"
+	DNS_CoreDNS                                               = "coredns"
+	EXT_DEPLOYMENT_PROMETHEUS                                 = "prometheus"
+	EXT_DEPLOYMENT_ALTERMANAGER                               = "altermanager"
+	EXT_DEPLOYMENT_METRICSERVER                               = "metric-server"
+	EXT_DEPLOYMENT_TRAEFIK                                    = "traefik"
+	EXT_DEPLOYMENT_ES                                         = "es"
+	EXT_DEPLOYMENT_FILEBEAT                                   = "filebeat"
+	_                                         AgentStatusFlag = iota
 	AgentStatusFlag_Whatever
 	AgentStatusFlag_Running
 	AgentStatusFlag_Provisioned
@@ -87,6 +89,12 @@ type LightningMonkeyClusterSettings struct {
 	ExtensionalDeployments        map[string] /*key->args*/ map[string]string `json:"ext_deployments"`
 	ExtraDockerGraphPath          string                                      `json:"extra_docker_graph_path"`
 	PortRangeSettings             *NodePortRangeSettings                      `json:"node_port_range_settings"`
+	ResourceReservation           *ResourceReservationSettings                `json:"resource_reservation"`
+}
+
+type ResourceReservationSettings struct {
+	Kube   string `json:"kube"`
+	System string `json:"system"`
 }
 
 type NodePortRangeSettings struct {
