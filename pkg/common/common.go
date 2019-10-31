@@ -31,13 +31,13 @@ var (
 				"helm":       {ImageName: "docker.io/fishead/gcr.io.kubernetes-helm.tiller:v2.12.3", DownloadAddr: "%s/apis/v1/registry/software/helmv2.tar?token=%s"},
 			},
 		},
-		"1.13.10": {
+		"1.13.12": {
 			DownloadType:      entities.DockerImageDownloadType_HTTP,
 			HTTPDownloadToken: "",
 			Images: map[string]entities.DockerImage{
-				"etcd":       {ImageName: "docker.io/mirrorgooglecontainers/etcd:3.2.24", DownloadAddr: "%s/apis/v1/registry/1.13.10/etcd.tar?token=%s"},
-				"k8s":        {ImageName: "g0194776/lightning-monkey-hyperkube:v1.13.10", DownloadAddr: "%s/apis/v1/registry/1.13.10/k8s.tar?token=%s"},
-				"infra":      {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.13.10/infra.tar?token=%s"},
+				"etcd":       {ImageName: "docker.io/mirrorgooglecontainers/etcd:3.2.24", DownloadAddr: "%s/apis/v1/registry/1.13.12/etcd.tar?token=%s"},
+				"k8s":        {ImageName: "g0194776/lightning-monkey-hyperkube:v1.13.12", DownloadAddr: "%s/apis/v1/registry/1.13.12/k8s.tar?token=%s"},
+				"infra":      {ImageName: "docker.io/mirrorgooglecontainers/pause-amd64:3.1", DownloadAddr: "%s/apis/v1/registry/1.13.12/infra.tar?token=%s"},
 				"coredns":    {ImageName: "docker.io/coredns/coredns:1.5.2", DownloadAddr: "%s/apis/v1/registry/software/coredns.tar?token=%s"},
 				"ha":         {ImageName: "docker.io/pelin/haproxy-keepalived:latest", DownloadAddr: "%s/apis/v1/registry/software/ha.tar?token=%s"},
 				"metrics":    {ImageName: "docker.io/mirrorgooglecontainers/metrics-server-amd64:v0.3.3", DownloadAddr: "%s/apis/v1/registry/software/metrics.tar?token=%s"},

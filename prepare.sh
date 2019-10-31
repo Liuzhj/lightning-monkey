@@ -9,7 +9,7 @@ wget http://mirror.rc.usf.edu/compute_lock/elrepo/kernel/el7/x86_64/RPMS/kernel-
 wget https://get.helm.sh/helm-v2.12.3-linux-amd64.tar.gz
 echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_etcd mirrorgooglecontainers/etcd:3.2.24
-./download-frozen-image-v2.sh img_hyperkube g0194776/lightning-monkey-hyperkube:v1.13.10
+./download-frozen-image-v2.sh img_hyperkube g0194776/lightning-monkey-hyperkube:v1.13.12
 ./download-frozen-image-v2.sh img_infra mirrorgooglecontainers/pause-amd64:3.1
 ./download-frozen-image-v2.sh img_coredns coredns/coredns:1.5.2
 ./download-frozen-image-v2.sh img_ha pelin/haproxy-keepalived:latest
