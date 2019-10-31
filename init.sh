@@ -70,15 +70,16 @@ _usage(){
 	
     #remote run
     #setup k8s env
-    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd setup
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd setup
     #show server information
-    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd show
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd show
     #check server env
-    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd check
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd check
     #deploy lightingmonkey role
-    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd run
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd run
 
 EOF
+  exit 1
 }
 
 
@@ -672,17 +673,17 @@ while test $# -ne 0; do
     -c|--clusterid)  clusterid="${1}"; shift ;;
     -g|--graph)      graph="${1}"; shift ;;
     -f|--force)      force="${1}"; shift ;;
-    run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage && exit 1
+    run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
                      [[ -z "${force}" ]] && force="false"
                      _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${role}";;
 
-    check)           [[ -z "${nic}" ]] && _usage && exit 1
+    check)           [[ -z "${nic}" ]] && _usage
                      _check_main "${nic}";;
 
     show)            _show_main ;;
 
-    setup)           [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage &&  exit 1
+    setup)           [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
                       _setup_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${role}";;
                     

@@ -76,7 +76,7 @@ spec:
       containers:
       - name: kube-router
         image: cloudnativelabs/kube-router:v0.2.5
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         args:
         - "--run-router=true"
         - "--run-firewall=true"
@@ -111,7 +111,7 @@ spec:
       initContainers:
       - name: install-cni
         image: busybox
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         command:
         - /bin/sh
         - -c
