@@ -16,20 +16,20 @@ DOCKERGRAPH="/var/lib/docker"
 TOKEN="df1733d40a31"
 
 #KERNEL_URL="/pkg/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm"
-KERNEL_URL="/apis/v1/registry/1.13.10/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm?token=${TOKEN}"
+KERNEL_URL="/apis/v1/registry/software/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm?token=${TOKEN}"
 KERNEL_PKG="kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm"
 
-DOCKER_ENGINE_URL="/apis/v1/registry/1.13.10/docker-engine-1.12.6-1.el7.centos.x86_64.rpm?token=${TOKEN}"
+DOCKER_ENGINE_URL="/apis/v1/registry/software/docker-engine-1.12.6-1.el7.centos.x86_64.rpm?token=${TOKEN}"
 #DOCKER_ENGINE_URL="/pkg/docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
 DOCKER_ENGINE_PKG="docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
 
-DOCKER_ENGINE_SELINUX_URL="/apis/v1/registry/1.13.10/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm?token=${TOKEN}"
+DOCKER_ENGINE_SELINUX_URL="/apis/v1/registry/software/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm?token=${TOKEN}"
 #DOCKER_ENGINE_SELINUX_URL="/pkg/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
 DOCKER_ENGINE_SELINUX_PKG="docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
 
 LMAGENT_URL="/apis/v1/registry/1.13.10/lmagent.tar?token=${TOKEN}"
 #LMAGENT_URL="/pkg/lmagent.tar"
-PROM_NODE_URL="/apis/v1/registry/1.13.10/exporter.tar?token=${TOKEN}"
+PROM_NODE_URL="/apis/v1/registry/software/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
 
 

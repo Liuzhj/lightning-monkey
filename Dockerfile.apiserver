@@ -10,33 +10,36 @@ RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
 
 FROM centos:7
 
-RUN mkdir -p /opt/registry/1.13.10
+ARG  K8S_VERSION
+
+RUN mkdir -p /opt/registry/${K8S_VERSION} && mkdir -p /opt/software
 COPY --from=builder /go/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY --from=builder /go/init.sh /opt/init.sh
 COPY --from=builder /go/lm-apiserver /opt
-#Copy depended images.
-COPY --from=builder /go/etcd.tar /opt/registry/1.13.10/etcd.tar
-COPY --from=builder /go/k8s.tar /opt/registry/1.13.10/k8s.tar
-COPY --from=builder /go/infra.tar /opt/registry/1.13.10/infra.tar
-COPY --from=builder /go/coredns.tar /opt/registry/1.13.10/coredns.tar
-COPY --from=builder /go/ha.tar /opt/registry/1.13.10/ha.tar
-COPY --from=builder /go/metrics.tar /opt/registry/1.13.10/metrics.tar
-COPY --from=builder /go/traefik.tar /opt/registry/1.13.10/traefik.tar
-COPY --from=builder /go/router.tar /opt/registry/1.13.10/router.tar
-COPY --from=builder /go/busybox.tar /opt/registry/1.13.10/busybox.tar
-COPY --from=builder /go/prometheus.tar /opt/registry/1.13.10/prometheus.tar
-COPY --from=builder /go/lmagent.tar /opt/registry/1.13.10/lmagent.tar
-COPY --from=builder /go/exporter.tar /opt/registry/1.13.10/exporter.tar
-COPY --from=builder /go/es.tar /opt/registry/1.13.10/es.tar
-COPY --from=builder /go/filebeat.tar /opt/registry/1.13.10/filebeat.tar
-COPY --from=builder /go/helmv2.tar /opt/registry/1.13.10/helmv2.tar
-#Copy basic RPM packages.
-COPY --from=builder /go/docker-engine-1.12.6-1.el7.centos.x86_64.rpm /opt/registry/1.13.10/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-COPY --from=builder /go/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm /opt/registry/1.13.10/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
-COPY --from=builder /go/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm /opt/registry/1.13.10/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm
-COPY --from=builder /go/helm-v2.12.3-linux-amd64.tar.gz /opt/registry/1.13.10/helm-v2.12.3-linux-amd64.tar.gz
+#kubernetes components
+COPY --from=builder /go/etcd.tar /opt/registry/${K8S_VERSION}/etcd.tar
+COPY --from=builder /go/k8s.tar /opt/registry/${K8S_VERSION}/k8s.tar
+COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION}/infra.tar
+COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION}/lmagent.tar
+#common components
+COPY --from=builder /go/coredns.tar /opt/registry/software/coredns.tar
+COPY --from=builder /go/ha.tar /opt/registry/software/ha.tar
+COPY --from=builder /go/metrics.tar /opt/registry/software/metrics.tar
+COPY --from=builder /go/traefik.tar /opt/registry/software/traefik.tar
+COPY --from=builder /go/router.tar /opt/registry/software/router.tar
+COPY --from=builder /go/busybox.tar /opt/registry/software/busybox.tar
+COPY --from=builder /go/prometheus.tar /opt/registry/software/prometheus.tar
+COPY --from=builder /go/exporter.tar /opt/registry/software/exporter.tar
+COPY --from=builder /go/es.tar /opt/registry/software/es.tar
+COPY --from=builder /go/filebeat.tar /opt/registry/software/filebeat.tar
+COPY --from=builder /go/helmv2.tar /opt/registry/software/helmv2.tar
+#copy basic RPM packages.
+COPY --from=builder /go/docker-engine-1.12.6-1.el7.centos.x86_64.rpm /opt/registry/software/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+COPY --from=builder /go/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm /opt/registry/software/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
+COPY --from=builder /go/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm /opt/registry/software/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm
+COPY --from=builder /go/helm-v2.12.3-linux-amd64.tar.gz /opt/registry/software/helm-v2.12.3-linux-amd64.tar.gz
 
-RUN yum install -y kubeadm-1.13.10-0 net-tools --disableexcludes=kubernetes
+RUN yum install -y kubeadm-${K8S_VERSION}-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-apiserver
 
 EXPOSE 8080
