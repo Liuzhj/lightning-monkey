@@ -504,7 +504,7 @@ _setup_docker() {
   wget ${apiserver}${DOCKER_ENGINE_SELINUX_URL} -O /tmp/${DOCKER_ENGINE_SELINUX_PKG}
   yum install -y /tmp/${DOCKER_ENGINE_PKG} /tmp/${DOCKER_ENGINE_SELINUX_PKG}
 
-  pt="/usr/bin/dockerd --insecure-registry=repository.test.com:8444 --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --storage-driver=overlay2 --graph=${dir}"
+  pt="/usr/bin/dockerd --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --graph=${dir}"
   execstart=$(echo ${pt}|sed 's/\//\\\//g')
   sed -r -i 's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
 
