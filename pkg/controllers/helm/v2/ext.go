@@ -76,7 +76,7 @@ spec:
           successThreshold: 1
           timeoutSeconds: 1
       dnsPolicy: ClusterFirst
-      restartPolicy: Always
+      restartPolicy: IfNotPresent
       serviceAccount: tiller
       serviceAccountName: tiller
 ---
