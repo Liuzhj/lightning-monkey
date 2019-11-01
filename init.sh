@@ -31,7 +31,7 @@ LMAGENT_URL="/apis/v1/registry/1.13.12/lmagent.tar?token=${TOKEN}"
 #LMAGENT_URL="/pkg/lmagent.tar"
 PROM_NODE_URL="/apis/v1/registry/software/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
-
+HELM_URL="/apis/v1/registry/software/helm-v2.12.3-linux-amd64.tar.gz?token=${TOKEN}"
 
 _usage(){
   cat <<-EOF
@@ -506,7 +506,7 @@ _setup_docker() {
 
   pt="/usr/bin/dockerd --insecure-registry=repository.test.com:8444 --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --storage-driver=overlay2 --graph=${dir}"
   execstart=$(echo ${pt}|sed 's/\//\\\//g')
-  sed -r  's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
+  sed -r -i 's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
 
   systemctl enable docker
   systemctl restart docker
@@ -635,6 +635,12 @@ _run_main() {
   #deployment lmagent
   wget "${apiserver}${LMAGENT_URL}" -O /tmp/lmagent.tar
   docker load </tmp/lmagent.tar
+
+  #install helm tools
+  wget "${apiserver}${HELM_URL}" -O /tmp/helm-v2.12.3-linux-amd64.tar.gz
+  tar xvzfp /tmp/helm-v2.12.3-linux-amd64.tar.gz linux-amd64/helm
+  /bin/cp -f linux-amd64/helm /usr/bin/ && chmod 755 /usr/bin/helm
+
   docker run -itd --restart=always --net=host --privileged \
             --name agent \
             -v /sys:/sys \
