@@ -1,8 +1,11 @@
 FROM centos:7
+
+ARG  K8S_VERSION
+
 COPY extras/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY lm-agent /opt
 
-RUN yum install -y kubeadm-1.13.10-0 net-tools --disableexcludes=kubernetes
+RUN yum install -y kubeadm-${K8S_VERSION}-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-agent && mkdir /tmp/cni && cp -r /opt/cni/bin/* /tmp/cni
 
 #Update time zone to Asia-Shanghai

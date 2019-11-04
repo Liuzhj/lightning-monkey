@@ -107,7 +107,7 @@ spec:
         args:
         - --kubelet-insecure-tls
         - --kubelet-preferred-address-types=InternalIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: tmp-dir
           mountPath: /tmp

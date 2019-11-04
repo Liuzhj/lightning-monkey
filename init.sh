@@ -16,22 +16,22 @@ DOCKERGRAPH="/var/lib/docker"
 TOKEN="df1733d40a31"
 
 #KERNEL_URL="/pkg/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm"
-KERNEL_URL="/apis/v1/registry/1.13.10/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm?token=${TOKEN}"
+KERNEL_URL="/apis/v1/registry/software/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm?token=${TOKEN}"
 KERNEL_PKG="kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm"
 
-DOCKER_ENGINE_URL="/apis/v1/registry/1.13.10/docker-engine-1.12.6-1.el7.centos.x86_64.rpm?token=${TOKEN}"
+DOCKER_ENGINE_URL="/apis/v1/registry/software/docker-engine-1.12.6-1.el7.centos.x86_64.rpm?token=${TOKEN}"
 #DOCKER_ENGINE_URL="/pkg/docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
 DOCKER_ENGINE_PKG="docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
 
-DOCKER_ENGINE_SELINUX_URL="/apis/v1/registry/1.13.10/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm?token=${TOKEN}"
+DOCKER_ENGINE_SELINUX_URL="/apis/v1/registry/software/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm?token=${TOKEN}"
 #DOCKER_ENGINE_SELINUX_URL="/pkg/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
 DOCKER_ENGINE_SELINUX_PKG="docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
 
-LMAGENT_URL="/apis/v1/registry/1.13.10/lmagent.tar?token=${TOKEN}"
+LMAGENT_URL="/apis/v1/registry/1.13.12/lmagent.tar?token=${TOKEN}"
 #LMAGENT_URL="/pkg/lmagent.tar"
-PROM_NODE_URL="/apis/v1/registry/1.13.10/exporter.tar?token=${TOKEN}"
+PROM_NODE_URL="/apis/v1/registry/software/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
-
+HELM_URL="/apis/v1/registry/software/helm-v2.12.3-linux-amd64.tar.gz?token=${TOKEN}"
 
 _usage(){
   cat <<-EOF
@@ -505,9 +505,9 @@ _setup_docker() {
   wget ${apiserver}${DOCKER_ENGINE_SELINUX_URL} -O /tmp/${DOCKER_ENGINE_SELINUX_PKG}
   yum install -y /tmp/${DOCKER_ENGINE_PKG} /tmp/${DOCKER_ENGINE_SELINUX_PKG}
 
-  pt="/usr/bin/dockerd --insecure-registry=repository.test.com:8444 --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --storage-driver=overlay2 --graph=${dir}"
+  pt="/usr/bin/dockerd --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --graph=${dir}"
   execstart=$(echo ${pt}|sed 's/\//\\\//g')
-  sed -r  's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
+  sed -r -i 's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
 
   systemctl enable docker
   systemctl restart docker
@@ -636,6 +636,12 @@ _run_main() {
   #deployment lmagent
   wget "${apiserver}${LMAGENT_URL}" -O /tmp/lmagent.tar
   docker load </tmp/lmagent.tar
+
+  #install helm tools
+  wget "${apiserver}${HELM_URL}" -O /tmp/helm-v2.12.3-linux-amd64.tar.gz
+  tar xvzfp /tmp/helm-v2.12.3-linux-amd64.tar.gz linux-amd64/helm
+  /bin/cp -f linux-amd64/helm /usr/bin/ && chmod 755 /usr/bin/helm
+
   docker run -itd --restart=always --net=host --privileged \
             --name agent \
             -v /sys:/sys \

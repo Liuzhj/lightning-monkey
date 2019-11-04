@@ -24,7 +24,7 @@ The agent is a background running service which has responsibility for interacti
 |Kubernetes Version|Supported|Tested|
 |---|---|---|
 |v1.12.5|√|√|
-|v1.13.10|√|√|
+|v1.13.12|√|√|
 
 # Supported Components Deployment
 |Component|Version|Tested|
