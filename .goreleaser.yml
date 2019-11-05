@@ -8,7 +8,7 @@ builds:
       - amd64
     main: ./cmd/apiserver
     gcflags:
-      - -N -l
+      - all=-N -l
   - binary: lm-agent
     id: "agent"
     goos:
@@ -17,6 +17,8 @@ builds:
     goarch:
       - amd64
     main: ./cmd/agent
+    gcflags:
+      - all=-N -l
 # Archive customization
 archive:
   format: tar.gz

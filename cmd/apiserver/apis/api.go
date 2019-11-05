@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"github.com/g0194776/lightningmonkey/cmd/apiserver/apis/debug"
 	v1agent "github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/agents"
 	v1cert "github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/certs"
 	v1cluster "github.com/g0194776/lightningmonkey/cmd/apiserver/apis/v1/clusters"
@@ -17,6 +18,7 @@ func (arm *APIRegisterationManager) Initialize() {
 	arm.apiEntries = append(arm.apiEntries, v1agent.Register)
 	arm.apiEntries = append(arm.apiEntries, v1cert.Register)
 	arm.apiEntries = append(arm.apiEntries, registry.Register)
+	arm.apiEntries = append(arm.apiEntries, debug.Register)
 }
 
 func (arm *APIRegisterationManager) DoRegister(app *iris.Application) error {
