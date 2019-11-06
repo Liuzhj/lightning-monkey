@@ -11,6 +11,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
+	"sync/atomic"
 	"text/template"
 )
 
@@ -202,6 +203,7 @@ type CoreDNSController struct {
 	client        *k8s.KubernetesClientSet
 	settings      entities.LightningMonkeyClusterSettings
 	parsedObjects []runtime.Object
+	hasInstalled  int32
 }
 
 func (dc *CoreDNSController) Initialize(cs *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
@@ -268,12 +270,18 @@ func (dc *CoreDNSController) GetName() string {
 }
 
 func (dc *CoreDNSController) HasInstalled() (bool, error) {
+	if atomic.LoadInt32(&dc.hasInstalled) == 1 {
+		return true, nil
+	}
 	ds, err := dc.client.CoreClient.AppsV1beta1().Deployments("kube-system").Get("coredns", v1.GetOptions{})
 	if err != nil {
 		if k8sErr.IsNotFound(err) {
 			return false, nil
 		}
 		return false, fmt.Errorf("Failed to retrieve Deployments(%s/%s) object from given Kubernetes cluster, error: %s", "kube-system", "coredns", err.Error())
+	}
+	if ds != nil {
+		atomic.StoreInt32(&dc.hasInstalled, 1)
 	}
 	return ds != nil, nil
 }

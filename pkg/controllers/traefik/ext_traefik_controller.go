@@ -10,6 +10,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
+	"sync/atomic"
 )
 
 const (
@@ -181,6 +182,7 @@ type TraefikDeploymentController struct {
 	client        *k8s.KubernetesClientSet
 	settings      entities.LightningMonkeyClusterSettings
 	parsedObjects []runtime.Object
+	hasInstalled  int32
 }
 
 func (dc *TraefikDeploymentController) Initialize(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
@@ -251,12 +253,18 @@ func (dc *TraefikDeploymentController) HasInstalled() (bool, error) {
 		//skipping installation procedure.
 		return true, nil
 	}
+	if atomic.LoadInt32(&dc.hasInstalled) == 1 {
+		return true, nil
+	}
 	ds, err := dc.client.CoreClient.ExtensionsV1beta1().DaemonSets("kube-system").Get("traefik-ingress-controller", v1.GetOptions{})
 	if err != nil {
 		if k8sErr.IsNotFound(err) {
 			return false, nil
 		}
 		return false, fmt.Errorf("Failed to retrieve DaemonSets(%s/%s) object from given Kubernetes cluster, error: %s", "kube-system", "traefik-ingress-controller", err.Error())
+	}
+	if ds != nil {
+		atomic.StoreInt32(&dc.hasInstalled, 1)
 	}
 	return ds != nil, nil
 }

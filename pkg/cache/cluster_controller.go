@@ -18,6 +18,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/flowcontrol"
 	"os"
 	"path/filepath"
 	"strings"
@@ -287,6 +288,8 @@ func (cc *ClusterControllerImple) InitializeKubernetesClient() error {
 	if err != nil {
 		return fmt.Errorf("Failed to build Kubernetes master client configuration, error: %s", err.Error())
 	}
+	//reset rate limiter for larger cluster size.
+	config.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(25, 50)
 	//create core client.
 	cc.cs.CoreClient, err = kubernetes.NewForConfig(config)
 	if err != nil {

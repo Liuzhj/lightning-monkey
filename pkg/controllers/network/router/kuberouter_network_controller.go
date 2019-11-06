@@ -11,6 +11,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
+	"sync/atomic"
 	"text/template"
 )
 
@@ -219,6 +220,7 @@ type KubeRouterNetworkController struct {
 	client        *k8s.KubernetesClientSet
 	settings      entities.LightningMonkeyClusterSettings
 	parsedObjects []runtime.Object
+	hasInstalled  int32
 }
 
 func (nc *KubeRouterNetworkController) Initialize(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
@@ -283,12 +285,18 @@ func (nc *KubeRouterNetworkController) GetName() string {
 }
 
 func (nc *KubeRouterNetworkController) HasInstalled() (bool, error) {
+	if atomic.LoadInt32(&nc.hasInstalled) == 1 {
+		return true, nil
+	}
 	ds, err := nc.client.CoreClient.ExtensionsV1beta1().DaemonSets("kube-system").Get("kube-router", v1.GetOptions{})
 	if err != nil {
 		if k8sErr.IsNotFound(err) {
 			return false, nil
 		}
 		return false, fmt.Errorf("Failed to retrieve DaemonSet(%s/%s) object from given Kubernetes cluster, error: %s", "kube-system", "kube-router", err.Error())
+	}
+	if ds != nil {
+		atomic.StoreInt32(&nc.hasInstalled, 1)
 	}
 	return ds != nil, nil
 }
