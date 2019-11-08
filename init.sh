@@ -238,6 +238,14 @@ _check_swap() {
   fi
 }
 
+_check_default_route() {
+  if ip r s |grep default >/dev/null 2>&1 ;then
+    state "default gw" 0;return 0
+  else
+    state "Not found default gw" 1; return 1
+  fi
+}
+
 _check_limit() {
   local maxfile
   local maxproc
@@ -412,6 +420,7 @@ _check_main(){
   _check_kernel_module
   _check_tools
   _check_swap
+  _check_default_route
   _check_limit
   _check_sysctl
   _check_timezone
@@ -563,6 +572,8 @@ _setup_main(){
 
   _check_repo >/dev/null 2>&1 || abort "No available centos repo"
 
+  _check_default_route >/dev/null 2>&1 || abort "Not found default route"
+
   _show_setup_pass "Install tools"
   _check_tools>/dev/null 2>&1 || _setup_tools
 
@@ -616,6 +627,7 @@ _run_main() {
   fi
   _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version."
   _check_swap>/dev/null 2>&1 || abort "No Swap disabled"
+  _check_default_route >/dev/null 2>&1 || abort "Not found default route"
   _check_sysctl>/dev/null 2>&1 || abort "No Kernel Parameters configured"
   _check_selinux>/dev/null 2>&1 || abort "No Selinux disabled"
   _check_firewalld>/dev/null 2>&1 || abort "No Firewalld disabled"
