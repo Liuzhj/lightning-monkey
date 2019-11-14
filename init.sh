@@ -405,17 +405,30 @@ _check_repo() {
   done
 }
 
+
+_check_partition() {
+  partition=$1
+  msg="$partition Disk Partition greater than 50G"
+  mkdir -p "${partition}" >/dev/null 2>&1
+  avaidisk=$(df -k --output=avail "${partition}" | sed '1d;s/[^0-9]//g')
+  if [[ ${avaidisk} -ge 50000000 ]];then
+      state "${msg}" 0;return 0
+    else
+      state "${msg}" 1;return 1
+  fi
+}
+
+
 _check_main(){
   _show_header "Check environment"
   local nic=$1
-  local apiserver=$2
-  local clusterid=$3
-  local graph=$4
+  local graph=$2
   local role
   role=$(echo ${@:5}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   _check_os
   _check_repo
+  _check_partition ${graph}
   _check_kernel
   _check_kernel_module
   _check_tools
@@ -482,7 +495,6 @@ net.ipv4.ip_nonlocal_bind = 1
 EOF
   sysctl -p /etc/sysctl.d/k8s.conf >/dev/null 2>&1
 }
-
 
 _setup_timezone() {
   ln -sfv /usr/share/zoneinfo/Asia/Shanghai /etc/localtime 
@@ -571,6 +583,8 @@ _setup_main(){
   _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version." 
 
   _check_repo >/dev/null 2>&1 || abort "No available centos repo"
+
+  _check_partition "${graph}" >/dev/null 2>&1 || abort "No available diskspace ${graph}"
 
   _check_default_route >/dev/null 2>&1 || abort "Not found default route"
 
@@ -698,7 +712,8 @@ while test $# -ne 0; do
                      _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${role}";;
 
     check)           [[ -z "${nic}" ]] && _usage
-                     _check_main "${nic}";;
+                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
+                     _check_main "${nic}" "${graph}";;
 
     show)            _show_main ;;
 
