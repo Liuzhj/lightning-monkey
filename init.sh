@@ -123,7 +123,8 @@ _show_product() {
 }
 
 _show_os() {
-  local distname,distid
+  local distname
+  local distid
   distname=$(awk -F '=' '/^ID=/{print $2}' /etc/os-release|tr -d "\"" )
   distid=$(awk -F '=' '/^VERSION_ID=/{print $2}' /etc/os-release |tr -d "\"" )
   _show_label "Distro" "$distname$distid"
@@ -408,10 +409,10 @@ _check_repo() {
 
 _check_partition() {
   partition=$1
-  msg="$partition Disk Partition greater than 50G"
+  msg="$partition Disk Partition less than 30G"
   mkdir -p "${partition}" >/dev/null 2>&1
   avaidisk=$(df -k --output=avail "${partition}" | sed '1d;s/[^0-9]//g')
-  if [[ ${avaidisk} -ge 50000000 ]];then
+  if [[ ${avaidisk} -ge 30000000 ]];then
       state "${msg}" 0;return 0
     else
       state "${msg}" 1;return 1
@@ -712,7 +713,7 @@ while test $# -ne 0; do
     run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
                      [[ -z "${force}" ]] && force="false"
-                     [[ -z "${labels}" ]] && labels="zone=public"
+                     [[ -z "${labels}" ]] && labels="beta.kubernetes.io/arch=amd64"
                      _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${labels}" "${role}";;
 
     check)           [[ -z "${nic}" ]] && _usage
