@@ -52,10 +52,10 @@ func newSecret(s entities.ImagePullSecret) ko.Secret {
 	}
 	rootMap := map[string]interface{}{}
 	rootMap["auths"] = childMap
-	data, err := json.Marshal(rootMap)
-	if err != nil {
-		panic(err)
-	}
+	data, _ := json.Marshal(rootMap)
+	buf := make([]byte, base64.StdEncoding.EncodedLen(len(data)))
+	base64.StdEncoding.Encode(buf, data)
+	logrus.Debugf("[Image Pulling Secret] base64 secret: %s", string(buf))
 	return ko.Secret{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      s.Name,
@@ -63,7 +63,7 @@ func newSecret(s entities.ImagePullSecret) ko.Secret {
 		},
 		Type: ko.SecretTypeDockerConfigJson,
 		Data: map[string][]byte{
-			".dockerconfigjson": []byte(base64.StdEncoding.EncodeToString(data)),
+			".dockerconfigjson": buf,
 		},
 	}
 }
