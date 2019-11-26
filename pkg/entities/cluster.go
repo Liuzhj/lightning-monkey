@@ -92,6 +92,15 @@ type LightningMonkeyClusterSettings struct {
 	PortRangeSettings             *NodePortRangeSettings                      `json:"node_port_range_settings"`
 	ResourceReservation           *ResourceReservationSettings                `json:"resource_reservation"`
 	HelmSettings                  *HelmSettings                               `json:"helm_settings"`
+	ImagePullSecrets              []ImagePullSecret                           `json:"image_pull_secrets"`
+}
+
+type ImagePullSecret struct {
+	Namespace string `json:"namespace"`
+	Registry  string `json:"registry"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Email     string `json:"email"`
 }
 
 type HelmSettings struct {

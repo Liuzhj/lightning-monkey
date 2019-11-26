@@ -2,6 +2,7 @@ package clusters
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
@@ -38,46 +39,19 @@ func NewCluster(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	//HA settings check.
-	if cluster.HASettings != nil {
-		if cluster.HASettings.VIP == "" {
-			rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"VIP\" is needed for initializing HAProxy & KeepAlived installation."}
-			ctx.JSON(&rsp)
-			ctx.Values().Set(entities.RESPONSEINFO, &rsp)
-			ctx.Next()
-			return
-		}
-		if cluster.HASettings.NodeCount <= 0 {
-			rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"Count\" must greater than zero!"}
-			ctx.JSON(&rsp)
-			ctx.Values().Set(entities.RESPONSEINFO, &rsp)
-			ctx.Next()
-			return
-		}
-	}
-	//node port range check.
-	if cluster.PortRangeSettings == nil {
-		cluster.PortRangeSettings = &entities.NodePortRangeSettings{
-			Begin: 30000,
-			End:   32767,
-		}
-	}
-	if cluster.PortRangeSettings.Begin == 0 {
-		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "Illegal node port range, \"node_port_range_settings.begin\" must greater than zero!"}
+	//set default value before performing real biz checks.
+	err = managers.SetDefaultValue(&cluster)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: fmt.Sprintf("Failed to set default values to cluster settings, error: %s", err.Error())}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
 		return
 	}
-	if cluster.PortRangeSettings.End == 0 {
-		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "Illegal node port range, \"node_port_range_settings.end\" must greater than zero!"}
-		ctx.JSON(&rsp)
-		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
-		ctx.Next()
-		return
-	}
-	if cluster.PortRangeSettings.End <= cluster.PortRangeSettings.Begin {
-		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "Illegal node port range, \"node_port_range_settings.end\" must greater than \"node_port_range_settings.begin\"!"}
+	//perform field-level security checks.
+	err = managers.SecurityCheck(cluster)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: fmt.Sprintf("Failed to perform field-level security checks to cluster settings, error: %s", err.Error())}
 		ctx.JSON(&rsp)
 		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 		ctx.Next()
