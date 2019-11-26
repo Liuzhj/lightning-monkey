@@ -633,8 +633,9 @@ _run_main() {
   local clusterid=$3
   local graph=$4
   local force=$5
+  local labels=$6
   local role
-  role=$(echo ${@:6}|sed -e 's/ / --/g' -e 's/^/ --/g')
+  role=$(echo ${@:7}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   if [[ "${force}" == "false" ]];then
     _check_kernel>/dev/null 2>&1 || abort "No kernel upgrade to 4.15.x"
@@ -684,6 +685,7 @@ _run_main() {
                 --address="$(ip a s dev "${nic}"|awk -F '[ /]+' '/inet /{print $3;exit;}')" \
                 --cluster="${clusterid}" \
                 --cert-dir=/etc/kubernetes/pki \
+                --labels="${labels}" \
                 ${role}
 }
 
@@ -706,10 +708,12 @@ while test $# -ne 0; do
     -c|--clusterid)  clusterid="${1}"; shift ;;
     -g|--graph)      graph="${1}"; shift ;;
     -f|--force)      force="${1}"; shift ;;
+    -l|--labels)     labels="${1}"; shift ;;
     run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
                      [[ -z "${force}" ]] && force="false"
-                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${role}";;
+                     [[ -z "${labels}" ]] && labels="zone=public"
+                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${labels}" "${role}";;
 
     check)           [[ -z "${nic}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
