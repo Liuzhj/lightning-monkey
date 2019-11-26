@@ -56,7 +56,7 @@ func setBizCheckProcessor() {
 		if cluster.ImagePullSecrets != nil && len(cluster.ImagePullSecrets) > 0 {
 			for i := 0; i < len(cluster.ImagePullSecrets); i++ {
 				ps := cluster.ImagePullSecrets[i]
-				if ps.Username == "" || ps.Password == "" || ps.Email == "" || ps.Namespace == "" || ps.Registry == "" {
+				if ps.Name == "" || ps.Username == "" || ps.Password == "" || ps.Email == "" || ps.Namespace == "" || ps.Registry == "" {
 					return errors.New("All of fields value in each of image pulling secrets are required!")
 				}
 			}

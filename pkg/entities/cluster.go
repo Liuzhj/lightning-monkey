@@ -96,6 +96,7 @@ type LightningMonkeyClusterSettings struct {
 }
 
 type ImagePullSecret struct {
+	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 	Registry  string `json:"registry"`
 	Username  string `json:"username"`

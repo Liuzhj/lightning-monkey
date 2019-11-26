@@ -154,6 +154,8 @@ func CreateK8SResource(cs *KubernetesClientSet, obj runtime.Object) (runtime.Obj
 		o, err = cs.CoreClient.CoreV1().Services(metadata.Namespace).Create(obj.(*ko.Service))
 	case *ko.Pod:
 		o, err = cs.CoreClient.CoreV1().Pods(metadata.Namespace).Create(obj.(*ko.Pod))
+	case *ko.Secret:
+		o, err = cs.CoreClient.CoreV1().Secrets(metadata.Namespace).Create(obj.(*ko.Secret))
 	case *ext_v1beta.Deployment:
 		o, err = cs.CoreClient.ExtensionsV1beta1().Deployments(metadata.Namespace).Create(obj.(*ext_v1beta.Deployment))
 	case *ko_v1beta.Deployment:
@@ -214,6 +216,12 @@ func IsKubernetesResourceExists(cs *KubernetesClientSet, obj runtime.Object) (bo
 		return realObj != nil, nil
 	case *ko.Pod:
 		realObj, err := cs.CoreClient.CoreV1().Pods(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return false, err
+		}
+		return realObj != nil, nil
+	case *ko.Secret:
+		realObj, err := cs.CoreClient.CoreV1().Secrets(metadata.Namespace).Get(metadata.Name, meta_v1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return false, err
 		}

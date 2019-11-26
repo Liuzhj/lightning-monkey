@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	built_in "github.com/g0194776/lightningmonkey/pkg/controllers/built-in"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/elasticsearch"
 	"github.com/g0194776/lightningmonkey/pkg/controllers/filebeat"
 	v2 "github.com/g0194776/lightningmonkey/pkg/controllers/helm/v2"
@@ -30,6 +31,7 @@ type ExtensionDeploymentController struct {
 
 func (dc *ExtensionDeploymentController) Initialize(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
 	controllers := []DeploymentController{
+		&built_in.DefaultImagePullingSecretsDeploymentController{},
 		&prometheus.PrometheusDeploymentController{},
 		&metrics.MetricServerDeploymentController{},
 		&traefik.TraefikDeploymentController{},
