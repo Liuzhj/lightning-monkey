@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/cache"
+	uuid "github.com/satori/go.uuid"
 	"io/ioutil"
 	"strconv"
 	"sync"
@@ -17,11 +19,13 @@ import (
 )
 
 type PendingTask struct {
-	isCancelled bool
-	cancel      func()
-	workProc    func()
-	ct          context.Context
-	agentId     string
+	isCancelled      bool
+	cancel           func()
+	workProc         func()
+	ct               context.Context
+	agentId          string
+	clusterId        string
+	briefInformation entities.LightningMonkeyAgentBriefInformation
 }
 
 func (t *PendingTask) Cancel() {
@@ -33,9 +37,21 @@ func (t *PendingTask) DoAsync() {
 	go func() {
 		select {
 		case <-t.ct.Done():
+			var isOK bool
+			var pendingTaskCollection map[string] /*agent id*/ *PendingTask
 			//remove itself from the background task list.
 			pendingTaskLock.Lock()
-			delete(pendingTasks, t.agentId)
+			if pendingTaskCollection, isOK = pendingTasks[t.clusterId]; isOK && len(pendingTaskCollection) > 0 {
+				if _, isOK = pendingTaskCollection[t.agentId]; isOK {
+					delete(pendingTaskCollection, t.agentId)
+				}
+				//reset
+				if len(pendingTaskCollection) > 0 {
+					pendingTasks[t.clusterId] = pendingTaskCollection
+				} else {
+					delete(pendingTasks, t.clusterId)
+				}
+			}
 			pendingTaskLock.Unlock()
 			if t.isCancelled {
 				return
@@ -47,12 +63,12 @@ func (t *PendingTask) DoAsync() {
 
 var (
 	pendingTaskLock *sync.RWMutex
-	pendingTasks    map[string] /*agent id*/ *PendingTask
+	pendingTasks    map[string] /*cluster id*/ map[string] /*agent id*/ *PendingTask
 )
 
 func Register(app *iris.Application) error {
 	if pendingTasks == nil {
-		pendingTasks = make(map[string] /*agent id*/ *PendingTask)
+		pendingTasks = make(map[string] /*cluster id*/ map[string] /*agent id*/ *PendingTask)
 	}
 	if pendingTaskLock == nil {
 		pendingTaskLock = &sync.RWMutex{}
@@ -318,13 +334,30 @@ func CancelChangeAgentClusterAndRoles(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
+	clusterId := ctx.URLParam("cluster-id")
+	if clusterId == "" {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"cluster-id\" parameter is required."}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
 	pendingTaskLock.Lock()
 	defer pendingTaskLock.Unlock()
 	var isOK bool
 	var t *PendingTask
-	if t, isOK = pendingTasks[agentId]; isOK {
-		delete(pendingTasks, agentId)
-		t.Cancel()
+	var pendingTaskCollection map[string] /*agent id*/ *PendingTask
+	if pendingTaskCollection, isOK = pendingTasks[clusterId]; isOK && len(pendingTaskCollection) > 0 {
+		if t, isOK = pendingTaskCollection[agentId]; isOK {
+			delete(pendingTaskCollection, agentId)
+			t.Cancel()
+		}
+		//reset
+		if len(pendingTaskCollection) > 0 {
+			pendingTasks[clusterId] = pendingTaskCollection
+		} else {
+			delete(pendingTasks, clusterId)
+		}
 	}
 	rsp := entities.Response{ErrorId: entities.Succeed}
 	ctx.JSON(&rsp)
@@ -335,12 +368,16 @@ func CancelChangeAgentClusterAndRoles(ctx iris.Context) {
 func addPendingTask(agentId string, waitTimeSecs int32, newClusterId, oldClusterId string, agent *entities.LightningMonkeyAgent, isETCDRole, isMasterRole, isMinionRole, isHARole bool) error {
 	pendingTaskLock.Lock()
 	defer pendingTaskLock.Unlock()
+
 	var isOK bool
 	var t *PendingTask
-	if t, isOK = pendingTasks[agentId]; isOK {
-		return fmt.Errorf("Duplicated background task for agent %s!", agentId)
+	var pendingTaskCollection map[string] /*agent id*/ *PendingTask
+	if pendingTaskCollection, isOK = pendingTasks[newClusterId]; isOK && len(pendingTaskCollection) > 0 {
+		if t, isOK = pendingTaskCollection[agentId]; isOK {
+			return fmt.Errorf("Duplicated background task for agent %s!", agentId)
+		}
 	}
-	t = NewPendingTask(agentId, int(waitTimeSecs), func() {
+	t = NewPendingTask(agentId, newClusterId, int(waitTimeSecs), func() {
 		logrus.Warnf("Delay triggered by background task, changing agent %s to cluster %s...", agentId, newClusterId)
 		err := common.ClusterManager.TransferAgentToCluster(
 			oldClusterId,
@@ -358,15 +395,30 @@ func addPendingTask(agentId string, waitTimeSecs int32, newClusterId, oldCluster
 			}
 		}
 	})
-	pendingTasks[agentId] = t
+	if pendingTaskCollection == nil {
+		pendingTaskCollection = make(map[string] /*agent id*/ *PendingTask)
+	}
+	t.briefInformation = entities.LightningMonkeyAgentBriefInformation{
+		Id:              agent.Id,
+		HasETCDRole:     isETCDRole,
+		HasMasterRole:   isMasterRole,
+		HasMinionRole:   isMinionRole,
+		HasHARole:       isHARole,
+		Hostname:        agent.Hostname,
+		HostInformation: agent.HostInformation,
+		DeploymentPhase: entities.AgentDeploymentPhase_Pending,
+		State:           agent.State,
+	}
+	pendingTaskCollection[agentId] = t
+	pendingTasks[newClusterId] = pendingTaskCollection
 	t.DoAsync()
 	return nil
 }
 
-func NewPendingTask(agentId string, waitTime int, workProc func()) *PendingTask {
+func NewPendingTask(agentId, clusterId string, waitTime int, workProc func()) *PendingTask {
 	d, _ := time.ParseDuration(fmt.Sprintf("%ds", waitTime))
 	ct, cf := context.WithTimeout(context.Background(), d)
-	return &PendingTask{agentId: agentId, ct: ct, cancel: cf, workProc: workProc}
+	return &PendingTask{agentId: agentId, clusterId: clusterId, ct: ct, cancel: cf, workProc: workProc}
 }
 
 func ListAgentsByClusterId(ctx iris.Context) {
@@ -401,6 +453,15 @@ func ListAgentsByClusterId(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
+	if agents != nil && len(agents) > 0 {
+		pendingTaskLock.RLock()
+		if clusterId == uuid.Nil.String() {
+			agents = filterPoolingHosts(agents)
+		} else {
+			agents = filterClusterHosts(cluster, agents)
+		}
+		pendingTaskLock.RUnlock()
+	}
 	rsp := entities.GetAgentListResponse{
 		Response: entities.Response{ErrorId: entities.Succeed},
 		Agents:   agents,
@@ -408,4 +469,39 @@ func ListAgentsByClusterId(ctx iris.Context) {
 	ctx.JSON(&rsp)
 	ctx.Values().Set(entities.RESPONSEINFO, &rsp)
 	ctx.Next()
+}
+
+func filterPoolingHosts(agents []entities.LightningMonkeyAgentBriefInformation) []entities.LightningMonkeyAgentBriefInformation {
+	if pendingTasks == nil || len(pendingTasks) == 0 {
+		return agents
+	}
+	if agents == nil || len(agents) == 0 {
+		return agents
+	}
+	var hasFound bool
+	var pendingTaskCollection map[string] /*agent id*/ *PendingTask
+	var filterAgents []entities.LightningMonkeyAgentBriefInformation
+	for i := 0; i < len(agents); i++ {
+		for _, pendingTaskCollection = range pendingTasks {
+			if _, hasFound = pendingTaskCollection[agents[i].Id]; hasFound {
+				break
+			}
+		}
+		if !hasFound {
+			filterAgents = append(filterAgents, agents[i])
+		}
+	}
+	return filterAgents
+}
+
+func filterClusterHosts(cluster cache.ClusterController, agents []entities.LightningMonkeyAgentBriefInformation) []entities.LightningMonkeyAgentBriefInformation {
+	var isOK bool
+	var pendingTaskCollection map[string] /*agent id*/ *PendingTask
+	if pendingTaskCollection, isOK = pendingTasks[cluster.GetClusterId()]; !isOK {
+		return agents
+	}
+	for _, t := range pendingTaskCollection {
+		agents = append(agents, t.briefInformation)
+	}
+	return agents
 }

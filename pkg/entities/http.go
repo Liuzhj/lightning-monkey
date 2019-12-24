@@ -85,13 +85,14 @@ type GetAgentListResponse struct {
 type LightningMonkeyAgentBriefInformation struct {
 	HostInformation
 
-	Id            string      `json:"id"`
-	HasETCDRole   bool        `json:"has_etcd_role"`
-	HasMasterRole bool        `json:"has_master_role"`
-	HasMinionRole bool        `json:"has_minion_role"`
-	HasHARole     bool        `json:"has_ha_role"`
-	Hostname      string      `json:"hostname"`
-	State         *AgentState `json:"state,omitempty"`
+	Id              string      `json:"id"`
+	HasETCDRole     bool        `json:"has_etcd_role"`
+	HasMasterRole   bool        `json:"has_master_role"`
+	HasMinionRole   bool        `json:"has_minion_role"`
+	HasHARole       bool        `json:"has_ha_role"`
+	Hostname        string      `json:"hostname"`
+	State           *AgentState `json:"state,omitempty"`
+	DeploymentPhase int         `json:"deployment_phase"` //0-pending, 1-deploying, 2-deployed
 }
 
 type WatchPoint struct {

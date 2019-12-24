@@ -43,7 +43,9 @@ func Test_WithoutAnyLiveNodes(t *testing.T) {
 	var currentAgent entities.LightningMonkeyAgent
 	currentAgent.State = &entities.AgentState{}
 	ac := cache.AgentCache{Mutex: &sync.Mutex{}}
-	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	job, err := js.GetNextJob(cc, currentAgent, &ac, func(i int) {
+
+	})
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	fmt.Printf("%#v\n", job)
@@ -89,7 +91,7 @@ func Test_WithoutAnyExpectedETCDNodes(t *testing.T) {
 		},
 	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 
-	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	job, err := js.GetNextJob(cc, currentAgent, &ac, func(i int) {})
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	fmt.Printf("%#v\n", job)
@@ -133,7 +135,7 @@ func Test_LessThanExpectedETCDNodes(t *testing.T) {
 			HasMinionRole: false,
 		}}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
 
-	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	job, err := js.GetNextJob(cc, currentAgent, &ac, func(i int) {})
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	fmt.Printf("%#v\n", job)
@@ -186,7 +188,7 @@ func Test_LessThanExpectedETCDNodes2(t *testing.T) {
 			HasMasterRole: false,
 			HasMinionRole: false,
 		}}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	job, err := js.GetNextJob(cc, currentAgent, &ac, func(i int) {})
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	fmt.Printf("%#v\n", job)
@@ -234,7 +236,7 @@ func Test_CurrentAgentNotOnline(t *testing.T) {
 			HasMinionRole: false,
 		},
 		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	job, err := js.GetNextJob(cc, currentAgent, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.NotNil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -302,7 +304,7 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount(t *testing.T) {
 			HasMinionRole: false,
 		},
 		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	job, err := js.GetNextJob(cc, currentAgent, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -374,7 +376,7 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount2(t *testing.T) {
 			HasMinionRole: false,
 		},
 		uuid.NewV4().String(): &currentAgent}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	job, err := js.GetNextJob(cc, currentAgent, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -434,7 +436,7 @@ func Test_ProvisionedCountThanLessExpectedETCDNodeCount3(t *testing.T) {
 		uuid.NewV4().String(): &currentAgent},
 		map[string]*entities.LightningMonkeyAgent{},
 		map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, currentAgent, &ac)
+	job, err := js.GetNextJob(cc, currentAgent, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -558,7 +560,7 @@ func Test_GetETCDDeploymentJob(t *testing.T) {
 		uuid.NewV4().String(): &agent2,
 		uuid.NewV4().String(): &agent3,
 	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, agent1, &ac)
+	job, err := js.GetNextJob(cc, agent1, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -643,7 +645,7 @@ func Test_WithoutAnyK8sMasterNodes(t *testing.T) {
 		uuid.NewV4().String(): &agent2,
 		uuid.NewV4().String(): &agent3,
 	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, agent1, &ac)
+	job, err := js.GetNextJob(cc, agent1, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -740,7 +742,7 @@ func Test_GetK8sMasterDeploymentJob(t *testing.T) {
 	}, map[string]*entities.LightningMonkeyAgent{
 		uuid.NewV4().String(): &agent4,
 	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, agent4, &ac)
+	job, err := js.GetNextJob(cc, agent4, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -831,7 +833,7 @@ func Test_WaitingAtLeastOneLiveK8sMaster(t *testing.T) {
 		uuid.NewV4().String(): &agent2,
 		uuid.NewV4().String(): &agent3,
 	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, agent4, &ac)
+	job, err := js.GetNextJob(cc, agent4, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -943,7 +945,7 @@ func Test_GetK8sMinionDeploymentJob(t *testing.T) {
 		uuid.NewV4().String(): &agent4}, map[string]*entities.LightningMonkeyAgent{
 		uuid.NewV4().String(): &agent5,
 	}, map[string]*entities.LightningMonkeyAgent{})
-	job, err := js.GetNextJob(cc, agent5, &ac)
+	job, err := js.GetNextJob(cc, agent5, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -1096,7 +1098,7 @@ func Test_GetK8sMinionDeploymentJob2(t *testing.T) {
 		uuid.NewV4().String(): &agent6,
 		uuid.NewV4().String(): &agent7,
 	})
-	job, err := js.GetNextJob(cc, agent5, &ac)
+	job, err := js.GetNextJob(cc, agent5, &ac, func(i int) {})
 	assert.NotNil(t, job)
 	assert.Nil(t, err)
 	fmt.Printf("%#v\n", job)
@@ -1408,4 +1410,93 @@ func Test_GetTotalPrivisionedCountWithSpecifiedRole3(t *testing.T) {
 	assert.True(t, ac.GetKubernetesMinionCount() == 0)
 	assert.True(t, ac.GetTotalProvisionedCountByRole(entities.AgentRole_ETCD) == 1)
 	assert.True(t, ac.GetTotalProvisionedCountByRole(entities.AgentRole_Minion) == 0)
+}
+
+func Test_CheckDeploymentPhase(t *testing.T) {
+	js := cache.ClusterJobSchedulerImple{}
+	js.InitializeStrategies()
+
+	cs := entities.LightningMonkeyClusterSettings{
+		Name:              "demo_cluster",
+		ExpectedETCDCount: 3,
+		ServiceCIDR:       "10.254.0.0/16",
+		KubernetesVersion: "1.12.5",
+		PodNetworkCIDR:    "172.1.0.0/16",
+		SecurityToken:     "",
+		ServiceDNSDomain:  ".cluster.local",
+		NetworkStack: &entities.NetworkStackSettings{
+			Type: entities.NetworkStack_KubeRouter,
+		},
+	}
+
+	gc := gomock.NewController(t)
+	defer gc.Finish()
+	cc := mock_lm.NewMockClusterController(gc)
+	cc.EXPECT().GetSettings().Return(cs)
+
+	agent1 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-1",
+		IsDelete:      false,
+		HasETCDRole:   true,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:       "127.0.0.1",
+			HasProvisionedETCD: false,
+			LastReportTime:     time.Now(),
+		},
+	}
+	agent2 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-2",
+		IsDelete:      false,
+		HasETCDRole:   true,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:       "127.0.0.2",
+			HasProvisionedETCD: true,
+			LastReportTime:     time.Now(),
+		},
+	}
+	agent3 := entities.LightningMonkeyAgent{
+		Id:        uuid.NewV4().String(),
+		ClusterId: uuid.NewV4().String(),
+
+		Hostname:      "keepers-3",
+		IsDelete:      false,
+		HasETCDRole:   true,
+		HasMasterRole: false,
+		HasMinionRole: false,
+		State: &entities.AgentState{
+			LastReportIP:       "127.0.0.3",
+			HasProvisionedETCD: true,
+			LastReportTime:     time.Now(),
+		},
+	}
+	assert.True(t, agent1.DeploymentPhase == entities.AgentDeploymentPhase_Pending)
+	ac := cache.AgentCache{}
+	ac.InitializeWithValues(map[string]*entities.LightningMonkeyAgent{
+		uuid.NewV4().String(): &agent1,
+		uuid.NewV4().String(): &agent2,
+		uuid.NewV4().String(): &agent3,
+	}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{}, map[string]*entities.LightningMonkeyAgent{})
+	job, err := js.GetNextJob(cc, agent1, &ac, func(i int) {
+		agent1.DeploymentPhase = i
+	})
+	assert.True(t, agent1.DeploymentPhase == entities.AgentDeploymentPhase_Deploying)
+	assert.NotNil(t, job)
+	assert.Nil(t, err)
+	fmt.Printf("%#v\n", job)
+	assert.True(t, job.Name == entities.AgentJob_Deploy_ETCD)
+	assert.True(t, job.Arguments != nil)
+	assert.True(t, len(strings.Split(job.Arguments["addresses"], ",")) == 3)
+	assert.True(t, compiler.StringArrayContainsValue(strings.Split(job.Arguments["addresses"], ","), agent1.State.LastReportIP))
+	assert.True(t, compiler.StringArrayContainsValue(strings.Split(job.Arguments["addresses"], ","), agent2.State.LastReportIP))
+	assert.True(t, compiler.StringArrayContainsValue(strings.Split(job.Arguments["addresses"], ","), agent3.State.LastReportIP))
 }
