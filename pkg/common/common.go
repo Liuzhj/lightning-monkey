@@ -1,10 +1,15 @@
 package common
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/cache"
 	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/storage"
+	"github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/clientv3"
 )
 
 var (
@@ -52,3 +57,86 @@ var (
 		},
 	}
 )
+
+func SaveAgent(agent *entities.LightningMonkeyAgent) (int64, error) {
+	//STEP 1, save agent's settings.
+	err := SaveAgentSettingsOnly(agent)
+	if err != nil {
+		return -1, err
+	}
+	//STEP 2, save agent's state with TTL.
+	return SaveAgentStateOnlyWithTTL(agent.ClusterId, agent.Id, agent.State)
+}
+
+func SaveAgentSettingsOnly(agent *entities.LightningMonkeyAgent) error {
+	ctx, cancel := context.WithTimeout(context.Background(), StorageDriver.GetRequestTimeoutDuration())
+	defer cancel()
+	//STEP 1, save agent's settings.
+	path := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", agent.ClusterId, agent.Id)
+	data, err := json.Marshal(agent)
+	if err != nil {
+		return err
+	}
+	_, err = StorageDriver.Put(ctx, path, string(data))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func SaveAgentStateOnlyWithTTL(clusterId string, agentId string, state *entities.AgentState) (int64, error) {
+	leaseId, err := newETCDLease()
+	if err != nil {
+		return -1, err
+	}
+	path := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", clusterId, agentId)
+	data, err := json.Marshal(state)
+	if err != nil {
+		return -1, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), StorageDriver.GetRequestTimeoutDuration())
+	defer cancel()
+	_, err = StorageDriver.Put(ctx, path, string(data), clientv3.WithLease(clientv3.LeaseID(leaseId)))
+	if err != nil {
+		return -1, err
+	}
+	return leaseId, nil
+}
+
+func SaveAgentStateOnly(clusterId string, agentId string, leaseId int64, state *entities.AgentState) (int64, error) {
+	var err error
+	needRegenerateLease := leaseId == -1
+	//STEP 1, renew/regenerate ETCD key lease.
+	if needRegenerateLease {
+		leaseId, err = newETCDLease()
+		if err != nil {
+			return -1, err
+		}
+		logrus.Infof("Agent %s has triggered reconnection procedure, state lease will renew one.", agentId)
+	} else {
+		lease := StorageDriver.NewLease()
+		_, err := lease.KeepAliveOnce(context.TODO(), clientv3.LeaseID(leaseId))
+		if err != nil {
+			return -1, fmt.Errorf("Failed to renew lease to remote storage driver, error: %s", err.Error())
+		}
+	}
+	//STEP 2, update state.
+	path := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", clusterId, agentId)
+	data, err := json.Marshal(state)
+	if err != nil {
+		return leaseId, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), StorageDriver.GetRequestTimeoutDuration())
+	defer cancel()
+	_, err = StorageDriver.Put(ctx, path, string(data), clientv3.WithLease(clientv3.LeaseID(leaseId)))
+	return leaseId, err
+}
+
+func newETCDLease() (int64, error) {
+	lease := StorageDriver.NewLease()
+	grantRsp, err := lease.Grant(context.TODO(), 15)
+	if err != nil {
+		return -1, fmt.Errorf("Could not grant a new lease to remote storage driver, error: %s", err.Error())
+	}
+	return int64(grantRsp.ID), nil
+}

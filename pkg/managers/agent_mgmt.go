@@ -1,15 +1,12 @@
 package managers
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
-	"go.etcd.io/etcd/clientv3"
 	"strings"
 	"time"
 )
@@ -75,7 +72,7 @@ func RegisterAgent(agent *entities.LightningMonkeyAgent) (*entities.LightningMon
 		agent.Id = uuid.NewV4().String()
 	}
 	agent.State.LastReportTime = time.Now()
-	leaseId, err := saveAgent(agent)
+	leaseId, err := common.SaveAgent(agent)
 	if err != nil {
 		return nil, "", "", -1, fmt.Errorf("Failed to save registered agent to storage driver, error: %s", err.Error())
 	}
@@ -97,7 +94,16 @@ func QueryAgentNextWorkItem(clusterId, agentId string) (*entities.AgentJob, erro
 	if agent == nil {
 		return nil, fmt.Errorf("Agent: %s not found!", agentId)
 	}
-	job, err := cluster.GetNextJob(*agent)
+	oldDeploymentPhase := agent.DeploymentPhase
+	job, err := cluster.GetNextJob(*agent, func(i int) {
+		agent.DeploymentPhase = i
+	})
+	if agent.DeploymentPhase > oldDeploymentPhase {
+		internalErr := common.SaveAgentSettingsOnly(agent)
+		if internalErr != nil {
+			logrus.Errorf("Failed to save agent %s settings which triggered by deployment phase updating(%d -> %d), error: %s", agentId, oldDeploymentPhase, agent.DeploymentPhase, internalErr.Error())
+		}
+	}
 	return &job, err
 }
 
@@ -156,79 +162,5 @@ func AgentReportStatus(clusterId, agentId string, status entities.LightningMonke
 	} else {
 		state.HasProvisionedMinion = false
 	}
-	return saveAgentState(clusterId, agentId, status.LeaseId, &state)
-}
-
-func saveAgent(agent *entities.LightningMonkeyAgent) (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), common.StorageDriver.GetRequestTimeoutDuration())
-	defer cancel()
-	//STEP 1, save agent's settings.
-	path := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/settings", agent.ClusterId, agent.Id)
-	data, err := json.Marshal(agent)
-	if err != nil {
-		return -1, err
-	}
-	_, err = common.StorageDriver.Put(ctx, path, string(data))
-	if err != nil {
-		return -1, err
-	}
-	//STEP 2, save agent's state with TTL.
-	return saveAgentStateWithTTL(agent.ClusterId, agent.Id, agent.State)
-}
-
-func saveAgentStateWithTTL(clusterId string, agentId string, state *entities.AgentState) (int64, error) {
-	leaseId, err := newETCDLease()
-	if err != nil {
-		return -1, err
-	}
-	path := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", clusterId, agentId)
-	data, err := json.Marshal(state)
-	if err != nil {
-		return -1, err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), common.StorageDriver.GetRequestTimeoutDuration())
-	defer cancel()
-	_, err = common.StorageDriver.Put(ctx, path, string(data), clientv3.WithLease(clientv3.LeaseID(leaseId)))
-	if err != nil {
-		return -1, err
-	}
-	return leaseId, nil
-}
-
-func newETCDLease() (int64, error) {
-	lease := common.StorageDriver.NewLease()
-	grantRsp, err := lease.Grant(context.TODO(), 15)
-	if err != nil {
-		return -1, fmt.Errorf("Could not grant a new lease to remote storage driver, error: %s", err.Error())
-	}
-	return int64(grantRsp.ID), nil
-}
-
-func saveAgentState(clusterId string, agentId string, leaseId int64, state *entities.AgentState) (int64, error) {
-	var err error
-	needRegenerateLease := leaseId == -1
-	//STEP 1, renew/regenerate ETCD key lease.
-	if needRegenerateLease {
-		leaseId, err = newETCDLease()
-		if err != nil {
-			return -1, err
-		}
-		logrus.Infof("Agent %s has triggered reconnection procedure, state lease will renew one.", agentId)
-	} else {
-		lease := common.StorageDriver.NewLease()
-		_, err := lease.KeepAliveOnce(context.TODO(), clientv3.LeaseID(leaseId))
-		if err != nil {
-			return -1, fmt.Errorf("Failed to renew lease to remote storage driver, error: %s", err.Error())
-		}
-	}
-	//STEP 2, update state.
-	path := fmt.Sprintf("/lightning-monkey/clusters/%s/agents/%s/state", clusterId, agentId)
-	data, err := json.Marshal(state)
-	if err != nil {
-		return leaseId, err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), common.StorageDriver.GetRequestTimeoutDuration())
-	defer cancel()
-	_, err = common.StorageDriver.Put(ctx, path, string(data), clientv3.WithLease(clientv3.LeaseID(leaseId)))
-	return leaseId, err
+	return common.SaveAgentStateOnly(clusterId, agentId, status.LeaseId, &state)
 }

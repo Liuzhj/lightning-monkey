@@ -36,7 +36,7 @@ type ClusterController interface {
 	GetStatus() string
 	GetClusterId() string
 	GetCertificates() entities.LightningMonkeyCertificateCollection
-	GetNextJob(agent entities.LightningMonkeyAgent) (entities.AgentJob, error)
+	GetNextJob(agent entities.LightningMonkeyAgent, updateAgentDeploymentPhase func(int)) (entities.AgentJob, error)
 	GetTotalCountByRole(role string) int
 	GetTotalProvisionedCountByRole(role string) int
 	GetSettings() entities.LightningMonkeyClusterSettings
@@ -183,8 +183,8 @@ func (cc *ClusterControllerImple) GetCertificates() entities.LightningMonkeyCert
 	return collection
 }
 
-func (cc *ClusterControllerImple) GetNextJob(agent entities.LightningMonkeyAgent) (entities.AgentJob, error) {
-	return cc.jobScheduler.GetNextJob(cc, agent, cc.cache)
+func (cc *ClusterControllerImple) GetNextJob(agent entities.LightningMonkeyAgent, updateAgentDeploymentPhase func(int)) (entities.AgentJob, error) {
+	return cc.jobScheduler.GetNextJob(cc, agent, cc.cache, updateAgentDeploymentPhase)
 }
 
 func (cc *ClusterControllerImple) SetSynchronizedRevision(id int64) {
@@ -477,6 +477,7 @@ func (cc *ClusterControllerImple) GetAgentList(onlineOnly bool) ([]entities.Ligh
 				HasHARole:       agent.HasHARole,
 				Hostname:        agent.Hostname,
 				HostInformation: agent.HostInformation,
+				DeploymentPhase: agent.DeploymentPhase,
 			}
 			if agent.State != nil {
 				as := *agent.State

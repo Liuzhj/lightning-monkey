@@ -19,6 +19,10 @@ const (
 	AgentReport_Provision                   = "Provision"
 	AgentReport_Heartbeat                   = "Heartbeat"
 	MaxAgentReportTimeoutSecs               = 30
+
+	AgentDeploymentPhase_Pending   = 0
+	AgentDeploymentPhase_Deploying = 1
+	AgentDeploymentPhase_Deployed  = 2
 )
 
 type Agent struct {
@@ -47,6 +51,7 @@ type LightningMonkeyAgent struct {
 	Id               string          `json:"id" bson:"_id"`
 	ClusterId        string          `json:"cluster_id" bson:"cluster_id"`
 	AdminCertificate string          `json:"admin_certificate"` //not exist if it has not master role.
+	DeploymentPhase  int             `json:"deployment_phase"`  //0-pending, 1-deploying, 2-deployed
 	Hostname         string          `json:"hostname" bson:"hostname"`
 	IsDelete         bool            `json:"is_delete" bson:"is_delete"`
 	HasETCDRole      bool            `json:"has_etcd_role" bson:"has_etcd_role"`
