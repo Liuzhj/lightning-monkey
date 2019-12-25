@@ -428,7 +428,7 @@ _check_main(){
   role=$(echo ${@:5}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   _check_os
-  _check_repo
+  #_check_repo
   _check_partition ${graph}
   _check_kernel
   _check_kernel_module
@@ -583,7 +583,7 @@ _setup_main(){
 
   _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version." 
 
-  _check_repo >/dev/null 2>&1 || abort "No available centos repo"
+  #_check_repo >/dev/null 2>&1 || abort "No available centos repo"
 
   _check_partition "${graph}" >/dev/null 2>&1 || abort "No available diskspace ${graph}"
 
@@ -659,7 +659,7 @@ _run_main() {
   #curl http://localhost:9100/metrics
   wget "${apiserver}${PROM_NODE_URL}" -O /tmp/exporter.tar
   docker load </tmp/exporter.tar
-  docker run -d --net="host" --pid="host" --cap-add=SYS_TIME prom/node-exporter:v0.15.2
+  docker run -d --net="host" --pid="host" --cap-add=SYS_TIME --restart=always prom/node-exporter:v0.15.2
   
   #deployment lmagent
   wget "${apiserver}${LMAGENT_URL}" -O /tmp/lmagent.tar
