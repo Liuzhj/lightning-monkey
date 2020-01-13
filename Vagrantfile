@@ -29,11 +29,14 @@ Vagrant.configure("2") do |config|
         yum update -y && yum install docker -y
         sudo su && systemctl start docker && systemctl status docker
         docker run -itd --name etcd-server \
-            --publish 2379:2379 \
-            --publish 2380:2380 \
-            --env ALLOW_NONE_AUTHENTICATION=yes \
-            --env ETCD_ADVERTISE_CLIENT_URLS=http://etcd-server:2379 \
-            bitnami/etcd:latest
+           --publish 2379:2379 \
+           --publish 2380:2380 \
+           --env ALLOW_NONE_AUTHENTICATION=yes \
+           --env ETCD_ADVERTISE_CLIENT_URLS=http://etcd-server:2379 \
+           -v /opt/etcd/data:/opt/bitnami/etcd/data \
+           bitnami/etcd:latest \
+           etcd --name etcd-s1 \
+           --auto-compaction-retention=1 --max-request-bytes=33554432 --quota-backend-bytes=8589934592
         docker run -itd -p 8080:8080 \
             --name apiserver \
             --link etcd-server:etcd-server \
