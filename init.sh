@@ -33,7 +33,8 @@ PROM_NODE_URL="/apis/v1/registry/software/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
 HELM_URL="/apis/v1/registry/software/helm-v2.12.3-linux-amd64.tar.gz?token=${TOKEN}"
 
-LXCFS_URL="http://10.136.104.179:8000/lxcfs-3.1.2-0.2.el7.x86_64.rpm"
+#LXCFS_URL="http://10.136.104.179:8000/lxcfs-3.1.2-0.2.el7.x86_64.rpm"
+LXCFS_URL="/apis/v1/registry/software/lxcfs-3.1.2-0.2.el7.x86_64.rpm?token=${TOKEN}"
 LXCFS_PKG="lxcfs-3.1.2-0.2.el7.x86_64.rpm"
 
 _usage(){
