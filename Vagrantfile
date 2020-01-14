@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
     apiserver.vm.hostname = "192.168.33.10"
     apiserver.trigger.after :up do |trigger|
       trigger.run_remote = {inline: <<-SHELL
-        setenforce 0 && swapoff -a
+        setenforce 0 && swapoff -a && mkdir /opt/etcd/data -p
         systemctl stop firewalld
         yum update -y && yum install docker -y
         sudo su && systemctl start docker && systemctl status docker

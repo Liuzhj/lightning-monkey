@@ -33,6 +33,9 @@ PROM_NODE_URL="/apis/v1/registry/software/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
 HELM_URL="/apis/v1/registry/software/helm-v2.12.3-linux-amd64.tar.gz?token=${TOKEN}"
 
+LXCFS_URL="http://10.136.104.179:8000/lxcfs-3.1.2-0.2.el7.x86_64.rpm"
+LXCFS_PKG="lxcfs-3.1.2-0.2.el7.x86_64.rpm"
+
 _usage(){
   cat <<-EOF
 
@@ -406,7 +409,6 @@ _check_repo() {
   done
 }
 
-
 _check_partition() {
   partition=$1
   msg="$partition Disk Partition less than 30G"
@@ -418,7 +420,6 @@ _check_partition() {
       state "${msg}" 1;return 1
   fi
 }
-
 
 _check_main(){
   _show_header "Check environment"
@@ -444,7 +445,6 @@ _check_main(){
   _check_firewalld
   _check_docker
 }
-
 
 _setup_kernel() {
   local apiserver=$1
@@ -537,6 +537,61 @@ _setup_docker() {
   mount -o remount,rw '/sys/fs/cgroup'
   rm -f /sys/fs/cgroup/cpuacct,cpu
   ln -sfv /sys/fs/cgroup/cpu,cpuacct /sys/fs/cgroup/cpuacct,cpu
+}
+
+_setup_lxcfs(){
+    local apiserver=$1
+    if ! command -v wget>/dev/null 2>&1;then
+      abort "wget command not found"
+    fi
+    #wget ${apiserver}${LXCFS_URL} -O /tmp/${LXCFS_PKG}
+    wget ${LXCFS_URL} -O /tmp/${LXCFS_PKG}
+    rpm -ivh --nodeps /tmp/${LXCFS_PKG}
+    cat << 'EOF' > /usr/lib/systemd/system/lxcfs.service
+[Unit]
+Description=FUSE filesystem for LXC
+ConditionVirtualization=!container
+Before=lxc.service
+Documentation=man:lxcfs(1)
+
+[Service]
+ExecStart=/usr/bin/lxcfs /var/lib/lxc/lxcfs/
+KillMode=process
+Restart=on-failure
+ExecStopPost=-/bin/fusermount -u /var/lib/lxc/lxcfs
+Delegate=yes
+ExecReload=/bin/kill -USR1 $MAINPID
+
+ExecStartPost=/usr/local/bin/container_remount_lxcfs.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    cat <<'EOF' > /usr/local/bin/container_remount_lxcfs.sh
+#! /bin/bash
+
+PATH=$PATH:/bin
+LXCFS="/var/lib/lxc/lxcfs"
+LXCFS_ROOT_PATH="/var/lib/lxc/lxcfs/proc/cpuinfo"
+
+containers=$(docker ps | grep -v pause  | awk '{print $1}' | grep -v CONTAINE)
+
+for container in $containers;do
+        mountpoint=$(docker inspect --format '{{ range .Mounts }}{{ if eq .Destination "/proc/cpuinfo" }}{{ .Source }}{{ end }}{{ end }}' $container)
+        if [ "$mountpoint" = "$LXCFS_ROOT_PATH" ];then
+                echo "remount $container"
+                PID=$(docker inspect --format '{{.State.Pid}}' $container)
+                # mount /proc
+                for file in meminfo cpuinfo stat diskstats swaps uptime;do
+                        echo nsenter --target $PID --mount --  mount -B "$LXCFS/proc/$file" "/proc/$file"
+                        nsenter --target $PID --mount --  mount -B "$LXCFS/proc/$file" "/proc/$file"
+                done
+        fi
+done
+EOF
+
+systemctl daemon-reload
+
 }
 
 
@@ -634,9 +689,10 @@ _run_main() {
   local clusterid=$3
   local graph=$4
   local force=$5
-  local labels=$6
+  local lxcfs=$6
+  local labels=$7
   local role
-  role=$(echo ${@:7}|sed -e 's/ / --/g' -e 's/^/ --/g')
+  role=$(echo ${@:8}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   if [[ "${force}" == "false" ]];then
     _check_kernel>/dev/null 2>&1 || abort "No kernel upgrade to 4.15.x"
@@ -653,7 +709,7 @@ _run_main() {
   if ! command -v wget >/dev/null 2>&1;then
     abort "wget command not found"
   fi
-  
+
   #check node exporter
   #netstat -tulnp|grep 9100
   #curl http://localhost:9100/metrics
@@ -669,6 +725,11 @@ _run_main() {
   wget "${apiserver}${HELM_URL}" -O /tmp/helm-v2.12.3-linux-amd64.tar.gz
   tar xvzfp /tmp/helm-v2.12.3-linux-amd64.tar.gz linux-amd64/helm
   /bin/cp -f linux-amd64/helm /usr/bin/ && chmod 755 /usr/bin/helm
+
+  #instlal lxcfs rpm
+  if [[ "${lxcfs}" == "true" ]];then
+    _setup_lxcfs "${apiserver}"
+  fi
 
   docker run -itd --restart=always --net=host --privileged \
             --name agent \
@@ -710,11 +771,13 @@ while test $# -ne 0; do
     -g|--graph)      graph="${1}"; shift ;;
     -f|--force)      force="${1}"; shift ;;
     -l|--labels)     labels="${1}"; shift ;;
+    -x|--lxcfs)      lxcfs="${1}"; shift ;;
     run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
                      [[ -z "${force}" ]] && force="false"
-                     [[ -z "${labels}" ]] && labels="beta.kubernetes.io/arch=amd64"
-                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${labels}" "${role}";;
+                     [[ -z "${labels}" ]] && labels='beta.kubernetes.io/arch=amd64'
+                     [[ -z "${lxcfs}" ]] && lxcfs="true"
+                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${lxcfs}" "${labels}" "${role}";;
 
     check)           [[ -z "${nic}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
