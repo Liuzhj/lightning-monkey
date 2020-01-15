@@ -32,7 +32,6 @@ COPY --from=builder /go/prometheus.tar /opt/registry/software/prometheus.tar
 COPY --from=builder /go/exporter.tar /opt/registry/software/exporter.tar
 COPY --from=builder /go/es.tar /opt/registry/software/es.tar
 COPY --from=builder /go/filebeat.tar /opt/registry/software/filebeat.tar
-COPY --from=builder /go/metricbeat.tar /opt/registry/software/metricbeat.tar
 COPY --from=builder /go/helmv2.tar /opt/registry/software/helmv2.tar
 #copy basic RPM packages.
 COPY --from=builder /go/docker-engine-1.12.6-1.el7.centos.x86_64.rpm /opt/registry/software/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
