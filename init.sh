@@ -33,9 +33,6 @@ PROM_NODE_URL="/apis/v1/registry/software/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
 HELM_URL="/apis/v1/registry/software/helm-v2.12.3-linux-amd64.tar.gz?token=${TOKEN}"
 
-#LXCFS_URL="http://10.136.104.179:8000/lxcfs-3.1.2-0.2.el7.x86_64.rpm"
-LXCFS_URL="/apis/v1/registry/software/lxcfs-3.1.2-0.2.el7.x86_64.rpm?token=${TOKEN}"
-LXCFS_PKG="lxcfs-3.1.2-0.2.el7.x86_64.rpm"
 
 _usage(){
   cat <<-EOF
@@ -399,15 +396,15 @@ _check_kernel_module() {
 _check_repo() {
   local httpcode
   msg="Centos Repo check"
+  repofile="/repodata/repomd.xml"
   for repourl in $(yum repolist -v | grep Repo-baseurl | awk  '{print $3}')
   do
-    httpcode=$(curl -s --head --write-out "%{http_code}\n" "${repourl}" -o  /dev/null)
+    httpcode=$(curl -s --head --write-out "%{http_code}\n" "${repourl}${repofile}" -o  /dev/null)
     if [[ ${httpcode} == 200 ]];then
       state "${msg}" 0;return 0
-    else
-      state "${msg}" 1;return 1
     fi
   done
+  state "${msg}" 1;return 1
 }
 
 _check_partition() {
@@ -430,7 +427,7 @@ _check_main(){
   role=$(echo ${@:5}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   _check_os
-  #_check_repo
+  _check_repo
   _check_partition ${graph}
   _check_kernel
   _check_kernel_module
@@ -540,61 +537,6 @@ _setup_docker() {
   ln -sfv /sys/fs/cgroup/cpu,cpuacct /sys/fs/cgroup/cpuacct,cpu
 }
 
-_setup_lxcfs(){
-    local apiserver=$1
-    if ! command -v wget>/dev/null 2>&1;then
-      abort "wget command not found"
-    fi
-    #wget ${apiserver}${LXCFS_URL} -O /tmp/${LXCFS_PKG}
-    wget ${LXCFS_URL} -O /tmp/${LXCFS_PKG}
-    rpm -ivh --nodeps /tmp/${LXCFS_PKG}
-    cat << 'EOF' > /usr/lib/systemd/system/lxcfs.service
-[Unit]
-Description=FUSE filesystem for LXC
-ConditionVirtualization=!container
-Before=lxc.service
-Documentation=man:lxcfs(1)
-
-[Service]
-ExecStart=/usr/bin/lxcfs /var/lib/lxc/lxcfs/
-KillMode=process
-Restart=on-failure
-ExecStopPost=-/bin/fusermount -u /var/lib/lxc/lxcfs
-Delegate=yes
-ExecReload=/bin/kill -USR1 $MAINPID
-
-ExecStartPost=/usr/local/bin/container_remount_lxcfs.sh
-
-[Install]
-WantedBy=multi-user.target
-EOF
-    cat <<'EOF' > /usr/local/bin/container_remount_lxcfs.sh
-#! /bin/bash
-
-PATH=$PATH:/bin
-LXCFS="/var/lib/lxc/lxcfs"
-LXCFS_ROOT_PATH="/var/lib/lxc/lxcfs/proc/cpuinfo"
-
-containers=$(docker ps | grep -v pause  | awk '{print $1}' | grep -v CONTAINE)
-
-for container in $containers;do
-        mountpoint=$(docker inspect --format '{{ range .Mounts }}{{ if eq .Destination "/proc/cpuinfo" }}{{ .Source }}{{ end }}{{ end }}' $container)
-        if [ "$mountpoint" = "$LXCFS_ROOT_PATH" ];then
-                echo "remount $container"
-                PID=$(docker inspect --format '{{.State.Pid}}' $container)
-                # mount /proc
-                for file in meminfo cpuinfo stat diskstats swaps uptime;do
-                        echo nsenter --target $PID --mount --  mount -B "$LXCFS/proc/$file" "/proc/$file"
-                        nsenter --target $PID --mount --  mount -B "$LXCFS/proc/$file" "/proc/$file"
-                done
-        fi
-done
-EOF
-
-systemctl daemon-reload
-
-}
-
 
 _setup_kernel_module() {
   cat > /etc/sysconfig/modules/ipvs.modules <<EOF
@@ -639,7 +581,7 @@ _setup_main(){
 
   _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version." 
 
-  #_check_repo >/dev/null 2>&1 || abort "No available centos repo"
+  _check_repo >/dev/null 2>&1 || abort "No available centos repo"
 
   _check_partition "${graph}" >/dev/null 2>&1 || abort "No available diskspace ${graph}"
 
@@ -690,10 +632,9 @@ _run_main() {
   local clusterid=$3
   local graph=$4
   local force=$5
-  local lxcfs=$6
-  local labels=$7
+  local labels=$6
   local role
-  role=$(echo ${@:8}|sed -e 's/ / --/g' -e 's/^/ --/g')
+  role=$(echo ${@:7}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   if [[ "${force}" == "false" ]];then
     _check_kernel>/dev/null 2>&1 || abort "No kernel upgrade to 4.15.x"
@@ -727,10 +668,6 @@ _run_main() {
   tar xvzfp /tmp/helm-v2.12.3-linux-amd64.tar.gz linux-amd64/helm
   /bin/cp -f linux-amd64/helm /usr/bin/ && chmod 755 /usr/bin/helm
 
-  #instlal lxcfs rpm
-  if [[ "${lxcfs}" == "true" ]];then
-    _setup_lxcfs "${apiserver}"
-  fi
 
   docker run -itd --restart=always --net=host --privileged \
             --name agent \
@@ -772,13 +709,11 @@ while test $# -ne 0; do
     -g|--graph)      graph="${1}"; shift ;;
     -f|--force)      force="${1}"; shift ;;
     -l|--labels)     labels="${1}"; shift ;;
-    -x|--lxcfs)      lxcfs="${1}"; shift ;;
     run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
                      [[ -z "${force}" ]] && force="false"
                      [[ -z "${labels}" ]] && labels='beta.kubernetes.io/arch=amd64'
-                     [[ -z "${lxcfs}" ]] && lxcfs="true"
-                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${lxcfs}" "${labels}" "${role}";;
+                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}"  "${labels}" "${role}";;
 
     check)           [[ -z "${nic}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
