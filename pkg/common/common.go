@@ -33,6 +33,7 @@ var (
 				"prometheus": {ImageName: "docker.io/prom/prometheus:v2.2.1", DownloadAddr: "%s/apis/v1/registry/software/prometheus.tar?token=%s"},
 				"es":         {ImageName: "docker.io/elasticsearch:6.8.3", DownloadAddr: "%s/apis/v1/registry/software/es.tar?token=%s"},
 				"filebeat":   {ImageName: "docker.io/elastic/filebeat:6.8.3", DownloadAddr: "%s/apis/v1/registry/software/filebeat.tar?token=%s"},
+				"metricbeat": {ImageName: "docker.io/elastic/metricbeat:6.8.3", DownloadAddr: "%s/apis/v1/registry/software/metricbeat.tar?token=%s"},
 				"helm":       {ImageName: "docker.io/fishead/gcr.io.kubernetes-helm.tiller:v2.12.3", DownloadAddr: "%s/apis/v1/registry/software/helmv2.tar?token=%s"},
 			},
 		},
