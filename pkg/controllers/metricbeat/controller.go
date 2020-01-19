@@ -91,7 +91,7 @@ spec:
         - name: ELASTICSEARCH_HOST
           value: {{.ES_HOST}}
         - name: ELASTICSEARCH_PORT
-          value: {{.ES_PORT}}
+          value: "{{.ES_PORT}}"
         - name: ELASTICSEARCH_USERNAME
           value: {{.ES_USERNAME}}
         - name: ELASTICSEARCH_PASSWORD
