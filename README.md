@@ -37,6 +37,9 @@
 |Metric-Server|0.3.3|√|
 |ElasticSearch|6.8.3|√|
 |Filebeat|6.8.3|√|
+|Metricbeat|6.8.3|√|
+|Helm v2|2.12.3|√|
+|node-exporter|0.15.2|√|
 
 如上所示，闪电猴项目不光提供了很多种可选的组件自动化部署任务，同时还会提供针对Kubernetes `kube-system` 命名空间下所有Deployment类型以及DaemonSet类型部署资源的健康检查工作，这些能力都会在闪电猴项目中以API的方式对外暴露。
 
@@ -111,11 +114,11 @@ docker run -itd --restart=always --net=host --privileged \
 ```json
 {
 	"id": "1b8624d9-b3cf-41a3-a95b-748277484ba5",
-	"name": "cluster1",
+	"name": "demo",
 	"expected_etcd_count": 3,
 	"pod_network_cidr": "55.55.0.0/12",
 	"service_cidr": "10.254.1.1/12",
-	"kubernetes_version": "1.13.10",
+	"kubernetes_version": "1.13.12",
 	"service_dns_domain": "cluster.local",
 	"service_dns_cluster_ip": "10.254.210.250",
 	"ha_settings": {
@@ -129,10 +132,30 @@ docker run -itd --restart=always --net=host --privileged \
 	"dns_deployment_settings": {
 		"type": "coredns"
 	},
+	"node_port_range_settings": {
+		"begin": 10000,
+		"end": 60000
+	},
+	"resource_reservation": {
+		"kube": "cpu=200m,memory=400Mi",
+		"system": "cpu=200m,memory=400Mi"
+	},
+	"image_pull_secrets": [{
+		"name": "myregistrykey",
+		"namespace": "default",
+		"registry": "repository.test.com:8444",
+		"username": "admin",
+		"password": "admin123",
+		"email": "test@test.com"
+	}],
 	"ext_deployments": {
 		"prometheus": {},
 		"metric-server": {},
-		"traefik": {}
+		"traefik": {},
+		"es": {},
+		"metricbeat": {},
+		"filebeat": {},
+		"helm": {}
 	}
 }
 ```
