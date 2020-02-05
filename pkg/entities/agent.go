@@ -19,6 +19,10 @@ const (
 	AgentReport_Provision                   = "Provision"
 	AgentReport_Heartbeat                   = "Heartbeat"
 	MaxAgentReportTimeoutSecs               = 30
+
+	AgentDeploymentPhase_Pending   = 0
+	AgentDeploymentPhase_Deploying = 1
+	AgentDeploymentPhase_Deployed  = 2
 )
 
 type Agent struct {
@@ -40,19 +44,31 @@ type Agent struct {
 	HasMasterRole                  bool      `json:"has_master_role"`
 	HasMinionRole                  bool      `json:"has_minion_role"`
 	HasHARole                      bool      `json:"has_ha_role"`
+	ListenPort                     int       `json:"listen_port"`
 }
 
 type LightningMonkeyAgent struct {
-	Id               string      `json:"id" bson:"_id"`
-	ClusterId        string      `json:"cluster_id" bson:"cluster_id"`
-	AdminCertificate string      `json:"admin_certificate"` //not exist if it has not master role.
-	Hostname         string      `json:"hostname" bson:"hostname"`
-	IsDelete         bool        `json:"is_delete" bson:"is_delete"`
-	HasETCDRole      bool        `json:"has_etcd_role" bson:"has_etcd_role"`
-	HasMasterRole    bool        `json:"has_master_role" bson:"has_master_role"`
-	HasMinionRole    bool        `json:"has_minion_role" bson:"has_minion_role"`
-	HasHARole        bool        `json:"has_ha_role"`
-	State            *AgentState `json:"-"`
+	Id               string          `json:"id" bson:"_id"`
+	ClusterId        string          `json:"cluster_id" bson:"cluster_id"`
+	AdminCertificate string          `json:"admin_certificate"` //not exist if it has not master role.
+	DeploymentPhase  int             `json:"deployment_phase"`  //0-pending, 1-deploying, 2-deployed
+	Hostname         string          `json:"hostname" bson:"hostname"`
+	IsDelete         bool            `json:"is_delete" bson:"is_delete"`
+	HasETCDRole      bool            `json:"has_etcd_role" bson:"has_etcd_role"`
+	HasMasterRole    bool            `json:"has_master_role" bson:"has_master_role"`
+	HasMinionRole    bool            `json:"has_minion_role" bson:"has_minion_role"`
+	HasHARole        bool            `json:"has_ha_role"`
+	HostInformation  HostInformation `json:"host_information"`
+	ListenPort       int             `json:"listen_port"`
+	State            *AgentState     `json:"-"`
+}
+
+type HostInformation struct {
+	OS            string  `json:"os"`
+	Kernel        string  `json:"kernel"`
+	CPUCores      int32   `json:"cpu_cores"`
+	CPUMhz        float64 `json:"cpu_mhz"`
+	MemoryTotalMB uint64  `json:"memory_total_mb"`
 }
 
 type AgentState struct {
@@ -112,4 +128,22 @@ type LightningMonkeyAgentReportStatusItem struct {
 	HasProvisioned bool      `json:"has_provisioned"`
 	Reason         string    `json:"reason"`
 	LastSeenTime   time.Time `json:"last_seen_time"`
+}
+
+type KubernetesNodeInfo struct {
+	NodeIP  string `json:"node_ip"`
+	PodCIDR string `json:"node_cidr"`
+}
+
+type GenerateSystemRoutingRulesRequest struct {
+	Nodes []KubernetesNodeInfo `json:"nodes"`
+}
+
+type ChangeClusterAndRolesRequest struct {
+	OldClusterId string `json:"old_cluster_id"`
+	NewClusterId string `json:"new_cluster_id"`
+	IsETCDRole   bool   `json:"is_etcd_role"`
+	IsMasterRole bool   `json:"is_master_role"`
+	IsMinionRole bool   `json:"is_minion_role"`
+	IsHARole     bool   `json:"is_ha_role"`
 }

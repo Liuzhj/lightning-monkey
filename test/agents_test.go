@@ -93,7 +93,7 @@ func Test_Successfully_Register_NewAgent(t *testing.T) {
 			LastReportIP: "10.10.10.10",
 		},
 	}
-	settings, agentId, leaseId, err := managers.RegisterAgent(&agent)
+	settings, agentId, _, leaseId, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		t.Logf("%#v", err)
 	}
@@ -157,7 +157,7 @@ func Test_Dulplicated_Register_ExistedAgent(t *testing.T) {
 			LastReportIP: "10.10.10.10",
 		},
 	}
-	settings, agentId, leaseId, err := managers.RegisterAgent(&agent)
+	settings, agentId, _, leaseId, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		t.Logf("%#v", err)
 	}
@@ -221,74 +221,12 @@ func Test_Failed_Register_ExistedAgent_DirtyOldAgentData(t *testing.T) {
 			LastReportIP: "10.10.10.10",
 		},
 	}
-	_, _, _, err := managers.RegisterAgent(&agent)
+	_, _, _, _, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		t.Logf("%#v", err)
 	}
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "dirty data"))
-}
-
-func Test_Failed_Register_ExistedAgent_ClusterIdMismatched(t *testing.T) {
-	gc := gomock.NewController(t)
-	defer gc.Finish()
-
-	clusterId := uuid.NewV4().String()
-	agentId := uuid.NewV4().String()
-	hostname := uuid.NewV4().String()
-	retValue := entities.LightningMonkeyClusterSettings{
-		Id:                clusterId,
-		CreateTime:        time.Now(),
-		Name:              uuid.NewV4().String(),
-		ExpectedETCDCount: 1,
-		ServiceCIDR:       "10.254.1.1/16",
-		KubernetesVersion: "1.12.5",
-		PodNetworkCIDR:    "13.13.1.1/16",
-		SecurityToken:     "",
-		ServiceDNSDomain:  "cluster.local",
-		NetworkStack: &entities.NetworkStackSettings{
-			Type:       "kuberouter",
-			Attributes: map[string]string{},
-		},
-	}
-	cm := mock_lm.NewMockClusterManagerInterface(gc)
-	cc := mock_lm.NewMockClusterController(gc)
-	cc.EXPECT().GetStatus().Return(entities.ClusterReady).AnyTimes()
-	cc.EXPECT().GetSettings().Return(retValue)
-	cm.EXPECT().GetClusterById(clusterId).Return(cc, nil)
-
-	preAgent := entities.LightningMonkeyAgent{
-		Id:            agentId,
-		ClusterId:     uuid.NewV4().String(), //<--dirty data, mismatched with original cluster-id.
-		Hostname:      hostname,
-		HasETCDRole:   true,
-		HasMasterRole: true,
-		HasMinionRole: false,
-		State: &entities.AgentState{
-			LastReportIP: "10.10.10.10",
-		},
-	}
-
-	cm.EXPECT().GetAgentFromETCD(clusterId, agentId).Return(&preAgent, nil)
-
-	common.ClusterManager = cm
-	agent := entities.LightningMonkeyAgent{
-		Id:            agentId,
-		ClusterId:     clusterId,
-		Hostname:      hostname,
-		HasETCDRole:   true,
-		HasMasterRole: true,
-		HasMinionRole: false,
-		State: &entities.AgentState{
-			LastReportIP: "10.10.10.10",
-		},
-	}
-	_, _, _, err := managers.RegisterAgent(&agent)
-	if err != nil {
-		t.Logf("%#v", err)
-	}
-	assert.NotNil(t, err)
-	assert.True(t, strings.Contains(err.Error(), "Duplicated agent registering with wrong cluster!"))
 }
 
 func Test_Failed_Register_ExistedAgent_DifferentLastReportIP(t *testing.T) {
@@ -345,7 +283,7 @@ func Test_Failed_Register_ExistedAgent_DifferentLastReportIP(t *testing.T) {
 			LastReportIP: "10.10.10.10",
 		},
 	}
-	_, _, _, err := managers.RegisterAgent(&agent)
+	_, _, _, _, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		t.Logf("%#v", err)
 	}
@@ -408,7 +346,7 @@ func Test_Failed_Register_ExistedAgent_RemovedOldAgent(t *testing.T) {
 			LastReportIP: "10.10.10.10",
 		},
 	}
-	_, _, _, err := managers.RegisterAgent(&agent)
+	_, _, _, _, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		t.Logf("%#v", err)
 	}
@@ -464,7 +402,7 @@ func Test_Register_NewAgent_FailedGenerateCertificate(t *testing.T) {
 			LastReportIP: "10.10.10.10",
 		},
 	}
-	_, _, _, err := managers.RegisterAgent(&agent)
+	_, _, _, _, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		t.Logf("%#v", err)
 	}
@@ -521,7 +459,7 @@ func Test_Register_NewAgent_AdminCertNotFound(t *testing.T) {
 			LastReportIP: "10.10.10.10",
 		},
 	}
-	_, _, _, err := managers.RegisterAgent(&agent)
+	_, _, _, _, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		t.Logf("%#v", err)
 	}
@@ -552,7 +490,7 @@ func Test_Register_NewAgent_RemovedCluster(t *testing.T) {
 			LastReportIP: "10.10.10.10",
 		},
 	}
-	_, _, _, err := managers.RegisterAgent(&agent)
+	_, _, _, _, err := managers.RegisterAgent(&agent)
 	if err != nil {
 		t.Logf("%#v", err)
 	}

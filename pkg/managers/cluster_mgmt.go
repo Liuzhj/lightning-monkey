@@ -9,34 +9,40 @@ import (
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
 	"net"
 	"strings"
 	"time"
 )
 
 func NewCluster(cluster *entities.LightningMonkeyClusterSettings) (string, error) {
-	//security checks.
-	if cluster.ExpectedETCDCount <= 0 {
-		return "", errors.New("Expected ETCD node count must greater than 0")
-	}
-	if cluster.KubernetesVersion == "" {
-		return "", errors.New("You must specify expected Kubernetes version!")
-	}
-	if cluster.ServiceDNSClusterIP == "" {
-		return "", errors.New("Field: \"service_dns_cluster_ip\" is required to configure in-cluster DNS communication!")
-	}
-	_, _, err := net.ParseCIDR(cluster.PodNetworkCIDR)
-	if err != nil {
-		return "", fmt.Errorf("Failed to parse \"cluster.PodNetworkCIDR\" value as correct CIDR format, error: %s", err.Error())
-	}
-	_, _, err = net.ParseCIDR(cluster.ServiceCIDR)
-	if err != nil {
-		return "", fmt.Errorf("Failed to parse \"cluster.ServiceCIDR\" value as correct CIDR format, error: %s", err.Error())
-	}
-	//generate required certificates.
-	certsResources, err := common.CertManager.GenerateMainCACertificates()
-	if err != nil {
-		return "", fmt.Errorf("Failed to generate Kubernetes required certificates, error: %s", err.Error())
+	var err error
+	var certsResources *certs.GeneratedCertsMap
+	//not pooling resource.
+	if cluster.Id != uuid.Nil.String() {
+		//security checks.
+		if cluster.ExpectedETCDCount <= 0 {
+			return "", errors.New("Expected ETCD node count must greater than 0")
+		}
+		if cluster.KubernetesVersion == "" {
+			return "", errors.New("You must specify expected Kubernetes version!")
+		}
+		if cluster.ServiceDNSClusterIP == "" {
+			return "", errors.New("Field: \"service_dns_cluster_ip\" is required to configure in-cluster DNS communication!")
+		}
+		_, _, err = net.ParseCIDR(cluster.PodNetworkCIDR)
+		if err != nil {
+			return "", fmt.Errorf("Failed to parse \"cluster.PodNetworkCIDR\" value as correct CIDR format, error: %s", err.Error())
+		}
+		_, _, err = net.ParseCIDR(cluster.ServiceCIDR)
+		if err != nil {
+			return "", fmt.Errorf("Failed to parse \"cluster.ServiceCIDR\" value as correct CIDR format, error: %s", err.Error())
+		}
+		//generate required certificates.
+		certsResources, err = common.CertManager.GenerateMainCACertificates()
+		if err != nil {
+			return "", fmt.Errorf("Failed to generate Kubernetes required certificates, error: %s", err.Error())
+		}
 	}
 	//considered troubleshooting, set to empty is not an required condition.
 	if cluster.Id == "" {
@@ -51,7 +57,7 @@ func NewCluster(cluster *entities.LightningMonkeyClusterSettings) (string, error
 	}
 	cluster.SecurityToken = "abc"
 	cluster.CreateTime = time.Now()
-	err = saveCluster(cluster, certsResources)
+	err = saveCluster(*cluster, certsResources)
 	if err != nil {
 		return "", fmt.Errorf("Failed to save cluster information to storage driver, error: %s", err.Error())
 	}
@@ -62,7 +68,7 @@ func GetClusterCertificates(clusterId string) (entities.LightningMonkeyCertifica
 	return common.ClusterManager.GetClusterCertificates(clusterId)
 }
 
-func saveCluster(cluster *entities.LightningMonkeyClusterSettings, certsMap *certs.GeneratedCertsMap) error {
+func saveCluster(cluster entities.LightningMonkeyClusterSettings, certsMap *certs.GeneratedCertsMap) error {
 	//STEP 1, add generated cluster certificates.
 	err := saveClusterCertificate(cluster, certsMap)
 	if err != nil {
@@ -83,11 +89,12 @@ func saveCluster(cluster *entities.LightningMonkeyClusterSettings, certsMap *cer
 	return err
 }
 
-func saveClusterCertificate(cluster *entities.LightningMonkeyClusterSettings, certsMap *certs.GeneratedCertsMap) error {
+func saveClusterCertificate(cluster entities.LightningMonkeyClusterSettings, certsMap *certs.GeneratedCertsMap) error {
 	var path string
 	var err error
 	if certsMap == nil || certsMap.GetResources() == nil || len(certsMap.GetResources()) == 0 {
-		return errors.New("No any generated certifiacate should save to remote storage.")
+		logrus.Warnf("No any generated certificates should save to remote storage, cluster: %s", cluster.Id)
+		return nil
 	}
 	cm := certsMap.GetResources()
 	for k, v := range cm {

@@ -71,3 +71,7 @@ func (sd *LightningMonkeyETCDStorageDriver) Put(ctx context.Context, key, val st
 func (sd *LightningMonkeyETCDStorageDriver) NewLease() clientv3.Lease {
 	return clientv3.NewLease(sd.client)
 }
+
+func (sd *LightningMonkeyETCDStorageDriver) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
+	return sd.client.Delete(ctx, key, opts...)
+}

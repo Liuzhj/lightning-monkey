@@ -2,23 +2,23 @@ builds:
   - binary: lm-apiserver
     id: "apiserver"
     goos:
-      - windows
       - darwin
       - linux
     goarch:
       - amd64
     main: ./cmd/apiserver
     gcflags:
-      - -N -l
+      - all=-N -l
   - binary: lm-agent
     id: "agent"
     goos:
-      - windows
       - darwin
       - linux
     goarch:
       - amd64
     main: ./cmd/agent
+    gcflags:
+      - all=-N -l
 # Archive customization
 archive:
   format: tar.gz
@@ -36,6 +36,8 @@ dockers:
     - download-frozen-image-v2.sh
     - prepare.sh
     - init.sh
+    build_flag_templates:
+    - "--build-arg=K8S_VERSION=1.13.12"
   - dockerfile: Dockerfile.agent
     binary: lm-agent
     # Path to the Dockerfile (from the project root).
@@ -46,3 +48,11 @@ dockers:
     - "registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest"
     extra_files:
     - extras/kubernetes.repo
+    build_flag_templates:
+    - "--build-arg=K8S_VERSION=1.13.12"
+release:
+  # If set to auto, will mark the release as not ready for production
+  # in case there is an indicator for this in the tag e.g. v1.0.0-rc1
+  # If set to true, will mark the release as not ready for production.
+  # Default is false.
+  prerelease: auto

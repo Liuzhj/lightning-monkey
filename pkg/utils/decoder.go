@@ -2,27 +2,43 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	uuid "github.com/satori/go.uuid"
 	"html/template"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
+	agg_v1betaObj "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
+	agg_scheme "k8s.io/kube-aggregator/pkg/apiserver/scheme"
+	"strings"
 )
 
-func ObjectMetaFor(obj runtime.Object) (*v1.ObjectMeta, error) {
-	v, err := conversion.EnforcePtr(obj)
-	if err != nil {
-		return nil, err
+func ObjectMetaFor(obj interface{}) (*v1.ObjectMeta, error) {
+	if newObj, isOK := obj.(runtime.Object); isOK {
+		v, err := conversion.EnforcePtr(newObj)
+		if err != nil {
+			return nil, err
+		}
+		var meta *v1.ObjectMeta
+		err = runtime.FieldPtr(v, "ObjectMeta", &meta)
+		return meta, err
 	}
-	var meta *v1.ObjectMeta
-	err = runtime.FieldPtr(v, "ObjectMeta", &meta)
-	return meta, err
+	if newObj, isOK := obj.(*agg_v1betaObj.APIService); isOK {
+		return &newObj.ObjectMeta, nil
+	}
+	return nil, fmt.Errorf("Unsupported object: %#v", obj)
 }
 
 func DecodeYamlOrJson(content string) (runtime.Object, error) {
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-	obj, _, err := decode([]byte(content), nil, nil)
+	var decoder func(data []byte, defaults *schema.GroupVersionKind, into runtime.Object) (runtime.Object, *schema.GroupVersionKind, error)
+	if strings.Contains(content, "apiregistration.k8s.io") {
+		decoder = agg_scheme.Codecs.UniversalDeserializer().Decode
+	} else {
+		decoder = scheme.Codecs.UniversalDeserializer().Decode
+	}
+	obj, _, err := decoder([]byte(content), nil, nil)
 	if err != nil {
 		return nil, err
 	}

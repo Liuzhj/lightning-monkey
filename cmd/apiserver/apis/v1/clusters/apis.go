@@ -2,6 +2,7 @@ package clusters
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/managers"
@@ -38,21 +39,23 @@ func NewCluster(ctx iris.Context) {
 		ctx.Next()
 		return
 	}
-	if cluster.HASettings != nil {
-		if cluster.HASettings.VIP == "" {
-			rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"VIP\" is needed for initializing HAProxy & KeepAlived installation."}
-			ctx.JSON(&rsp)
-			ctx.Values().Set(entities.RESPONSEINFO, &rsp)
-			ctx.Next()
-			return
-		}
-		if cluster.HASettings.NodeCount <= 0 {
-			rsp := entities.Response{ErrorId: entities.ParameterError, Reason: "\"Count\" must greater than zero!"}
-			ctx.JSON(&rsp)
-			ctx.Values().Set(entities.RESPONSEINFO, &rsp)
-			ctx.Next()
-			return
-		}
+	//set default value before performing real biz checks.
+	err = managers.SetDefaultValue(&cluster)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.InternalError, Reason: fmt.Sprintf("Failed to set default values to cluster settings, error: %s", err.Error())}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
+	}
+	//perform field-level security checks.
+	err = managers.SecurityCheck(cluster)
+	if err != nil {
+		rsp := entities.Response{ErrorId: entities.ParameterError, Reason: fmt.Sprintf("Failed to perform field-level security checks to cluster settings, error: %s", err.Error())}
+		ctx.JSON(&rsp)
+		ctx.Values().Set(entities.RESPONSEINFO, &rsp)
+		ctx.Next()
+		return
 	}
 	clusterId, err := managers.NewCluster(&cluster)
 	if err != nil {

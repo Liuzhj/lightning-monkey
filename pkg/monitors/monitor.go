@@ -1,9 +1,9 @@
 package monitors
 
 import (
-	"k8s.io/client-go/kubernetes"
+	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"strings"
-	"time"
 )
 
 const (
@@ -14,20 +14,12 @@ const (
 
 type KubernetesResourceMonitor interface {
 	GetName() string
-	GetWatchPoints() []WatchPoint
+	GetWatchPoints() []entities.WatchPoint
 	Start() error
 	Dispose()
 }
 
-type WatchPoint struct {
-	IsSystemComponent bool      `json:"is_system_component"`
-	Name              string    `json:"name"`
-	Namespace         string    `json:"namespace"`
-	Status            string    `json:"status"`
-	LastCheckTime     time.Time `json:"last_check_time"`
-}
-
-func NewMonitor(t string, c *kubernetes.Clientset, clusterId string) KubernetesResourceMonitor {
+func NewMonitor(t string, c *k8s.KubernetesClientSet, clusterId string) KubernetesResourceMonitor {
 	switch strings.ToLower(t) {
 	case "sys":
 		return &KubernetesSystemComponentMonitor{

@@ -7,7 +7,7 @@ import (
 
 type ClusterJobScheduler interface {
 	InitializeStrategies()
-	GetNextJob(cc ClusterController, agent entities.LightningMonkeyAgent, cache *AgentCache) (entities.AgentJob, error)
+	GetNextJob(cc ClusterController, agent entities.LightningMonkeyAgent, cache *AgentCache, updateAgentDeploymentPhase func(int)) (entities.AgentJob, error)
 }
 
 type ClusterJobSchedulerImple struct {
@@ -24,11 +24,13 @@ func (js *ClusterJobSchedulerImple) InitializeStrategies() {
 		&ClusterKubernetesDNSJobStrategy{},
 		&EnableMonitorsJobStrategy{},
 		&ExtensibilityDeploymentJobStrategy{},
+		&MetricsServerAddStaticRouteStrategy{},
 	}
 }
 
-func (js *ClusterJobSchedulerImple) GetNextJob(cc ClusterController, agent entities.LightningMonkeyAgent, cache *AgentCache) (entities.AgentJob, error) {
+func (js *ClusterJobSchedulerImple) GetNextJob(cc ClusterController, agent entities.LightningMonkeyAgent, cache *AgentCache, updateAgentDeploymentPhase func(int)) (entities.AgentJob, error) {
 	if js.strategies == nil || len(js.strategies) == 0 {
+		updateAgentDeploymentPhase(entities.AgentDeploymentPhase_Deployed)
 		return entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Skipped, No any cluster job strategies being found."}, nil
 	}
 	if agent.State == nil {
@@ -47,9 +49,12 @@ func (js *ClusterJobSchedulerImple) GetNextJob(cc ClusterController, agent entit
 			continue
 		}
 		if deployFlag == entities.ConditionNotConfirmed {
+			updateAgentDeploymentPhase(entities.AgentDeploymentPhase_Deploying)
 			return entities.AgentJob{Name: entities.AgentJob_NOP, Reason: reason}, nil
 		}
+		updateAgentDeploymentPhase(entities.AgentDeploymentPhase_Deploying)
 		return entities.AgentJob{Name: js.strategies[i].GetStrategyName(), Arguments: deployArgs}, nil
 	}
+	updateAgentDeploymentPhase(entities.AgentDeploymentPhase_Deployed)
 	return entities.AgentJob{Name: entities.AgentJob_NOP, Reason: "Waiting, no any operations should perform."}, nil
 }

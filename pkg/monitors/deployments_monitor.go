@@ -1,11 +1,12 @@
 package monitors
 
 import (
+	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/k8s"
 	"github.com/sirupsen/logrus"
 	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -13,8 +14,8 @@ import (
 
 type KubernetesDeploymentMonitor struct {
 	clusterId string
-	client    *kubernetes.Clientset
-	cache     *[]WatchPoint
+	client    *k8s.KubernetesClientSet
+	cache     *[]entities.WatchPoint
 	stopChan  chan int
 }
 
@@ -22,7 +23,7 @@ func (m *KubernetesDeploymentMonitor) GetName() string {
 	return "Kubernetes Deployment Monitor"
 }
 
-func (m *KubernetesDeploymentMonitor) GetWatchPoints() []WatchPoint {
+func (m *KubernetesDeploymentMonitor) GetWatchPoints() []entities.WatchPoint {
 	return *m.cache
 }
 
@@ -73,8 +74,8 @@ func (m *KubernetesDeploymentMonitor) doMonitor() {
 	atomic.SwapPointer((*unsafe.Pointer)(unsafe.Pointer(&m.cache)), unsafe.Pointer(&wps))
 }
 
-func (m *KubernetesDeploymentMonitor) getAppsV1DeploymentsStatus(namespace string) []WatchPoint {
-	csl, err := m.client.AppsV1().Deployments(namespace).List(meta_v1.ListOptions{})
+func (m *KubernetesDeploymentMonitor) getAppsV1DeploymentsStatus(namespace string) []entities.WatchPoint {
+	csl, err := m.client.CoreClient.AppsV1().Deployments(namespace).List(meta_v1.ListOptions{})
 	if err != nil {
 		logrus.Errorf("Failed to list deployments from cluster: %s, error: %s", m.clusterId, err.Error())
 		return nil
@@ -83,10 +84,10 @@ func (m *KubernetesDeploymentMonitor) getAppsV1DeploymentsStatus(namespace strin
 		return nil
 	}
 	var item apps_v1.Deployment
-	wps := make([]WatchPoint, 0, len(csl.Items))
+	wps := make([]entities.WatchPoint, 0, len(csl.Items))
 	for i := 0; i < len(csl.Items); i++ {
 		item = csl.Items[i]
-		wp := WatchPoint{}
+		wp := entities.WatchPoint{}
 		wp.Name = item.Name
 		wp.Namespace = namespace
 		wp.Status = getDeploymentHealthStatus(item.Status.Conditions)

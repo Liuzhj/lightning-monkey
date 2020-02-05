@@ -1,6 +1,8 @@
 package entities
 
-import "github.com/g0194776/lightningmonkey/pkg/monitors"
+import (
+	"time"
+)
 
 const (
 	Succeed                          int = 0
@@ -33,6 +35,7 @@ type RegisterAgentResponse struct {
 	Response
 	AgentId        string                `json:"agent_id"`
 	BasicImages    DockerImageCollection `json:"image_collection"`
+	ClusterId      string                `json:"cluster_id"`
 	MasterSettings map[string]string     `json:"master_settings"`
 	LeaseId        int64                 `json:"lease_id"`
 }
@@ -71,5 +74,31 @@ type AgentReportStatusResponse struct {
 
 type GetClusterComponentStatusResponse struct {
 	Response
-	WatchPoints []monitors.WatchPoint `json:"status"`
+	WatchPoints []WatchPoint `json:"status"`
+}
+
+type GetAgentListResponse struct {
+	Response
+	Agents []LightningMonkeyAgentBriefInformation `json:"agents"`
+}
+
+type LightningMonkeyAgentBriefInformation struct {
+	HostInformation
+
+	Id              string      `json:"id"`
+	HasETCDRole     bool        `json:"has_etcd_role"`
+	HasMasterRole   bool        `json:"has_master_role"`
+	HasMinionRole   bool        `json:"has_minion_role"`
+	HasHARole       bool        `json:"has_ha_role"`
+	Hostname        string      `json:"hostname"`
+	State           *AgentState `json:"state,omitempty"`
+	DeploymentPhase int         `json:"deployment_phase"` //0-pending, 1-deploying, 2-deployed
+}
+
+type WatchPoint struct {
+	IsSystemComponent bool      `json:"is_system_component"`
+	Name              string    `json:"name"`
+	Namespace         string    `json:"namespace"`
+	Status            string    `json:"status"`
+	LastCheckTime     time.Time `json:"last_check_time"`
 }
