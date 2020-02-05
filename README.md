@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/g0194776/lightning-monkey.svg?token=vHH8ZAATWuPpZvD2YF3L&branch=feature/init)](https://travis-ci.com/g0194776/lightning-monkey)
 
-# Lightning Monkey
+# 闪电猴项目 (Lightning Monkey)
 当前项目正处于开发阶段，我们欢迎任何BUG和代码的提交。
 
 # 前言
