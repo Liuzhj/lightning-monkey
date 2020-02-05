@@ -16,21 +16,22 @@ DOCKERGRAPH="/var/lib/docker"
 TOKEN="df1733d40a31"
 
 #KERNEL_URL="/pkg/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm"
-KERNEL_URL="/apis/v1/registry/1.13.10/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm?token=${TOKEN}"
+KERNEL_URL="/apis/v1/registry/software/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm?token=${TOKEN}"
 KERNEL_PKG="kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm"
 
-DOCKER_ENGINE_URL="/apis/v1/registry/1.13.10/docker-engine-1.12.6-1.el7.centos.x86_64.rpm?token=${TOKEN}"
+DOCKER_ENGINE_URL="/apis/v1/registry/software/docker-engine-1.12.6-1.el7.centos.x86_64.rpm?token=${TOKEN}"
 #DOCKER_ENGINE_URL="/pkg/docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
 DOCKER_ENGINE_PKG="docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
 
-DOCKER_ENGINE_SELINUX_URL="/apis/v1/registry/1.13.10/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm?token=${TOKEN}"
+DOCKER_ENGINE_SELINUX_URL="/apis/v1/registry/software/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm?token=${TOKEN}"
 #DOCKER_ENGINE_SELINUX_URL="/pkg/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
 DOCKER_ENGINE_SELINUX_PKG="docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
 
-LMAGENT_URL="/apis/v1/registry/1.13.10/lmagent.tar?token=${TOKEN}"
+LMAGENT_URL="/apis/v1/registry/1.13.12/lmagent.tar?token=${TOKEN}"
 #LMAGENT_URL="/pkg/lmagent.tar"
-PROM_NODE_URL="/apis/v1/registry/1.13.10/exporter.tar?token=${TOKEN}"
+PROM_NODE_URL="/apis/v1/registry/software/exporter.tar?token=${TOKEN}"
 #PROM_NODE_URL="/pkg/exporter.tar"
+HELM_URL="/apis/v1/registry/software/helm-v2.12.3-linux-amd64.tar.gz?token=${TOKEN}"
 
 
 _usage(){
@@ -63,20 +64,20 @@ _usage(){
   Example:
 
     #local run
-    /bin/bash k8setup.sh -e enp0s8 -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -r master  -r etcd run
-    /bin/bash k8setup.sh -e enp0s8 check
-    /bin/bash k8setup.sh -e enp0s8 -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -r master  -r etcd setup
-    /bin/bash k8setup.sh show
-	
+    /bin/bash init.sh -e enp0s8 -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -r master  -r etcd run
+    /bin/bash init.sh -e enp0s8 check
+    /bin/bash init.sh -e enp0s8 -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -r master  -r etcd setup
+    /bin/bash init.sh show
+
     #remote run
     #setup k8s env
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd setup
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd setup
     #show server information
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd show
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd show
     #check server env
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd check
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd check
     #deploy lightingmonkey role
-    curl -fsSL http://192.168.56.101:8000/k8setup.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /data/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd run
+    curl -fsSL http://192.168.56.101:8000/init.sh | /bin/bash /dev/stdin -a http://192.168.56.101:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5" -e enp0s8 -r master -r etcd run
 
 EOF
   exit 1
@@ -123,7 +124,8 @@ _show_product() {
 }
 
 _show_os() {
-  local distname,distid
+  local distname
+  local distid
   distname=$(awk -F '=' '/^ID=/{print $2}' /etc/os-release|tr -d "\"" )
   distid=$(awk -F '=' '/^VERSION_ID=/{print $2}' /etc/os-release |tr -d "\"" )
   _show_label "Distro" "$distname$distid"
@@ -238,6 +240,14 @@ _check_swap() {
   fi
 }
 
+_check_default_route() {
+  if ip r s |grep default >/dev/null 2>&1 ;then
+    state "default gw" 0;return 0
+  else
+    state "Not found default gw" 1; return 1
+  fi
+}
+
 _check_limit() {
   local maxfile
   local maxproc
@@ -275,12 +285,12 @@ _check_sysctl() {
     state "kernel conntrack_max. Suggest:655360" 0
   fi
 
-  if [[ $ip_forward -ne 1 ]];then 
+  if [[ $ip_forward -ne 1 ]];then
     state "kernel ip_forward. Suggest:1. Actual:${ip_forward}" 1;flag=1
   else
     state "kernel kernel ip_forward" 0
   fi
-  
+
   if [[ $swappiness -ne 0 ]];then
     state "kernel swappiness. Suggest:0. Actual:${swappiness}" 1;flag=1
   else
@@ -365,7 +375,7 @@ _check_docker() {
   local version
   local msg="Docker version"
   version=$(docker -v 2>/dev/null|awk '{print $3}'|tr -d ",")
-  
+
   if [[ ${version} == "1.12.6" ]];then
     state "${msg}" 0;return 0
   else
@@ -380,38 +390,50 @@ _check_kernel_module() {
   else
     state "${msg}. Actual:not load" 1;return 1
   fi
-  
+
 }
 
 _check_repo() {
   local httpcode
   msg="Centos Repo check"
+  repofile="/repodata/repomd.xml"
   for repourl in $(yum repolist -v | grep Repo-baseurl | awk  '{print $3}')
   do
-    httpcode=$(curl -s --head --write-out "%{http_code}\n" "${repourl}" -o  /dev/null)
+    httpcode=$(curl -s --head --write-out "%{http_code}\n" "${repourl}${repofile}" -o  /dev/null)
     if [[ ${httpcode} == 200 ]];then
+      state "${msg}" 0;return 0
+    fi
+  done
+  state "${msg}" 1;return 1
+}
+
+_check_partition() {
+  partition=$1
+  msg="$partition Disk Partition less than 30G"
+  mkdir -p "${partition}" >/dev/null 2>&1
+  avaidisk=$(df -k --output=avail "${partition}" | sed '1d;s/[^0-9]//g')
+  if [[ ${avaidisk} -ge 30000000 ]];then
       state "${msg}" 0;return 0
     else
       state "${msg}" 1;return 1
-    fi
-  done
+  fi
 }
 
 _check_main(){
   _show_header "Check environment"
   local nic=$1
-  local apiserver=$2
-  local clusterid=$3
-  local graph=$4
+  local graph=$2
   local role
   role=$(echo ${@:5}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   _check_os
   _check_repo
+  _check_partition ${graph}
   _check_kernel
   _check_kernel_module
   _check_tools
   _check_swap
+  _check_default_route
   _check_limit
   _check_sysctl
   _check_timezone
@@ -422,7 +444,6 @@ _check_main(){
   _check_docker
 }
 
-
 _setup_kernel() {
   local apiserver=$1
   if ! command -v wget >/dev/null 2>&1;then
@@ -431,17 +452,19 @@ _setup_kernel() {
   wget "${apiserver}${KERNEL_URL}" -O /tmp/${KERNEL_PKG}
   rpm -ivh /tmp/${KERNEL_PKG}
   grub2-set-default 0
-  grub2-mkconfig -o /boot/grub2/grub.cfg 
+  grub2-mkconfig -o /boot/grub2/grub.cfg
 }
 
 _setup_tools() {
   yum install -y strace lsof net-tools ipvsadm rpcbind nfs-utils wget chrony sysstat
+  yum install -y epel-release
+  yum install -y jq
 }
 
 _setup_swap() {
   sed -i '/ swap / s/^/#/' /etc/fstab
   swapoff -a
-  free -m 
+  free -m
 }
 
 _setup_limit() {
@@ -472,19 +495,18 @@ EOF
   sysctl -p /etc/sysctl.d/k8s.conf >/dev/null 2>&1
 }
 
-
 _setup_timezone() {
-  ln -sfv /usr/share/zoneinfo/Asia/Shanghai /etc/localtime 
+  ln -sfv /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 }
 
 _setup_ntp() {
-  systemctl restart chronyd 
+  systemctl restart chronyd
   chronyc -a makestep
 }
 
 _setup_selinux() {
   sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
-  setenforce 0 
+  setenforce 0
 }
 
 _setup_firewalld() {
@@ -503,9 +525,9 @@ _setup_docker() {
   wget ${apiserver}${DOCKER_ENGINE_SELINUX_URL} -O /tmp/${DOCKER_ENGINE_SELINUX_PKG}
   yum install -y /tmp/${DOCKER_ENGINE_PKG} /tmp/${DOCKER_ENGINE_SELINUX_PKG}
 
-  pt="/usr/bin/dockerd --insecure-registry=repository.test.com:8444 --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --storage-driver=overlay2 --graph=${dir}"
+  pt="/usr/bin/dockerd --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --graph=${dir}"
   execstart=$(echo ${pt}|sed 's/\//\\\//g')
-  sed -i -r  's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
+  sed -r -i 's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
 
   systemctl enable docker
   systemctl restart docker
@@ -557,9 +579,13 @@ _setup_main(){
   local role
   role=$(echo ${@:5}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
-  _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version." 
+  _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version."
 
   _check_repo >/dev/null 2>&1 || abort "No available centos repo"
+
+  _check_partition "${graph}" >/dev/null 2>&1 || abort "No available diskspace ${graph}"
+
+  _check_default_route >/dev/null 2>&1 || abort "Not found default route"
 
   _show_setup_pass "Install tools"
   _check_tools>/dev/null 2>&1 || _setup_tools
@@ -575,7 +601,7 @@ _setup_main(){
 
   _show_setup_pass "Tune sysctl"
   _check_sysctl>/dev/null 2>&1 || _setup_sysctl
-  
+
   _show_setup_pass "Configure timezone"
   _check_timezone>/dev/null 2>&1 || _setup_timezone
 
@@ -606,14 +632,16 @@ _run_main() {
   local clusterid=$3
   local graph=$4
   local force=$5
+  local labels=$6
   local role
-  role=$(echo ${@:6}|sed -e 's/ / --/g' -e 's/^/ --/g')
+  role=$(echo ${@:7}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   if [[ "${force}" == "false" ]];then
     _check_kernel>/dev/null 2>&1 || abort "No kernel upgrade to 4.15.x"
   fi
   _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version."
   _check_swap>/dev/null 2>&1 || abort "No Swap disabled"
+  _check_default_route >/dev/null 2>&1 || abort "Not found default route"
   _check_sysctl>/dev/null 2>&1 || abort "No Kernel Parameters configured"
   _check_selinux>/dev/null 2>&1 || abort "No Selinux disabled"
   _check_firewalld>/dev/null 2>&1 || abort "No Firewalld disabled"
@@ -623,19 +651,27 @@ _run_main() {
   if ! command -v wget >/dev/null 2>&1;then
     abort "wget command not found"
   fi
-  
+
   #check node exporter
   #netstat -tulnp|grep 9100
   #curl http://localhost:9100/metrics
   wget "${apiserver}${PROM_NODE_URL}" -O /tmp/exporter.tar
   docker load </tmp/exporter.tar
-  docker run -d --net="host" --pid="host" --cap-add=SYS_TIME quay.io/prometheus/node-exporter:v0.15.2
-  
+  docker run -d --net="host" --pid="host" --cap-add=SYS_TIME --restart=always prom/node-exporter:v0.15.2
+
   #deployment lmagent
   wget "${apiserver}${LMAGENT_URL}" -O /tmp/lmagent.tar
   docker load </tmp/lmagent.tar
-  docker run -itd --restart=always --net=host \
+
+  #install helm tools
+  wget "${apiserver}${HELM_URL}" -O /tmp/helm-v2.12.3-linux-amd64.tar.gz
+  tar xvzfp /tmp/helm-v2.12.3-linux-amd64.tar.gz linux-amd64/helm
+  /bin/cp -f linux-amd64/helm /usr/bin/ && chmod 755 /usr/bin/helm
+
+
+  docker run -itd --restart=always --net=host --privileged \
             --name agent \
+            -v /sys:/sys \
             -v /etc:/etc \
             -v /var/run:/var/run \
             -v /var/lib:/var/lib \
@@ -649,6 +685,7 @@ _run_main() {
                 --address="$(ip a s dev "${nic}"|awk -F '[ /]+' '/inet /{print $3;exit;}')" \
                 --cluster="${clusterid}" \
                 --cert-dir=/etc/kubernetes/pki \
+                --labels="${labels}" \
                 ${role}
 }
 
@@ -671,13 +708,16 @@ while test $# -ne 0; do
     -c|--clusterid)  clusterid="${1}"; shift ;;
     -g|--graph)      graph="${1}"; shift ;;
     -f|--force)      force="${1}"; shift ;;
+    -l|--labels)     labels="${1}"; shift ;;
     run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
-                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
+                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
                      [[ -z "${force}" ]] && force="false"
-                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}" "${role}";;
+                     [[ -z "${labels}" ]] && labels='beta.kubernetes.io/arch=amd64'
+                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}"  "${labels}" "${role}";;
 
     check)           [[ -z "${nic}" ]] && _usage
-                     _check_main "${nic}";;
+                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
+                     _check_main "${nic}" "${graph}";;
 
     show)            _show_main ;;
 
