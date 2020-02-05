@@ -77,11 +77,14 @@ docker run --rm -p 8080:8080 -it \
 ```shell
 export API_SERVER_ADDR=http://127.0.0.1:8080
 export CLUSTER_ID=xxxxxxx
-docker run -itd --restart=always --net=host \
+docker run -itd --restart=always --net=host --privileged \
+    --name agent \
+    -v /sys:/sys \
     -v /etc:/etc \
     -v /var/run:/var/run \
     -v /var/lib:/var/lib \
     -v /opt/cni/bin:/opt/cni/bin \
+    -v /opt/lightning-monkey:/opt/lightning-monkey \
     -e "LOG_LEVEL=debug" \
     --entrypoint=/opt/lm-agent \
     g0194776/lmagent:latest \
