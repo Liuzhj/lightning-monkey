@@ -1,15 +1,17 @@
 #!/bin/bash
 
-echo "Cleaning diry data..."
-rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics && rm -rf img_traefik && rm -rf img_router && rm -rf img_busybox && rm -rf img_prometheus && rm -rf img_lmagent && rm -rf img_exporter && rm -rf img_es && rm -rf img_filebeat && rm -rf img_helmv2 && rm -rf img_metricbeat
+SUPPORTED_K8S_VERSIONS=("1.12.10" "1.13.12" "1.14.10" "1.15.9")
+
 echo "Downloading RPM packages..."
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
 wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
 wget http://mirror.rc.usf.edu/compute_lock/elrepo/kernel/el7/x86_64/RPMS/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm
 wget https://get.helm.sh/helm-v2.12.3-linux-amd64.tar.gz
+
+./download_kubeadm.sh "${SUPPORTED_K8S_VERSIONS[*]}"
+
 echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_etcd mirrorgooglecontainers/etcd:3.2.24
-./download-frozen-image-v2.sh img_hyperkube g0194776/lightning-monkey-hyperkube:v1.13.12
 ./download-frozen-image-v2.sh img_infra mirrorgooglecontainers/pause-amd64:3.1
 ./download-frozen-image-v2.sh img_coredns coredns/coredns:1.5.2
 ./download-frozen-image-v2.sh img_ha pelin/haproxy-keepalived:latest
@@ -24,9 +26,15 @@ echo "Downloading depended Docker images..."
 ./download-frozen-image-v2.sh img_filebeat elastic/filebeat:6.8.3
 ./download-frozen-image-v2.sh img_helmv2 fishead/gcr.io.kubernetes-helm.tiller:v2.12.3
 ./download-frozen-image-v2.sh img_metricbeat elastic/metricbeat:6.8.3
+
+echo "Downloading specified versions of kubeadm..."
+for ver in ${SUPPORTED_K8S_VERSIONS[*]} ; do
+    ./download-frozen-image-v2.sh img_hyperkube_${ver} g0194776/lightning-monkey-hyperkube:v${ver}
+    tar -C 'img_hyperkube_${ver}' -cf ./k8s_${ver}.tar .
+done
+
 echo "Assmebling downloaded Docker image layers to tarball files..."
 tar -C 'img_etcd' -cf ./etcd.tar .
-tar -C 'img_hyperkube' -cf ./k8s.tar .
 tar -C 'img_infra' -cf ./infra.tar .
 tar -C 'img_coredns' -cf ./coredns.tar .
 tar -C 'img_ha' -cf ./ha.tar .
@@ -41,5 +49,3 @@ tar -C 'img_es' -cf ./es.tar .
 tar -C 'img_filebeat' -cf ./filebeat.tar .
 tar -C 'img_metricbeat' -cf ./metricbeat.tar .
 tar -C 'img_helmv2' -cf ./helmv2.tar .
-echo "Cleaning downloaded files..."
-rm -rf img_etcd && rm -rf img_hyperkube && rm -rf img_infra && rm -rf img_coredns && rm -rf img_ha && rm -rf img_metrics && rm -rf img_traefik && rm -rf img_router && rm -rf img_busybox && rm -rf img_prometheus && rm -rf img_lmagent && rm -rf img_exporter && rm -rf img_es && rm -rf img_filebeat && rm -rf img_helmv2 && rm -rf img_metricbeat

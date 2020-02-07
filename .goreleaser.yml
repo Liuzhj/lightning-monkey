@@ -37,7 +37,10 @@ dockers:
     - prepare.sh
     - init.sh
     build_flag_templates:
-    - "--build-arg=K8S_VERSION=1.13.12"
+    - "--build-arg=K8S_VERSION_V1_12=1.12.10"
+    - "--build-arg=K8S_VERSION_V1_13=1.13.12"
+    - "--build-arg=K8S_VERSION_V1_14=1.14.10"
+    - "--build-arg=K8S_VERSION_V1_15=1.15.9"
   - dockerfile: Dockerfile.agent
     binary: lm-agent
     # Path to the Dockerfile (from the project root).
@@ -49,7 +52,10 @@ dockers:
     extra_files:
     - extras/kubernetes.repo
     build_flag_templates:
-    - "--build-arg=K8S_VERSION=1.13.12"
+    - "--build-arg=K8S_VERSION_V1_12=1.12.10"
+    - "--build-arg=K8S_VERSION_V1_13=1.13.12"
+    - "--build-arg=K8S_VERSION_V1_14=1.14.10"
+    - "--build-arg=K8S_VERSION_V1_15=1.15.9"
 release:
   # If set to auto, will mark the release as not ready for production
   # in case there is an indicator for this in the tag e.g. v1.0.0-rc1

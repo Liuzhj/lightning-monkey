@@ -10,17 +10,46 @@ RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
 
 FROM centos:7
 
-ARG  K8S_VERSION
+ARG  K8S_VERSION_V1_12="1.12.10"
+ARG  K8S_VERSION_V1_13="1.13.12"
+ARG  K8S_VERSION_V1_14="1.14.10"
+ARG  K8S_VERSION_V1_15="1.15.9"
 
-RUN mkdir -p /opt/registry/${K8S_VERSION} && mkdir -p /opt/software
+RUN mkdir -p /opt/registry/${K8S_VERSION_V1_12} \
+    && mkdir -p /opt/registry/${K8S_VERSION_V1_13} \
+    && mkdir -p /opt/registry/${K8S_VERSION_V1_14} \
+    && mkdir -p /opt/registry/${K8S_VERSION_V1_15} \
+    && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_12} \
+    && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_13} \
+    && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_14} \
+    && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_15} \
+    && mkdir -p /opt/software
 COPY --from=builder /go/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY --from=builder /go/init.sh /opt/init.sh
 COPY --from=builder /go/lm-apiserver /opt
-#kubernetes components
-COPY --from=builder /go/etcd.tar /opt/registry/${K8S_VERSION}/etcd.tar
-COPY --from=builder /go/k8s.tar /opt/registry/${K8S_VERSION}/k8s.tar
-COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION}/infra.tar
-COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION}/lmagent.tar
+COPY --from=builder /go/etcd.tar /opt/registry/software/etcd.tar
+
+#kubernetes components for latest v1.12.x version.
+COPY --from=builder /go/k8s_${K8S_VERSION_V1_12}.tar /opt/registry/${K8S_VERSION_V1_12}/k8s.tar
+COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION_V1_12}/infra.tar
+COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION_V1_12}/lmagent.tar
+COPY --from=builder /go/${K8S_VERSION_V1_12}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_12}/kubeadm
+#kubernetes components for latest v1.13.x version.
+COPY --from=builder /go/k8s_${K8S_VERSION_V1_13}.tar /opt/registry/${K8S_VERSION_V1_13}/k8s.tar
+COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION_V1_13}/infra.tar
+COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION_V1_13}/lmagent.tar
+COPY --from=builder /go/${K8S_VERSION_V1_13}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_13}/kubeadm
+#kubernetes components for latest v1.14.x version.
+COPY --from=builder /go/k8s_${K8S_VERSION_V1_14}.tar /opt/registry/${K8S_VERSION_V1_14}/k8s.tar
+COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION_V1_14}/infra.tar
+COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION_V1_14}/lmagent.tar
+COPY --from=builder /go/${K8S_VERSION_V1_14}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_14}/kubeadm
+#kubernetes components for latest v1.15.x version.
+COPY --from=builder /go/k8s_${K8S_VERSION_V1_15}.tar /opt/registry/${K8S_VERSION_V1_15}/k8s.tar
+COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION_V1_15}/infra.tar
+COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION_V1_15}/lmagent.tar
+COPY --from=builder /go/${K8S_VERSION_V1_15}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_15}/kubeadm
+
 #common components
 COPY --from=builder /go/coredns.tar /opt/registry/software/coredns.tar
 COPY --from=builder /go/ha.tar /opt/registry/software/ha.tar
