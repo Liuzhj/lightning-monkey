@@ -4,6 +4,7 @@ COPY extras/kubernetes.repo ./kubernetes.repo
 COPY lm-agent ./lm-agent
 COPY prepare.sh ./prepare.sh
 COPY init.sh ./init.sh
+COPY download_kubeadm.sh ./download_kubeadm.sh
 RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
 
 
@@ -13,7 +14,6 @@ ARG  K8S_VERSION_V1_12="1.12.10"
 ARG  K8S_VERSION_V1_13="1.13.12"
 ARG  K8S_VERSION_V1_14="1.14.10"
 ARG  K8S_VERSION_V1_15="1.15.9"
-
 
 RUN mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_12} \
     && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_13} \

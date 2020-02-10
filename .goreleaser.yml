@@ -36,6 +36,7 @@ dockers:
     - download-frozen-image-v2.sh
     - prepare.sh
     - init.sh
+    - download_kubeadm.sh
     build_flag_templates:
     - "--build-arg=K8S_VERSION_V1_12=1.12.10"
     - "--build-arg=K8S_VERSION_V1_13=1.13.12"
@@ -53,6 +54,7 @@ dockers:
     - extras/kubernetes.repo
     - prepare.sh
     - init.sh
+    - download_kubeadm.sh
     build_flag_templates:
     - "--build-arg=K8S_VERSION_V1_12=1.12.10"
     - "--build-arg=K8S_VERSION_V1_13=1.13.12"
