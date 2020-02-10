@@ -5,7 +5,7 @@ COPY lm-agent ./lm-agent
 COPY prepare.sh ./prepare.sh
 COPY init.sh ./init.sh
 COPY download_kubeadm.sh ./download_kubeadm.sh
-RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
+RUN  ./prepare.sh -s
 
 
 FROM centos:7
