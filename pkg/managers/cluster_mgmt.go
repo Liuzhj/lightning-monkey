@@ -39,7 +39,7 @@ func NewCluster(cluster *entities.LightningMonkeyClusterSettings) (string, error
 			return "", fmt.Errorf("Failed to parse \"cluster.ServiceCIDR\" value as correct CIDR format, error: %s", err.Error())
 		}
 		//generate required certificates.
-		certsResources, err = common.CertManager.GenerateMainCACertificates()
+		certsResources, err = common.CertManager.GenerateMainCACertificates(cluster.KubernetesVersion)
 		if err != nil {
 			return "", fmt.Errorf("Failed to generate Kubernetes required certificates, error: %s", err.Error())
 		}

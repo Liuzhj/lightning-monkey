@@ -79,7 +79,7 @@ func Test_Successfully_Register_NewAgent(t *testing.T) {
 	gcm.InitializeData(map[string]string{
 		"admin.conf": "sdfsdfsdf",
 	})
-	certManager.EXPECT().GenerateAdminKubeConfig("10.10.10.10", gomock.Any()).Return(gcm, nil)
+	certManager.EXPECT().GenerateAdminKubeConfig("1.12.5", "10.10.10.10", gomock.Any()).Return(gcm, nil)
 	common.CertManager = certManager
 
 	common.ClusterManager = cm
@@ -388,7 +388,7 @@ func Test_Register_NewAgent_FailedGenerateCertificate(t *testing.T) {
 	gcm.InitializeData(map[string]string{
 		"admin.conf": "sdfsdfsdf",
 	})
-	certManager.EXPECT().GenerateAdminKubeConfig("10.10.10.10", gomock.Any()).Return(nil, errors.New("failed to generate certificate!"))
+	certManager.EXPECT().GenerateAdminKubeConfig("1.12.5", "10.10.10.10", gomock.Any()).Return(nil, errors.New("failed to generate certificate!"))
 	common.CertManager = certManager
 
 	common.ClusterManager = cm
@@ -445,7 +445,7 @@ func Test_Register_NewAgent_AdminCertNotFound(t *testing.T) {
 	gcm.InitializeData(map[string]string{
 		"admin2.conf": "sdfsdfsdf",
 	})
-	certManager.EXPECT().GenerateAdminKubeConfig("10.10.10.10", gomock.Any()).Return(gcm, nil)
+	certManager.EXPECT().GenerateAdminKubeConfig("1.12.5", "10.10.10.10", gomock.Any()).Return(gcm, nil)
 	common.CertManager = certManager
 
 	common.ClusterManager = cm

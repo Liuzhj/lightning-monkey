@@ -38,17 +38,16 @@ func (gm *GeneratedCertsMap) GetResources() map[string]string {
 
 //go:generate mockgen -package=mock_lm -destination=../../mocks/mock_cert_manager.go -source=k8s_certs_generator.go CertificateManager
 type CertificateManager interface {
-	GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.LightningMonkeyCertificateCollection) (*GeneratedCertsMap, error)
-	GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error)
-	GenerateMainCACertificates() (*GeneratedCertsMap, error)
-	GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent string) error
-	GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error
+	GenerateAdminKubeConfig(k8sVersion, advertiseAddr string, basicCertMap entities.LightningMonkeyCertificateCollection) (*GeneratedCertsMap, error)
+	GenerateMainCACertificates(k8sVersion string) (*GeneratedCertsMap, error)
+	GenerateETCDClientCertificatesAndManifest(k8sVersion, certPath, etcdConfigContent string) error
+	GenerateMasterCertificatesAndManifest(k8sVersion, certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error
 }
 
 type CertificateManagerImple struct {
 }
 
-func (cm *CertificateManagerImple) GenerateAdminKubeConfig(advertiseAddr string, basicCertMap entities.LightningMonkeyCertificateCollection) (*GeneratedCertsMap, error) {
+func (cm *CertificateManagerImple) GenerateAdminKubeConfig(k8sVersion, advertiseAddr string, basicCertMap entities.LightningMonkeyCertificateCollection) (*GeneratedCertsMap, error) {
 	if basicCertMap == nil || len(basicCertMap) == 0 {
 		return nil, errors.New("Failed to generate kube-admin config without any basic certificates!")
 	}
@@ -64,7 +63,7 @@ func (cm *CertificateManagerImple) GenerateAdminKubeConfig(advertiseAddr string,
 	}()
 	if basicCertMap != nil {
 		for i := 0; i < len(basicCertMap); i++ {
-			logrus.Infof("Pareparing write cert: %s", basicCertMap[i].Name)
+			logrus.Infof("Preparing write cert: %s", basicCertMap[i].Name)
 			_ = os.MkdirAll(filepath.Dir(filepath.Join(path, basicCertMap[i].Name)), 0644)
 			ioErr := ioutil.WriteFile(filepath.Join(path, basicCertMap[i].Name), []byte(basicCertMap[i].Value), 0644)
 			if ioErr != nil {
@@ -72,7 +71,14 @@ func (cm *CertificateManagerImple) GenerateAdminKubeConfig(advertiseAddr string,
 			}
 		}
 	}
-	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig admin --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s", path, path, advertiseAddr))
+	cmd := exec.Command("/bin/bash", "-c",
+		fmt.Sprintf(
+			"%s init phase kubeconfig admin --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s",
+			GetKubeadmProgramFilePath(k8sVersion),
+			path,
+			path,
+			advertiseAddr,
+		))
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -97,39 +103,7 @@ func (cm *CertificateManagerImple) GenerateAdminKubeConfig(advertiseAddr string,
 	return getCertificatesContent(path, "", nil)
 }
 
-func (cm *CertificateManagerImple) GenerateMasterCertificates(advertiseAddr, serviceCIDR string) (*GeneratedCertsMap, error) {
-	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
-	logrus.Infof("Certificates temporary storage path: %s", path)
-	defer func() {
-		//remove certs path.
-		_ = os.RemoveAll(path)
-	}()
-	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase certs all --cert-dir=%s --apiserver-advertise-address=%s --service-cidr=%s", path, advertiseAddr, serviceCIDR))
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-	if err = cmd.Start(); err != nil {
-		return nil, err
-	}
-	reader := bufio.NewReader(stdout)
-	for {
-		traceData, _, err := reader.ReadLine()
-		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
-			break
-		}
-		logrus.Infof(string(traceData))
-	}
-	if err = cmd.Wait(); err != nil {
-		return nil, err
-	}
-	return getCertificatesContent(path, "", nil)
-}
-
-func (cm *CertificateManagerImple) GenerateMainCACertificates() (*GeneratedCertsMap, error) {
+func (cm *CertificateManagerImple) GenerateMainCACertificates(k8sVersion string) (*GeneratedCertsMap, error) {
 	path := fmt.Sprintf("/tmp/kubernetes-certs/%s", uuid.NewV4().String())
 	logrus.Infof("Certificates temporary storage path: %s", path)
 	defer func() {
@@ -137,10 +111,10 @@ func (cm *CertificateManagerImple) GenerateMainCACertificates() (*GeneratedCerts
 		_ = os.RemoveAll(path)
 	}()
 	subCommands := []string{
-		fmt.Sprintf("kubeadm init phase certs ca --cert-dir=%s", path),
-		fmt.Sprintf("kubeadm init phase certs etcd-ca --cert-dir=%s", path),
-		fmt.Sprintf("kubeadm init phase certs front-proxy-ca --cert-dir=%s", path),
-		fmt.Sprintf("kubeadm init phase certs sa --cert-dir=%s", path),
+		fmt.Sprintf("%s init phase certs ca --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), path),
+		fmt.Sprintf("%s init phase certs etcd-ca --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), path),
+		fmt.Sprintf("%s init phase certs front-proxy-ca --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), path),
+		fmt.Sprintf("%s init phase certs sa --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), path),
 	}
 	var err error
 	certMap := &GeneratedCertsMap{res: make(map[string]string), path: path}
@@ -161,7 +135,7 @@ func (cm *CertificateManagerImple) GenerateMainCACertificates() (*GeneratedCerts
 	return certMap, nil
 }
 
-func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(certPath, etcdConfigContent string) error {
+func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(k8sVersion, certPath, etcdConfigContent string) error {
 	configFilePath := filepath.Join(certPath, "etcd_config.yml")
 	_ = os.RemoveAll(configFilePath)
 	f, err := os.OpenFile(configFilePath, os.O_CREATE|os.O_WRONLY, 0664)
@@ -174,11 +148,11 @@ func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(cer
 		return err
 	}
 	subCommands := []string{
-		"kubeadm init phase certs etcd-server",
-		"kubeadm init phase certs etcd-peer",
-		"kubeadm init phase certs etcd-healthcheck-client",
-		"kubeadm init phase certs apiserver-etcd-client",
-		"kubeadm init phase etcd local",
+		fmt.Sprintf("%s init phase certs etcd-server", GetKubeadmProgramFilePath(k8sVersion)),
+		fmt.Sprintf("%s init phase certs etcd-peer", GetKubeadmProgramFilePath(k8sVersion)),
+		fmt.Sprintf("%s init phase certs etcd-healthcheck-client", GetKubeadmProgramFilePath(k8sVersion)),
+		fmt.Sprintf("%s init phase certs apiserver-etcd-client", GetKubeadmProgramFilePath(k8sVersion)),
+		fmt.Sprintf("%s init phase etcd local", GetKubeadmProgramFilePath(k8sVersion)),
 	}
 	for i := 0; i < len(subCommands); i++ {
 		err = executeCommand(subCommands[i], configFilePath)
@@ -189,21 +163,23 @@ func (cm *CertificateManagerImple) GenerateETCDClientCertificatesAndManifest(cer
 	return nil
 }
 
-func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error {
+func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(k8sVersion, certPath, address string, settings map[string]string, imageCollection *entities.DockerImageCollection) error {
 	subCommands := []string{
-		fmt.Sprintf("kubeadm init phase certs apiserver --apiserver-advertise-address=%s --service-dns-domain=%s --service-cidr=%s --cert-dir=%s --apiserver-cert-extra-sans=%s",
+		fmt.Sprintf("%s init phase certs apiserver --apiserver-advertise-address=%s --service-dns-domain=%s --service-cidr=%s --cert-dir=%s --apiserver-cert-extra-sans=%s",
+			GetKubeadmProgramFilePath(k8sVersion),
 			address,
 			settings[entities.MasterSettings_ServiceDNSDomain],
 			settings[entities.MasterSettings_ServiceCIDR],
 			certPath,
 			getExtraSans(settings),
 		),
-		fmt.Sprintf("kubeadm init phase certs apiserver-etcd-client --cert-dir=%s", certPath),
-		fmt.Sprintf("kubeadm init phase certs apiserver-kubelet-client --cert-dir=%s", certPath),
-		fmt.Sprintf("kubeadm init phase certs front-proxy-client --cert-dir=%s", certPath),
-		fmt.Sprintf("kubeadm init phase kubeconfig controller-manager --apiserver-advertise-address=%s --cert-dir=%s", address, certPath),
-		fmt.Sprintf("kubeadm init phase kubeconfig scheduler --apiserver-advertise-address=%s --cert-dir=%s", address, certPath),
-		fmt.Sprintf("kubeadm init phase control-plane all --apiserver-advertise-address=%s --kubernetes-version=%s --pod-network-cidr=%s --service-cidr=%s --cert-dir=%s",
+		fmt.Sprintf("%s init phase certs apiserver-etcd-client --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), certPath),
+		fmt.Sprintf("%s init phase certs apiserver-kubelet-client --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), certPath),
+		fmt.Sprintf("%s init phase certs front-proxy-client --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), certPath),
+		fmt.Sprintf("%s init phase kubeconfig controller-manager --apiserver-advertise-address=%s --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), address, certPath),
+		fmt.Sprintf("%s init phase kubeconfig scheduler --apiserver-advertise-address=%s --cert-dir=%s", GetKubeadmProgramFilePath(k8sVersion), address, certPath),
+		fmt.Sprintf("%s init phase control-plane all --apiserver-advertise-address=%s --kubernetes-version=%s --pod-network-cidr=%s --service-cidr=%s --cert-dir=%s",
+			GetKubeadmProgramFilePath(k8sVersion),
 			address, //address,
 			settings[entities.MasterSettings_KubernetesVersion],
 			settings[entities.MasterSettings_PodCIDR],
@@ -278,6 +254,13 @@ func (cm *CertificateManagerImple) GenerateMasterCertificatesAndManifest(certPat
 		return f.Sync()
 	})
 	return err
+}
+
+func GetKubeadmProgramFilePath(ver string) string {
+	if ver == "" {
+		return "kubeadm"
+	}
+	return fmt.Sprintf("/usr/bin/k8s_%s/kubeadm", ver)
 }
 
 func getExtraSans(settings map[string]string) string {

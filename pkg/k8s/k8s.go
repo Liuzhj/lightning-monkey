@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/utils"
 	"github.com/sirupsen/logrus"
@@ -105,8 +106,15 @@ type KubernetesClientSet struct {
 	APIRegClientV1beta1 *agg_v1beta.ApiregistrationV1beta1Client
 }
 
-func GenerateKubeletConfig(certPath, masterAPIAddr string, replacementSlots map[string]string) error {
-	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kubeadm init phase kubeconfig kubelet --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s", certPath, certPath, masterAPIAddr))
+func GenerateKubeletConfig(k8sVersion, certPath, masterAPIAddr string, replacementSlots map[string]string) error {
+	cmd := exec.Command("/bin/bash",
+		"-c",
+		fmt.Sprintf("%s init phase kubeconfig kubelet --cert-dir=%s --kubeconfig-dir=%s --apiserver-advertise-address=%s",
+			certs.GetKubeadmProgramFilePath(k8sVersion),
+			certPath,
+			certPath,
+			masterAPIAddr,
+		))
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err

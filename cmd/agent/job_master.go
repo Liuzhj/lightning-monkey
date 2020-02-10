@@ -11,7 +11,13 @@ import (
 )
 
 func HandleDeployMaster(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
-	err := common.CertManager.GenerateMasterCertificatesAndManifest(CERTIFICATE_STORAGE_PATH, *a.arg.Address, a.masterSettings, a.basicImages)
+	err := common.CertManager.GenerateMasterCertificatesAndManifest(
+		a.masterSettings[entities.MasterSettings_KubernetesVersion],
+		CERTIFICATE_STORAGE_PATH,
+		*a.arg.Address,
+		a.masterSettings,
+		a.basicImages,
+	)
 	if err != nil {
 		return false, xerrors.Errorf("Failed to generate Kubernetes master certificates and manifests, error: %s %w", err.Error(), crashError)
 	}
