@@ -51,6 +51,8 @@ dockers:
     - "registry.cn-beijing.aliyuncs.com/lightning-monkey/agent:latest"
     extra_files:
     - extras/kubernetes.repo
+    - prepare.sh
+    - init.sh
     build_flag_templates:
     - "--build-arg=K8S_VERSION_V1_12=1.12.10"
     - "--build-arg=K8S_VERSION_V1_13=1.13.12"

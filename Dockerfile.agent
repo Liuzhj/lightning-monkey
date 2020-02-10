@@ -2,7 +2,6 @@ FROM golang:1.10.2 as builder
 
 COPY extras/kubernetes.repo ./kubernetes.repo
 COPY lm-agent ./lm-agent
-COPY download-frozen-image-v2.sh ./download-frozen-image-v2.sh
 COPY prepare.sh ./prepare.sh
 COPY init.sh ./init.sh
 RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
