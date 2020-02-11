@@ -7,7 +7,6 @@ COPY init.sh ./init.sh
 COPY download_kubeadm.sh ./download_kubeadm.sh
 RUN  ./prepare.sh -s
 
-
 FROM centos:7
 
 ARG  K8S_VERSION_V1_12="1.12.10"
