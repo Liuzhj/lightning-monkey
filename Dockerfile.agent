@@ -14,10 +14,13 @@ ARG  K8S_VERSION_V1_13="1.13.12"
 ARG  K8S_VERSION_V1_14="1.14.10"
 ARG  K8S_VERSION_V1_15="1.15.9"
 
-RUN mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_12} \
+RUN mkdir -p /opt/cni/bin \
+    && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_12} \
     && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_13} \
     && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_14} \
     && mkdir -p /usr/bin/k8s_${K8S_VERSION_V1_15}
+
+RUN yum install -y net-tools wget && wget -qO- https://github.com/containernetworking/plugins/releases/download/v0.8.5/cni-plugins-linux-amd64-v0.8.5.tgz | tar zxvf - -C /opt/cni/bin
 
 COPY --from=builder /go/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY --from=builder /go/lm-agent /opt
@@ -27,7 +30,6 @@ COPY --from=builder /go/${K8S_VERSION_V1_13}/kubernetes/node/bin/kubeadm /usr/bi
 COPY --from=builder /go/${K8S_VERSION_V1_14}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_14}/kubeadm
 COPY --from=builder /go/${K8S_VERSION_V1_15}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_15}/kubeadm
 
-RUN yum install -y net-tools
 RUN chmod +x /opt/lm-agent && mkdir /tmp/cni && cp -r /opt/cni/bin/* /tmp/cni
 
 #Update time zone to Asia-Shanghai
