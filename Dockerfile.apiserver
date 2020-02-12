@@ -6,7 +6,7 @@ COPY download-frozen-image-v2.sh ./download-frozen-image-v2.sh
 COPY prepare.sh ./prepare.sh
 COPY init.sh ./init.sh
 COPY download_kubeadm.sh ./download_kubeadm.sh
-RUN  ./prepare.sh
+RUN  apt-get update -y && apt-get install jq -y && ./prepare.sh
 
 
 FROM centos:7
