@@ -31,7 +31,7 @@ if [[ $1 != "-s" ]]; then
     echo "Downloading specified versions of kubeadm..."
     for ver in ${SUPPORTED_K8S_VERSIONS[*]} ; do
         ./download-frozen-image-v2.sh img_hyperkube_${ver} g0194776/lightning-monkey-hyperkube:v${ver}
-        tar -C 'img_hyperkube_${ver}' -cf ./k8s_${ver}.tar .
+        tar -C "img_hyperkube_${ver}" -cf ./k8s_${ver}.tar .
     done
 
     echo "Assmebling downloaded Docker image layers to tarball files..."
