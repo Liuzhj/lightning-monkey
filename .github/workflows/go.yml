@@ -48,12 +48,12 @@ jobs:
 
       - name: Try Building Agent
         run: |
-          cd cmd/agent && go build .
+          cd cmd/agent && go build -o lm-agent . && mv lm-agent ../../lm-agent
         env:
           GOPATH: /home/runner/work/lightning-monkey/go
 
       - name: Try Building API Server
         run: |
-          cd cmd/apiserver && go build .
+          cd cmd/apiserver && go build -o lm-apiserver . && mv lm-apiserver ../../lm-apiserver
         env:
           GOPATH: /home/runner/work/lightning-monkey/go
