@@ -69,6 +69,16 @@ jobs:
           file: Dockerfile.agent
           build_args: K8S_VERSION_V1_12=1.12.10,K8S_VERSION_V1_13=1.13.12,K8S_VERSION_V1_14=1.14.10,K8S_VERSION_V1_15=1.15.9
 
+      - name: Publish agent to docker registry (docker.io -> latest)
+        uses: jerray/publish-docker-action@master
+        with:
+          repository: g0194776/lightning-monkey-agent
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: latest
+          file: Dockerfile.agent
+          build_args: K8S_VERSION_V1_12=1.12.10,K8S_VERSION_V1_13=1.13.12,K8S_VERSION_V1_14=1.14.10,K8S_VERSION_V1_15=1.15.9
+
       - name: Publish agent to docker registry (aliyun)
         uses: jerray/publish-docker-action@master
         with:
@@ -77,6 +87,17 @@ jobs:
           username: ${{ secrets.ALICLOUD_DOCKER_USERNAME }}
           password: ${{ secrets.ALICLOUD_DOCKER_PASSWORD }}
           auto_tag: true
+          file: Dockerfile.agent
+          build_args: K8S_VERSION_V1_12=1.12.10,K8S_VERSION_V1_13=1.13.12,K8S_VERSION_V1_14=1.14.10,K8S_VERSION_V1_15=1.15.9
+
+      - name: Publish agent to docker registry (aliyun -> latest)
+        uses: jerray/publish-docker-action@master
+        with:
+          registry: registry.cn-beijing.aliyuncs.com
+          repository: lightning-monkey/agent
+          username: ${{ secrets.ALICLOUD_DOCKER_USERNAME }}
+          password: ${{ secrets.ALICLOUD_DOCKER_PASSWORD }}
+          tags: latest
           file: Dockerfile.agent
           build_args: K8S_VERSION_V1_12=1.12.10,K8S_VERSION_V1_13=1.13.12,K8S_VERSION_V1_14=1.14.10,K8S_VERSION_V1_15=1.15.9
 
@@ -90,6 +111,16 @@ jobs:
           file: Dockerfile.apiserver
           build_args: K8S_VERSION_V1_12=1.12.10,K8S_VERSION_V1_13=1.13.12,K8S_VERSION_V1_14=1.14.10,K8S_VERSION_V1_15=1.15.9
 
+      - name: Publish apiserver to docker registry (docker.io -> latest)
+        uses: jerray/publish-docker-action@master
+        with:
+          repository: g0194776/lightning-monkey-apiserver
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: latest
+          file: Dockerfile.apiserver
+          build_args: K8S_VERSION_V1_12=1.12.10,K8S_VERSION_V1_13=1.13.12,K8S_VERSION_V1_14=1.14.10,K8S_VERSION_V1_15=1.15.9
+
       - name: Publish apiserver to docker registry (aliyun)
         uses: jerray/publish-docker-action@master
         with:
@@ -98,5 +129,16 @@ jobs:
           username: ${{ secrets.ALICLOUD_DOCKER_USERNAME }}
           password: ${{ secrets.ALICLOUD_DOCKER_PASSWORD }}
           auto_tag: true
+          file: Dockerfile.apiserver
+          build_args: K8S_VERSION_V1_12=1.12.10,K8S_VERSION_V1_13=1.13.12,K8S_VERSION_V1_14=1.14.10,K8S_VERSION_V1_15=1.15.9
+
+      - name: Publish apiserver to docker registry (aliyun -> latest)
+        uses: jerray/publish-docker-action@master
+        with:
+          registry: registry.cn-beijing.aliyuncs.com
+          repository: lightning-monkey/apiserver
+          username: ${{ secrets.ALICLOUD_DOCKER_USERNAME }}
+          password: ${{ secrets.ALICLOUD_DOCKER_PASSWORD }}
+          tags: latest
           file: Dockerfile.apiserver
           build_args: K8S_VERSION_V1_12=1.12.10,K8S_VERSION_V1_13=1.13.12,K8S_VERSION_V1_14=1.14.10,K8S_VERSION_V1_15=1.15.9
