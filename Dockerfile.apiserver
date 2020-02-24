@@ -69,6 +69,9 @@ COPY --from=builder /go/docker-engine-1.12.6-1.el7.centos.x86_64.rpm /opt/regist
 COPY --from=builder /go/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm /opt/registry/software/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
 COPY --from=builder /go/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm /opt/registry/software/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm
 COPY --from=builder /go/helm-v2.12.3-linux-amd64.tar.gz /opt/registry/software/helm-v2.12.3-linux-amd64.tar.gz
+COPY --from=builder /go/docker-ce-18.09.9-3.el7.x86_64.rpm /opt/registry/software/docker-ce-18.09.9-3.el7.x86_64.rpm
+COPY --from=builder /go/docker-ce-cli-18.09.9-3.el7.x86_64.rpm /opt/registry/software/docker-ce-cli-18.09.9-3.el7.x86_64.rpm
+COPY --from=builder /go/containerd.io-1.2.6-3.3.el7.x86_64.rpm /opt/registry/software/containerd.io-1.2.6-3.3.el7.x86_64.rpm
 
 RUN yum install -y kubeadm-${K8S_VERSION}-0 net-tools --disableexcludes=kubernetes
 RUN chmod +x /opt/lm-apiserver
