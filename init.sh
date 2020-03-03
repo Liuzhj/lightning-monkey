@@ -394,7 +394,7 @@ _check_docker() {
   fi
   # chekc docker higher
   if [[ "${dockerver}" == "newversion" ]];then
-    if [[ ${version} == "18.09.3" ]];then
+    if [[ ${version} == "18.09.9" ]];then
         state "${msg}" 0;return 0
     else
         state "${msg}" 1;return 1

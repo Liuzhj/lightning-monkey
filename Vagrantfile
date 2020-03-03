@@ -169,7 +169,7 @@ Vagrant.configure("2") do |config|
         end
         k8s_minion1.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
-		        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -d newversion setup
+		    curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -d newversion setup
             curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -f true -d newversion run
             echo "waiting 10s..."
             sleep 10s
@@ -191,7 +191,7 @@ Vagrant.configure("2") do |config|
         end
         k8s_minion2.trigger.after :up do |trigger|
           trigger.run_remote = {inline: <<-SHELL
-		        curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -d newversion setup
+		    curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -d newversion setup
             curl -fsSL http://192.168.33.10:8080/bootstrap/init.sh | /bin/bash /dev/stdin -a http://192.168.33.10:8080 -g /var/lib/docker -c "1b8624d9-b3cf-41a3-a95b-748277484ba5"  -e eth1  -r minion -f true -d newversion run
             echo "waiting 10s..."
             sleep 10s
