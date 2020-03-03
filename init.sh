@@ -397,7 +397,7 @@ _check_repo() {
   local httpcode
   msg="Centos Repo check"
   repofile="/repodata/repomd.xml"
-  for repourl in $(yum repolist -v | grep Repo-baseurl | awk  '{print $3}')
+  for repourl in $(yum repolist -v | grep Repo-baseurl | awk  '{print $3}'|tr -d ',')
   do
     httpcode=$(curl -s --head --write-out "%{http_code}\n" "${repourl}${repofile}" -o  /dev/null)
     if [[ ${httpcode} == 200 ]];then

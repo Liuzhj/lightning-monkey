@@ -71,6 +71,9 @@ spec:
         k8s-app: kube-router
         tier: node
       annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9181"
+        prometheus.io/scrape: "true"
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
       serviceAccountName: kube-router
@@ -82,6 +85,7 @@ spec:
         - "--run-router=true"
         - "--run-firewall=true"
         - "--run-service-proxy=true"
+        - "--metrics-port=9181"
         - "--kubeconfig=/var/lib/kube-router/kubeconfig"
         env:
         - name: NODE_NAME

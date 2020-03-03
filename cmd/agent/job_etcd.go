@@ -34,6 +34,8 @@ etcd:
             initial-cluster: {{.SERVERS}}
             initial-cluster-state: new
             name: {{.NAME}}
+            metrics: extensive
+            enable-pprof: true
             listen-peer-urls: https://{{.ADDR}}:2380
             listen-client-urls: https://{{.ADDR}}:2379
             advertise-client-urls: https://{{.ADDR}}:2379
