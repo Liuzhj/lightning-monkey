@@ -19,13 +19,18 @@ TOKEN="df1733d40a31"
 KERNEL_URL="/apis/v1/registry/software/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm?token=${TOKEN}"
 KERNEL_PKG="kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm"
 
-DOCKER_ENGINE_URL="/apis/v1/registry/software/docker-engine-1.12.6-1.el7.centos.x86_64.rpm?token=${TOKEN}"
-#DOCKER_ENGINE_URL="/pkg/docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
-DOCKER_ENGINE_PKG="docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
+DOCKER_ENGINE_URL_OLD="/apis/v1/registry/software/docker-engine-1.12.6-1.el7.centos.x86_64.rpm?token=${TOKEN}"
+DOCKER_ENGINE_PKG_OLD="docker-engine-1.12.6-1.el7.centos.x86_64.rpm"
 
-DOCKER_ENGINE_SELINUX_URL="/apis/v1/registry/software/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm?token=${TOKEN}"
-#DOCKER_ENGINE_SELINUX_URL="/pkg/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
-DOCKER_ENGINE_SELINUX_PKG="docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm"
+DOCKER_ENGINE_URL_NEW="/apis/v1/registry/software/docker-ce-18.09.9-3.el7.x86_64.rpm?token=${TOKEN}"
+DOCKER_ENGINE_PKG_NEW="docker-ce-18.09.9-3.el7.x86_64.rpm"
+
+DOCKER_ENGINE_CLI_URL_NEW="/apis/v1/registry/software/docker-ce-cli-18.09.9-3.el7.x86_64.rpm?token=${TOKEN}"
+DOCKER_ENGINE_CLI_PKG_NEW="docker-ce-cli-18.09.9-3.el7.x86_64.rpm"
+
+DOCKER_ENGINE_CONTAINERD_URL_NEW="/apis/v1/registry/software/containerd.io-1.2.6-3.3.el7.x86_64.rpm?token=${TOKEN}"
+DOCKER_ENGINE_CONTAINERD_PKG_NEW="containerd.io-1.2.6-3.3.el7.x86_64.rpm"
+
 
 LMAGENT_URL="/apis/v1/registry/1.13.12/lmagent.tar?token=${TOKEN}"
 #LMAGENT_URL="/pkg/lmagent.tar"
@@ -51,6 +56,7 @@ _usage(){
     -c, --clusterid           cluster id,ex:1b8624d9-b3cf-41a3-a95b-748277484ba5
     -r, --role                server role,support :master|minion|ha|etcd.ex:master
     -f, --force               force install,ignore kernel version,support true|false
+    -d, --docker_version      docker version,support oldversion|newversion
 
 
   Command:
@@ -371,15 +377,28 @@ _check_firewalld() {
   fi
 }
 
+
 _check_docker() {
   local version
   local msg="Docker version"
+  local dockerver=$1
   version=$(docker -v 2>/dev/null|awk '{print $3}'|tr -d ",")
 
-  if [[ ${version} == "1.12.6" ]];then
-    state "${msg}" 0;return 0
-  else
-    state "${msg}" 1;return 1
+  # chekc docker 1.12.6
+  if [[ "${dockerver}" == "oldversion" ]];then
+    if [[ ${version} == "1.12.6" ]];then
+        state "${msg}" 0;return 0
+    else
+        state "${msg}" 1;return 1
+    fi
+  fi
+  # chekc docker higher
+  if [[ "${dockerver}" == "newversion" ]];then
+    if [[ ${version} == "18.09.3" ]];then
+        state "${msg}" 0;return 0
+    else
+        state "${msg}" 1;return 1
+    fi
   fi
 }
 
@@ -397,7 +416,7 @@ _check_repo() {
   local httpcode
   msg="Centos Repo check"
   repofile="/repodata/repomd.xml"
-  for repourl in $(yum repolist -v | grep Repo-baseurl | awk  '{print $3}')
+  for repourl in $(yum repolist -v | grep Repo-baseurl | awk  '{print $3}'|tr -d ',')
   do
     httpcode=$(curl -s --head --write-out "%{http_code}\n" "${repourl}${repofile}" -o  /dev/null)
     if [[ ${httpcode} == 200 ]];then
@@ -423,8 +442,7 @@ _check_main(){
   _show_header "Check environment"
   local nic=$1
   local graph=$2
-  local role
-  role=$(echo ${@:5}|sed -e 's/ / --/g' -e 's/^/ --/g')
+  local dockerver=$3
 
   _check_os
   _check_repo
@@ -441,7 +459,7 @@ _check_main(){
   _check_ntp
   _check_selinux
   _check_firewalld
-  _check_docker
+  _check_docker ${dockerver}
 }
 
 _setup_kernel() {
@@ -514,18 +532,12 @@ _setup_firewalld() {
   systemctl disable firewalld
 }
 
-_setup_docker() {
-  local dir=$1
-  local apiserver=$2
-  if ! command -v wget>/dev/null 2>&1;then
-    abort "wget command not found"
-  fi
+_setup_docker_oldversion() {
   yum remove -y docker*
-  wget ${apiserver}${DOCKER_ENGINE_URL} -O /tmp/${DOCKER_ENGINE_PKG}
-  wget ${apiserver}${DOCKER_ENGINE_SELINUX_URL} -O /tmp/${DOCKER_ENGINE_SELINUX_PKG}
-  yum install -y /tmp/${DOCKER_ENGINE_PKG} /tmp/${DOCKER_ENGINE_SELINUX_PKG}
+  wget ${apiserver}${DOCKER_ENGINE_URL_OLD} -O /tmp/${DOCKER_ENGINE_PKG_OLD}
+  yum install -y /tmp/${DOCKER_ENGINE_PKG_OLD}
 
-  pt="/usr/bin/dockerd --log-opt max-size=50M -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --graph=${dir}"
+  pt="/usr/bin/dockerd --log-level=warn --log-opt max-size=50M --storage-driver=overlay2 -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --graph=${dir}"
   execstart=$(echo ${pt}|sed 's/\//\\\//g')
   sed -r -i 's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
 
@@ -537,6 +549,40 @@ _setup_docker() {
   ln -sfv /sys/fs/cgroup/cpu,cpuacct /sys/fs/cgroup/cpuacct,cpu
 }
 
+_setup_docker_newversion() {
+  yum remove -y docker*
+  wget ${apiserver}${DOCKER_ENGINE_URL_NEW} -O /tmp/${DOCKER_ENGINE_PKG_NEW}
+  wget ${apiserver}${DOCKER_ENGINE_CLI_URL_NEW} -O /tmp/${DOCKER_ENGINE_CLI_PKG_NEW}
+  wget ${apiserver}${DOCKER_ENGINE_CONTAINERD_URL_NEW} -O /tmp/${DOCKER_ENGINE_CONTAINERD_PKG_NEW}
+  yum install -y /tmp/${DOCKER_ENGINE_PKG_NEW} /tmp/${DOCKER_ENGINE_CLI_PKG_NEW} /tmp/${DOCKER_ENGINE_CONTAINERD_PKG_NEW}
+
+  pt="/usr/bin/dockerd --log-level=warn --log-opt max-size=50M --storage-driver=overlay2 -H fd:// --containerd=/run/containerd/containerd.sock -H unix:///var/run/docker.sock -H tcp://0.0.0.0:900 --data-root=${dir}"
+  execstart=$(echo ${pt}|sed 's/\//\\\//g')
+  sed -r -i 's/(^ExecStart=)[^"]*/\1'"${execstart}"'/' /usr/lib/systemd/system/docker.service
+
+  systemctl enable docker
+  systemctl restart docker
+
+  mount -o remount,rw '/sys/fs/cgroup'
+  rm -f /sys/fs/cgroup/cpuacct,cpu
+  ln -sfv /sys/fs/cgroup/cpu,cpuacct /sys/fs/cgroup/cpuacct,cpu
+}
+
+
+_setup_docker() {
+  local dir=$1
+  local apiserver=$2
+  local dockerver=$3
+  if ! command -v wget>/dev/null 2>&1;then
+    abort "wget command not found"
+  fi
+  if [[ ${dockerver} == "oldversion" ]];then
+    _setup_docker_oldversion
+  else
+    _setup_docker_newversion
+  fi
+
+}
 
 _setup_kernel_module() {
   cat > /etc/sysconfig/modules/ipvs.modules <<EOF
@@ -554,7 +600,6 @@ EOF
     && bash /etc/sysconfig/modules/ipvs.modules \
     && lsmod | grep -e br_netfilter -e nf_conntrack_ipv4
 }
-
 
 _setup_hostname() {
   local nic=$1
@@ -576,8 +621,9 @@ _setup_main(){
   local apiserver=$2
   local clusterid=$3
   local graph=$4
+  local dockerver=$5
   local role
-  role=$(echo ${@:5}|sed -e 's/ / --/g' -e 's/^/ --/g')
+  role=$(echo ${@:6}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   _check_os >/dev/null 2>&1 || abort "Only supports centos7 system version."
 
@@ -618,11 +664,10 @@ _setup_main(){
   _check_hostname "${nic}">/dev/null 2>&1 || _setup_hostname "${nic}"
 
   _show_setup_pass "Install docker"
-  _check_docker>/dev/null 2>&1 || _setup_docker "${graph}" "${apiserver}"
+  _check_docker "${dockerver}" >/dev/null 2>&1 || _setup_docker "${graph}" "${apiserver}" "${dockerver}"
 
   _show_setup_pass "Upgrade kernel"
   _check_kernel>/dev/null 2>&1 || _setup_kernel "${apiserver}"
-
 
 }
 
@@ -633,8 +678,9 @@ _run_main() {
   local graph=$4
   local force=$5
   local labels=$6
+  local dockerver=$7
   local role
-  role=$(echo ${@:7}|sed -e 's/ / --/g' -e 's/^/ --/g')
+  role=$(echo ${@:8}|sed -e 's/ / --/g' -e 's/^/ --/g')
 
   if [[ "${force}" == "false" ]];then
     _check_kernel>/dev/null 2>&1 || abort "No kernel upgrade to 4.15.x"
@@ -646,7 +692,7 @@ _run_main() {
   _check_selinux>/dev/null 2>&1 || abort "No Selinux disabled"
   _check_firewalld>/dev/null 2>&1 || abort "No Firewalld disabled"
   _check_hostname "${nic}">/dev/null 2>&1 || abort "Host name was not configured correctly"
-  _check_docker>/dev/null 2>&1 || abort "No docker install"
+  _check_docker "${dockerver}">/dev/null 2>&1 || abort "No docker install"
 
   if ! command -v wget >/dev/null 2>&1;then
     abort "wget command not found"
@@ -700,30 +746,34 @@ fi
 while test $# -ne 0; do
   arg=$1; shift
   case $arg in
-    -h|--help)       _usage; exit ;;
-    -v|--version)    _version; exit ;;
-    -e|--nic)        nic="${1}"; shift ;;
-    -r|--role)       role="${role} ${1}"; shift ;;
-    -a|--apiserver)  apiserver="${1}"; shift ;;
-    -c|--clusterid)  clusterid="${1}"; shift ;;
-    -g|--graph)      graph="${1}"; shift ;;
-    -f|--force)      force="${1}"; shift ;;
-    -l|--labels)     labels="${1}"; shift ;;
+    -h|--help)               _usage; exit ;;
+    -v|--version)            _version; exit ;;
+    -e|--nic)                nic="${1}"; shift ;;
+    -r|--role)               role="${role} ${1}"; shift ;;
+    -a|--apiserver)          apiserver="${1}"; shift ;;
+    -c|--clusterid)          clusterid="${1}"; shift ;;
+    -g|--graph)              graph="${1}"; shift ;;
+    -f|--force)              force="${1}"; shift ;;
+    -l|--labels)             labels="${1}"; shift ;;
+    -d|--dockder_version)    dockerver="${1}"; shift ;;
     run)             [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
                      [[ -z "${force}" ]] && force="false"
                      [[ -z "${labels}" ]] && labels='beta.kubernetes.io/arch=amd64'
-                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}"  "${labels}" "${role}";;
+                     [[ -z "${dockerver}" ]] && dockerver='newversion'
+                     _run_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${force}"  "${labels}" "${dockerver}" "${role}";;
 
     check)           [[ -z "${nic}" ]] && _usage
                      [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
-                     _check_main "${nic}" "${graph}";;
+                     [[ -z "${dockerver}" ]] && dockerver='newversion'
+                     _check_main "${nic}" "${graph}" "${dockerver}";;
 
     show)            _show_main ;;
 
     setup)           [[ -z "${nic}" || -z "${apiserver}" || -z "${clusterid}" || -z "${role}" ]] && _usage
-                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}" 
-                      _setup_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${role}";;
+                     [[ -z "${graph}" ]] && graph="${DOCKERGRAPH}"
+                     [[ -z "${dockerver}" ]] && dockerver='newversion'
+                     _setup_main "${nic}" "${apiserver}" "${clusterid}" "${graph}" "${dockerver}" "${role}" ;;
                     
     *)_usage
       ;;
