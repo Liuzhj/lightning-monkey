@@ -6,38 +6,17 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/docker/distribution/reference"
 	"github.com/docker/engine-api/types"
 	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
+	"github.com/g0194776/lightningmonkey/pkg/templates"
+	"github.com/g0194776/lightningmonkey/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"html/template"
 	"io"
 	"strings"
-)
-
-const (
-	//ensures version of kubeadm is "1.13.5"
-	etcdConfigTemplate string = `apiVersion: "kubeadm.k8s.io/v1alpha3"
-kind: ClusterConfiguration
-etcd:
-    local:
-        image: {{.IMAGE}}
-        dataDir: {{.DATADIR}}
-        serverCertSANs:
-        - "{{.HOST}}"
-        - "127.0.0.1"
-        peerCertSANs:
-        - "{{.HOST}}"
-        - "127.0.0.1"
-        extraArgs:
-            initial-cluster: {{.SERVERS}}
-            initial-cluster-state: new
-            name: {{.NAME}}
-            listen-peer-urls: https://{{.ADDR}}:2380
-            listen-client-urls: https://{{.ADDR}}:2379
-            advertise-client-urls: https://{{.ADDR}}:2379
-            initial-advertise-peer-urls: https://{{.ADDR}}:2380`
 )
 
 func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, error) {
@@ -58,18 +37,33 @@ func HandleDeployETCD(job *entities.AgentJob, a *LightningMonkeyAgent) (bool, er
 		}
 	}
 	serversConnection := sb.String()
-	tmpl, err := template.New("etcd").Parse(etcdConfigTemplate)
+	logrus.Debugf("Try to get ETCD configuration template by Kubernetes version: %s", a.masterSettings[entities.MasterSettings_KubernetesVersion])
+	ts, err := templates.GetTemplate(entities.AgentJob_Deploy_ETCD, a.masterSettings[entities.MasterSettings_KubernetesVersion])
+	if err != nil {
+		return false, xerrors.Errorf("Failed to get ETCD configuration template by given Kubernetes version \"%s\", error: %s %w", a.masterSettings[entities.MasterSettings_KubernetesVersion], err.Error(), crashError)
+	}
+	if ts == "" {
+		return false, xerrors.Errorf("Got empty ETCD configuration template by given Kubernetes version \"%s\", %w", a.masterSettings[entities.MasterSettings_KubernetesVersion], crashError)
+	}
+	tmpl, err := template.New("etcd").Parse(ts)
 	if err != nil {
 		return false, xerrors.Errorf("Failed to parse ETCD configuration template, error: %s %w", err.Error(), crashError)
 	}
 	logrus.Infof("SERVER ADDR: %s", *a.arg.Address)
+	ref, err := reference.Parse(a.basicImages.Images["etcd"].ImageName)
+	if err != nil {
+		return false, xerrors.Errorf("Failed to parse ETCD docker image reference object, reason: %s %w", err.Error(), crashError)
+	}
+	tagged := ref.(reference.NamedTagged)
 	args := map[string]string{
-		"NAME":    generateETCDName(a, *a.arg.Address),
-		"HOST":    *a.arg.Address,
-		"SERVERS": serversConnection,
-		"IMAGE":   a.basicImages.Images["etcd"].ImageName,
-		"DATADIR": "/data/etcd",
-		"ADDR":    *a.arg.Address, //"0.0.0.0",
+		"NAME":      generateETCDName(a, *a.arg.Address),
+		"HOST":      *a.arg.Address,
+		"SERVERS":   serversConnection,
+		"IMAGE":     a.basicImages.Images["etcd"].ImageName,
+		"IMAGETAG":  tagged.Tag(),                                 //needed from Kubernetes v1.14
+		"IMAGEREPO": utils.GetDockerRepositoryName(tagged.Name()), //needed from Kubernetes v1.14
+		"DATADIR":   "/data/etcd",
+		"ADDR":      *a.arg.Address, //"0.0.0.0",
 	}
 	buffer := bytes.Buffer{}
 	err = tmpl.Execute(&buffer, args)

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/g0194776/lightningmonkey/pkg/certs"
 	"github.com/g0194776/lightningmonkey/pkg/common"
+	"github.com/g0194776/lightningmonkey/pkg/templates"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
@@ -57,6 +58,9 @@ func main() {
 		ip := GetLocalIP()
 		arg.Address = &ip
 	}
+	logrus.Info("Registering Kubernetes resource templates...")
+	templates.InitializeKubernetesResourceTemplates()
+	logrus.Info("Initializing certificate manager...")
 	common.CertManager = &certs.CertificateManagerImple{}
 	agent := LightningMonkeyAgent{}
 	agent.Initialize(arg)
