@@ -5,8 +5,8 @@ SUPPORTED_K8S_VERSIONS=("1.12.10" "1.13.12" "1.14.10" "1.15.9")
 
 if [[ $1 != "-s" ]]; then
     echo "Downloading RPM packages..."
-    wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
-    wget https://yum.dockerproject.org/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
+    wget https://mirrors.aliyun.com/docker-engine/yum/repo/main/centos/7/Packages/docker-engine-1.12.6-1.el7.centos.x86_64.rpm
+    wget https://mirrors.aliyun.com/docker-engine/yum/repo/main/centos/7/Packages/docker-engine-selinux-1.12.6-1.el7.centos.noarch.rpm
     wget http://mirror.rc.usf.edu/compute_lock/elrepo/kernel/el7/x86_64/RPMS/kernel-ml-4.15.6-1.el7.elrepo.x86_64.rpm
     wget https://get.helm.sh/helm-v2.12.3-linux-amd64.tar.gz
     wget https://download.docker.com/linux/centos/7/x86_64/stable/Packages/docker-ce-18.09.9-3.el7.x86_64.rpm
