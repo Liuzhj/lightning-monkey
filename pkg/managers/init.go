@@ -2,6 +2,8 @@ package managers
 
 import (
 	"errors"
+	"fmt"
+	"github.com/g0194776/lightningmonkey/pkg/common"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/sirupsen/logrus"
 )
@@ -26,6 +28,13 @@ func setDefaultValueProcessors() {
 }
 
 func setBizCheckProcessor() {
+	//supported Kubernetes version check.
+	check_processors = append(check_processors, func(cluster entities.LightningMonkeyClusterSettings) error {
+		if !common.IsSupportedKubernetesVersion(cluster.KubernetesVersion) {
+			return fmt.Errorf("%s version of Kubernetes is not supported yet, Currently, we are supporting those of versions of Kubernetes: %v", cluster.KubernetesVersion, common.SupportedK8sVersions)
+		}
+		return nil
+	})
 	//HA settings check.
 	check_processors = append(check_processors, func(cluster entities.LightningMonkeyClusterSettings) error {
 		if cluster.HASettings != nil {

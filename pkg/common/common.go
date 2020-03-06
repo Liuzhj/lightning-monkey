@@ -145,3 +145,15 @@ func newETCDLease() (int64, error) {
 	}
 	return int64(grantRsp.ID), nil
 }
+
+func IsSupportedKubernetesVersion(k8sVer string) bool {
+	if k8sVer == "" {
+		return false
+	}
+	for i := 0; i < len(SupportedK8sVersions); i++ {
+		if k8sVer == SupportedK8sVersions[i] {
+			return true
+		}
+	}
+	return false
+}
