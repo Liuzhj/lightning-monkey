@@ -2,17 +2,15 @@ package controllers
 
 import (
 	"fmt"
-	built_in "github.com/g0194776/lightningmonkey/pkg/controllers/built-in"
-	"github.com/g0194776/lightningmonkey/pkg/controllers/elasticsearch"
-	"github.com/g0194776/lightningmonkey/pkg/controllers/filebeat"
-	v2 "github.com/g0194776/lightningmonkey/pkg/controllers/helm/v2"
-	"github.com/g0194776/lightningmonkey/pkg/controllers/metricbeat"
-	"github.com/g0194776/lightningmonkey/pkg/controllers/metrics"
-	"github.com/g0194776/lightningmonkey/pkg/controllers/prometheus"
-	"github.com/g0194776/lightningmonkey/pkg/controllers/traefik"
 	"github.com/g0194776/lightningmonkey/pkg/entities"
 	"github.com/g0194776/lightningmonkey/pkg/k8s"
+	"github.com/hashicorp/go-version"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	ecs []extControllerSetting
+	ecc map[string]extControllerSetting
 )
 
 func CreateExtensionDeploymentController(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) (DeploymentController, error) {
@@ -24,6 +22,25 @@ func CreateExtensionDeploymentController(client *k8s.KubernetesClientSet, client
 	return &dc, nil
 }
 
+type extControllerSetting interface {
+	New() DeploymentController
+	IsSatisfyWithKubernetes(k8sVer string) bool
+}
+
+type extControllerSettingObj struct {
+	builder    func() DeploymentController
+	expression func(*extControllerSettingObj, string) bool
+	co         version.Constraints
+}
+
+func (e *extControllerSettingObj) New() DeploymentController {
+	return e.builder()
+}
+
+func (e *extControllerSettingObj) IsSatisfyWithKubernetes(k8sVer string) bool {
+	return e.expression(e, k8sVer)
+}
+
 type ExtensionDeploymentController struct {
 	client      *k8s.KubernetesClientSet
 	settings    entities.LightningMonkeyClusterSettings
@@ -31,16 +48,7 @@ type ExtensionDeploymentController struct {
 }
 
 func (dc *ExtensionDeploymentController) Initialize(client *k8s.KubernetesClientSet, clientIp string, settings entities.LightningMonkeyClusterSettings) error {
-	controllers := []DeploymentController{
-		&built_in.DefaultImagePullingSecretsDeploymentController{},
-		&prometheus.PrometheusDeploymentController{},
-		&metrics.MetricServerDeploymentController{},
-		&traefik.TraefikDeploymentController{},
-		&elasticsearch.ElasticSearchDeploymentController{},
-		&filebeat.FilebeatDeploymentController{},
-		&metricbeat.MetricbeatDeploymentController{},
-		&v2.HelmDeploymentController{},
-	}
+	controllers := newExtDeploymentControllers()
 	dc.controllers = []DeploymentController{}
 	var err error
 	for i := 0; i < len(controllers); i++ {
@@ -94,4 +102,49 @@ func (dc *ExtensionDeploymentController) HasInstalled() (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func registerExtDeploymentController(name string, createFunc func() DeploymentController, expression string) {
+	var err error
+	var expFunc func(*extControllerSettingObj, string) bool
+	extSettingObj := &extControllerSettingObj{builder: createFunc}
+	if expression == "*" || expression == "all" {
+		expFunc = func(*extControllerSettingObj, string) bool { return true }
+	} else {
+		extSettingObj.co, err = version.NewConstraint(expression)
+		if err != nil {
+			logrus.Fatal(err)
+			return
+		}
+		expFunc = func(so *extControllerSettingObj, s string) bool {
+			v, err := version.NewVersion(s)
+			if err != nil {
+				logrus.Errorf("Failed to convert semantic version string(%s) to object, error: %s", s, err.Error())
+				return false
+			}
+			return so.co.Check(v)
+		}
+	}
+	obj := &extControllerSettingObj{builder: createFunc, expression: expFunc}
+	ecs = append(ecs, obj)
+	ecc[name] = obj
+}
+
+func newExtDeploymentControllers() []DeploymentController {
+	controllers := []DeploymentController{}
+	if ecs == nil || len(ecs) == 0 {
+		return controllers
+	}
+	for i := 0; i < len(ecs); i++ {
+		controllers = append(controllers, ecs[i].New())
+	}
+	return controllers
+}
+
+func IsSatisfyWithKubernetes(extComponentName string, k8sVer string) (bool, error) {
+	if obj, isOK := ecc[extComponentName]; !isOK {
+		return false, fmt.Errorf("unknown extensional component: %s", extComponentName)
+	} else {
+		return obj.IsSatisfyWithKubernetes(k8sVer), nil
+	}
 }
