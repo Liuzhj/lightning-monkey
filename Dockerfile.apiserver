@@ -35,21 +35,25 @@ COPY --from=builder /go/k8s_${K8S_VERSION_V1_12}.tar /opt/registry/${K8S_VERSION
 COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION_V1_12}/infra.tar
 COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION_V1_12}/lmagent.tar
 COPY --from=builder /go/${K8S_VERSION_V1_12}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_12}/kubeadm
+COPY --from=builder /go/${K8S_VERSION_V1_12}/kubernetes/node/bin/kubectl /usr/bin/k8s_${K8S_VERSION_V1_12}/kubectl
 #kubernetes components for latest v1.13.x version.
 COPY --from=builder /go/k8s_${K8S_VERSION_V1_13}.tar /opt/registry/${K8S_VERSION_V1_13}/k8s.tar
 COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION_V1_13}/infra.tar
 COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION_V1_13}/lmagent.tar
 COPY --from=builder /go/${K8S_VERSION_V1_13}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_13}/kubeadm
+COPY --from=builder /go/${K8S_VERSION_V1_13}/kubernetes/node/bin/kubectl /usr/bin/k8s_${K8S_VERSION_V1_13}/kubectl
 #kubernetes components for latest v1.14.x version.
 COPY --from=builder /go/k8s_${K8S_VERSION_V1_14}.tar /opt/registry/${K8S_VERSION_V1_14}/k8s.tar
 COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION_V1_14}/infra.tar
 COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION_V1_14}/lmagent.tar
 COPY --from=builder /go/${K8S_VERSION_V1_14}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_14}/kubeadm
+COPY --from=builder /go/${K8S_VERSION_V1_14}/kubernetes/node/bin/kubectl /usr/bin/k8s_${K8S_VERSION_V1_14}/kubectl
 #kubernetes components for latest v1.15.x version.
 COPY --from=builder /go/k8s_${K8S_VERSION_V1_15}.tar /opt/registry/${K8S_VERSION_V1_15}/k8s.tar
 COPY --from=builder /go/infra.tar /opt/registry/${K8S_VERSION_V1_15}/infra.tar
 COPY --from=builder /go/lmagent.tar /opt/registry/${K8S_VERSION_V1_15}/lmagent.tar
 COPY --from=builder /go/${K8S_VERSION_V1_15}/kubernetes/node/bin/kubeadm /usr/bin/k8s_${K8S_VERSION_V1_15}/kubeadm
+COPY --from=builder /go/${K8S_VERSION_V1_15}/kubernetes/node/bin/kubectl /usr/bin/k8s_${K8S_VERSION_V1_15}/kubectl
 
 #common components
 COPY --from=builder /go/coredns.tar /opt/registry/software/coredns.tar
